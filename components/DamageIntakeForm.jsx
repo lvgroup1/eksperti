@@ -3,8 +3,10 @@ import * as XLSX from "xlsx";
 
 // ==========================
 //  Damage Intake – STEP WIZARD (1..12)
-//  Shows fields strictly in order, one step at a time.
-//  Export to Excel at Step 12. Local profile save via localStorage.
+//  After selecting rooms (9), Step 10 lists all room instances (e.g., Virtuve 1, Virtuve 2).
+//  Expert opens one room -> per-room editor (areas + positions/quantities) -> save -> back to list.
+//  When ALL rooms have positions entered, Step 10 shows a bottom button
+//  "Viss pabeigts — izveidot tāmi" which exports Excel and saves to profile.
 // ==========================
 
 // Helper types
@@ -98,99 +100,129 @@ export default function DamageIntakeForm() {
   const [lossKnown, setLossKnown] = useState("Nē"); // 8
   const [lossAmount, setLossAmount] = useState(""); // 8.1
 
-  // Rooms (9-10)
+  // Rooms (9-11)
   const [rooms, setRooms] = useState(
     ROOM_TYPES.reduce((acc, r) => {
       acc[r] = { checked: false, count: 1, custom: "" };
       return acc;
     }, /** @type {Record<string,{checked:boolean,count:number,custom:string}>} */ ({}))
   );
-  const [roomInstances, setRoomInstances] = useState([]); // { id, type, index, areas: string[], note?: string }
 
-  // Actions (11)
-  const [actions, setActions] = useState([{ action: "", quantity: "", unit: "m2" }]);
+  // For visible list of selected room instances
+  // structure: { id, type, index, areas: string[], note?: string }
+  const [roomInstances, setRoomInstances] = useState([]);
+
+  // Per-room actions: { [roomId]: Array<{action:string, quantity:string, unit:string}> }
+  const [roomActions, setRoomActions] = useState({});
+
+  // Which room is currently being edited (for step 11)
+  const [editingRoomId, setEditingRoomId] = useState(null);
 
   // Saved estimates (local profile)
   const [saved, setSaved] = useState([]);
   useEffect(() => setSaved(loadSaved()), []);
 
-  // Build room instances when rooms change
+  // Build room instances when rooms selection changes
   useEffect(() => {
     const instances = [];
     Object.entries(rooms).forEach(([type, meta]) => {
       if (meta.checked) {
         const cnt = Math.max(1, Number(meta.count) || 1);
         for (let i = 1; i <= cnt; i++) {
+          const id = `${type}-${i}`;
+          // Preserve existing areas/notes if exist
+          const existing = roomInstances.find((r) => r.id === id);
           instances.push({
-            id: `${type}-${i}`,
+            id,
             type: type === "Cits" ? meta.custom || "Cits" : type,
             index: i,
-            areas: [],
-            note: "",
+            areas: existing?.areas || [],
+            note: existing?.note || "",
           });
         }
       }
     });
     setRoomInstances(instances);
+    // Clean up roomActions for removed rooms
+    setRoomActions((prev) => {
+      const next = {};
+      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ action: "", quantity: "", unit: "m2" }]));
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-  // Actions rows
-  const addActionRow = () => setActions((a) => [...a, { action: "", quantity: "", unit: "m2" }]);
-  const removeActionRow = (idx) => setActions((a) => (a.length === 1 ? a : a.filter((_, i) => i !== idx)));
+  // Actions helpers for a specific room
+  function addActionRow(roomId) {
+    setRoomActions((ra) => ({ ...ra, [roomId]: [...(ra[roomId] || []), { action: "", quantity: "", unit: "m2" }] }));
+  }
+  function removeActionRow(roomId, idx) {
+    setRoomActions((ra) => {
+      const list = ra[roomId] || [];
+      if (list.length <= 1) return ra; // keep at least one
+      return { ...ra, [roomId]: list.filter((_, i) => i !== idx) };
+    });
+  }
+  function setActionField(roomId, idx, key, value) {
+    setRoomActions((ra) => {
+      const list = [...(ra[roomId] || [{ action: "", quantity: "", unit: "m2" }])];
+      list[idx] = { ...list[idx], [key]: value };
+      return { ...ra, [roomId]: list };
+    });
+  }
 
-  function handleInstanceAreaToggle(id, area) {
+  function toggleArea(roomId, area) {
     setRoomInstances((arr) =>
       arr.map((ri) =>
-        ri.id === id
-          ? { ...ri, areas: ri.areas.includes(area) ? ri.areas.filter((a) => a !== area) : [...ri.areas, area] }
+        ri.id === roomId
+          ? {
+              ...ri,
+              areas: ri.areas.includes(area)
+                ? ri.areas.filter((a) => a !== area)
+                : [...ri.areas, area],
+            }
           : ri
       )
     );
   }
-  function setInstanceNote(id, note) {
-    setRoomInstances((arr) => arr.map((ri) => (ri.id === id ? { ...ri, note } : ri)));
+  function setRoomNote(roomId, note) {
+    setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
   }
 
-  // ===== Validation per step =====
+  // Validation per step
   const stepValid = useMemo(() => {
     switch (step) {
-      case 1:
-        return !!address.trim();
-      case 2:
-        return !!insurer;
-      case 3:
-        return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
-      case 4:
-        return (
-          !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim())
-        );
-      case 5:
-        return ["Jā", "Nē"].includes(electricity);
-      case 6:
-        return ["Jā", "Nē"].includes(needsDrying);
-      case 7:
-        return ["Jā", "Nē"].includes(commonPropertyDamaged);
-      case 8:
-        return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
-      case 9:
-        // At least one room selected OR allow continue anyway
-        return Object.values(rooms).some((r) => r.checked);
-      case 10:
-        // If rooms selected, allow
-        return true;
-      case 11:
-        // Either empty list or valid rows with action+quantity
-        return actions.every((a) => (a.action && a.quantity) || (!a.action && !a.quantity));
-      case 12:
-        return true;
-      default:
-        return true;
+      case 1: return !!address.trim();
+      case 2: return !!insurer;
+      case 3: return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
+      case 4: return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
+      case 5: return ["Jā", "Nē"].includes(electricity);
+      case 6: return ["Jā", "Nē"].includes(needsDrying);
+      case 7: return ["Jā", "Nē"].includes(commonPropertyDamaged);
+      case 8: return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
+      case 9: return Object.values(rooms).some((r) => r.checked);
+      case 10: return true; // list view of rooms — navigation handled in-UI
+      case 11: return true; // per-room editor handles its own save
+      case 12: return true;
+      default: return true;
     }
-  }, [step, address, insurer, locationType, dwellingSubtype, incidentType, incidentOther, electricity, needsDrying, commonPropertyDamaged, lossKnown, lossAmount, rooms, actions]);
+  }, [step, address, insurer, locationType, dwellingSubtype, incidentType, incidentOther, electricity, needsDrying, commonPropertyDamaged, lossKnown, lossAmount, rooms]);
 
   const totalSteps = 12;
   const next = () => setStep((s) => Math.min(totalSteps, s + 1));
-  const back = () => setStep((s) => Math.max(1, s - 1));
+  const back = () => {
+    if (step === 11) {
+      // going back from per-room editor returns to room list
+      setEditingRoomId(null);
+      setStep(10);
+    } else {
+      setStep((s) => Math.max(1, s - 1));
+    }
+  };
+
+  // Completion checks
+  const roomHasPositions = (roomId) => (roomActions[roomId] || []).some((r) => r.action && r.quantity);
+  const allRoomsCompleted = roomInstances.length > 0 && roomInstances.every((ri) => roomHasPositions(ri.id));
 
   // ===== Excel export =====
   function exportToExcel() {
@@ -216,10 +248,7 @@ export default function DamageIntakeForm() {
       ["Elektrības traucējumi", electricity === "Jā" ? "Ir" : "Nav"],
       ["Vai nepieciešama žāvēšana?", needsDrying],
       ["Vai bojāts kopīpašums?", commonPropertyDamaged],
-      [
-        "Zaudējuma novērtējums pēc klienta vārdiem",
-        lossKnown === "Jā" ? `${lossAmount} EUR` : "Nav",
-      ],
+      ["Zaudējuma novērtējums pēc klienta vārdiem", lossKnown === "Jā" ? `${lossAmount} EUR` : "Nav"],
     ];
 
     const roomsSheet = [
@@ -232,27 +261,27 @@ export default function DamageIntakeForm() {
       ]),
     ];
 
-    const actionsSheet = [
-      ["#", "Pozīcija", "Daudzums", "Mērvienība"],
-      ...actions
-        .filter((a) => a.action && a.quantity)
-        .map((a, idx) => [idx + 1, a.action, a.quantity, a.unit || "m2"]),
+    const actionsByRoomSheet = [
+      ["Telpa", "Pozīcija", "Daudzums", "Mērvienība"],
+      ...roomInstances.flatMap((ri) =>
+        (roomActions[ri.id] || [])
+          .filter((a) => a.action && a.quantity)
+          .map((a) => [
+            `${ri.type} ${ri.index}`,
+            a.action,
+            a.quantity,
+            a.unit || "m2",
+          ])
+      ),
     ];
 
     const wb = XLSX.utils.book_new();
-    const wsSummary = XLSX.utils.aoa_to_sheet(summary);
-    const wsRooms = XLSX.utils.aoa_to_sheet(roomsSheet);
-    const wsActions = XLSX.utils.aoa_to_sheet(actionsSheet);
-
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Pieteikums");
-    XLSX.utils.book_append_sheet(wb, wsRooms, "Telpas");
-    XLSX.utils.book_append_sheet(wb, wsActions, "Darbi");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), "Pieteikums");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(roomsSheet), "Telpas");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actionsByRoomSheet), "Darbi pa telpām");
 
     const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-    const filename = `tame_${(estimatorName || "tametajs").replaceAll(
-      /[^a-zA-Z0-9_\-]/g,
-      "_"
-    )}_${prettyDate()}.xlsx`;
+    const filename = `tame_${(estimatorName || "tametajs").replaceAll(/[^a-zA-Z0-9_\-]/g, "_")}_${prettyDate()}.xlsx`;
 
     const link = document.createElement("a");
     link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
@@ -261,13 +290,7 @@ export default function DamageIntakeForm() {
     link.click();
     document.body.removeChild(link);
 
-    const entry = {
-      id: crypto.randomUUID(),
-      filename,
-      createdAtISO: new Date().toISOString(),
-      estimator: estimatorName || "Nezināms",
-      base64: wbout,
-    };
+    const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
     saveEntry(entry);
     setSaved(loadSaved());
   }
@@ -299,7 +322,7 @@ export default function DamageIntakeForm() {
         <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi no 1 līdz 12. Pēdējā solī tiks ģenerēta Excel tāme.</div>
+            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi no 1 līdz 12. Kad 10. solī visas telpas ir aizpildītas, varēsi ģenerēt tāmi.</div>
           </div>
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 320 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
@@ -313,7 +336,7 @@ export default function DamageIntakeForm() {
           <div style={{ width: `${progressPct}%`, height: 8, background: "#10b981", borderRadius: 999 }} />
         </div>
 
-        {/* Steps */}
+        {/* Steps 1..9 same as before */}
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
@@ -464,73 +487,95 @@ export default function DamageIntakeForm() {
         )}
 
         {step === 10 && (
-          <StepShell title="10. Vietas katrā telpā, kas tika bojātas">
+          <StepShell title="10. Izvēlētās telpas">
             {roomInstances.length === 0 ? (
               <div style={{ color: "#6b7280" }}>Nav izvēlētas telpas 9. solī.</div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
-                {roomInstances.map((ri) => (
-                  <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
-                    <div style={{ fontWeight: 600, marginBottom: 8 }}>{ri.type} {ri.index}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
-                      {AREA_OPTIONS.map((a) => (
-                        <label key={a} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          <input type="checkbox" checked={ri.areas.includes(a)} onChange={() => handleInstanceAreaToggle(ri.id, a)} /> {a}
-                        </label>
-                      ))}
+                {roomInstances.map((ri) => {
+                  const completed = roomHasPositions(ri.id);
+                  const areasCount = ri.areas.length;
+                  return (
+                    <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
+                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
+                        Bojātās vietas: {areasCount > 0 ? areasCount : "—"}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Atvērt</button>
+                        {completed && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saglabāts</span>}
+                      </div>
                     </div>
-                    <input placeholder="Piezīmes (papildus info)" value={ri.note} onChange={(e) => setInstanceNote(ri.id, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            )}
+            {allRoomsCompleted && (
+              <div style={{ marginTop: 16, textAlign: "right" }}>
+                <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Viss pabeigts — izveidot tāmi</button>
               </div>
             )}
           </StepShell>
         )}
 
-        {step === 11 && (
-          <StepShell title="11. Pozīcijas un apjomi">
-            <div style={{ display: "grid", gap: 12 }}>
-              {actions.map((row, idx) => (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 110px auto", gap: 8, alignItems: "end" }}>
-                  <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-                    <select value={row.action} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, action: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
-                      <option value="">— Izvēlies —</option>
-                      {ACTION_OPTIONS.map((a) => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Daudzums</div>
-                    <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, quantity: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="m2" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
-                    <input value={row.unit} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, unit: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" onClick={addActionRow} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Pievienot</button>
-                    <button type="button" onClick={() => removeActionRow(idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
-                  </div>
+        {step === 11 && editingRoomId && (
+          <StepShell title={`11. Pozīcijas un apjomi – ${roomInstances.find(r=>r.id===editingRoomId)?.type} ${roomInstances.find(r=>r.id===editingRoomId)?.index}`}>
+            {/* Areas (was step 10 in spec) */}
+            <LabeledRow label="Bojātās vietas šajā telpā">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {AREA_OPTIONS.map((a) => (
+                  <label key={a} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <input type="checkbox" checked={roomInstances.find(r=>r.id===editingRoomId)?.areas.includes(a) || false} onChange={() => toggleArea(editingRoomId, a)} /> {a}
+                  </label>
+                ))}
+              </div>
+            </LabeledRow>
+            <LabeledRow label="Piezīmes">
+              <input value={roomInstances.find(r=>r.id===editingRoomId)?.note || ''} onChange={(e) => setRoomNote(editingRoomId, e.target.value)} placeholder="Papildus informācija" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+            </LabeledRow>
+
+            {/* Positions for this room */}
+            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
+            {(roomActions[editingRoomId] || [{ action: "", quantity: "", unit: "m2" }]).map((row, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 110px auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
+                  <select value={row.action} onChange={(e) => setActionField(editingRoomId, idx, 'action', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                    <option value="">— Izvēlies —</option>
+                    {ACTION_OPTIONS.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
+                <div>
+                  <div style={{ fontSize: 13, marginBottom: 4 }}>Daudzums</div>
+                  <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setActionField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="m2" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
+                  <input value={row.unit} onChange={(e) => setActionField(editingRoomId, idx, 'unit', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={() => addActionRow(editingRoomId)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Pievienot</button>
+                  <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+              <button type="button" onClick={back} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}>← Atpakaļ uz telpu sarakstu</button>
+              <button type="button" onClick={() => { setEditingRoomId(null); setStep(10); }} style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Saglabāt un atgriezties</button>
             </div>
           </StepShell>
         )}
 
-        {step === 12 && (
-          <StepShell title="12. Pabeigt apskati – ģenerēt Excel tāmi">
-            <div style={{ marginBottom: 12, color: "#374151" }}>Nospiežot pogu, tiks izveidota Excel tāme no ievadītajiem datiem un saglabāta jūsu profilā (šajā pārlūkā).</div>
-            <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Ģenerēt Excel</button>
-          </StepShell>
+        {/* Navigation bar (hide default Next on steps 10 & 11) */}
+        {[1,2,3,4,5,6,7,8,9,12].includes(step) && (
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+            <button type="button" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}>← Atpakaļ</button>
+            <button type="button" onClick={() => setStep((s) => Math.min(totalSteps, s + 1))} disabled={!stepValid || step === totalSteps} style={{ padding: "10px 14px", borderRadius: 10, background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827", color: "white", border: 0 }}>{step === totalSteps ? "Beigas" : "Tālāk →"}</button>
+          </div>
         )}
-
-        {/* Navigation */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-          <button type="button" onClick={back} disabled={step === 1} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}>← Atpakaļ</button>
-          <button type="button" onClick={next} disabled={!stepValid || step === totalSteps} style={{ padding: "10px 14px", borderRadius: 10, background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827", color: "white", border: 0 }}>{step === totalSteps ? "Beigas" : "Tālāk →"}</button>
-        </div>
 
         {/* Saved estimates */}
         <div style={{ background: "white", padding: 16, borderRadius: 12, marginTop: 20 }}>
