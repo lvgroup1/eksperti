@@ -1,0 +1,2485 @@
+{
+  "insurer": "Balta",
+  "version": "2024-08-27",
+  "currency": "EUR",
+  "items": [
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Ūdensnotekas teknes un caurules demontāža",
+      "unit": "m",
+      "unit_price": 1.65
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Ūdensnotekas teknes un caurules demontāža,saglabājot esošos",
+      "unit": "m",
+      "unit_price": 3.8
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta vējkastes demontāža saglabājot esošos",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Nodegušo konstrukciju demontāža (jumts, mansarda stāvs)",
+      "unit": "m3",
+      "unit_price": 46.2
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Šiferu apšuvuma demontāža",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Jumts, pārsegums:7.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta seguma demontāža",
+      "unit": "m2",
+      "unit_price": 2.53
+    },
+    {
+      "id": "Jumts, pārsegums:8.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta izolācijas demontāža",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Jumts, pārsegums:9.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta terāuda  nesošo profilu demontāža",
+      "unit": "m2",
+      "unit_price": 2.42
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta nesošās konstrukciju montāža (mūrlata, kopnes,spares, sijas, balstbrusas)",
+      "unit": "m3",
+      "unit_price": 280.5
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kokmateriāla apstrāde ar antipirēnu",
+      "unit": "m3",
+      "unit_price": 99.0
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Latas vai šķerslatas montāža, s=400mm",
+      "unit": "m2",
+      "unit_price": 5.25
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Latas vai šķerslatas montāža, s=400mm",
+      "unit": "m2",
+      "unit_price": 5.25
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Ciešs dēlu klājs zem jumta seguma",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Jumts, pārsegums:6.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta siltumizolācija ar akmens vati starp spārēm, 200mm",
+      "unit": "m2",
+      "unit_price": 4.6
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta tērauda nesoša profila montāža",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta siltumizolācija 100+20 mm",
+      "unit": "m2",
+      "unit_price": 4.6
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Nesošo konstrukciju krāsotu virsmu tīrīšana ar rokas jeb mehāniskiem instrumentiem",
+      "unit": "m2",
+      "unit_price": 0.55
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta nesošo tērauda konstrukciju pretrūsas apstrāde",
+      "unit": "m2",
+      "unit_price": 1.98
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta nesošo tērauda konstrukciju gruntēšana",
+      "unit": "m2",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Jumts, pārsegums:6.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta nesošo tērauda konstrukciju krāsošana",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Mitrumizturīgā OSB plāksnes montāža",
+      "unit": "m2",
+      "unit_price": 5.68
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pašlīmējošu polimērbitumena apakšklāja montāža",
+      "unit": "m2",
+      "unit_price": 3.96
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Karnīzes un vējmalas skārda elementu montāža",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta pieslēgumu ierīkošana",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Bitumena dakstiņu klāja montāža",
+      "unit": "m2",
+      "unit_price": 7.14
+    },
+    {
+      "id": "Jumts, pārsegums:6.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores un šķautņu dakstiņu montāža",
+      "unit": "m",
+      "unit_price": 5.28
+    },
+    {
+      "id": "Jumts, pārsegums:7.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta vējkastes apšūšana ar  koka dēlīšiem",
+      "unit": "m2",
+      "unit_price": 12.0
+    },
+    {
+      "id": "Jumts, pārsegums:8.0",
+      "category": "Jumts, pārsegums",
+      "name": "Dēļu krāsošana",
+      "unit": "m2",
+      "unit_price": 8.5
+    },
+    {
+      "id": "Jumts, pārsegums:9.0",
+      "category": "Jumts, pārsegums",
+      "name": "Bitumena dakstiņu klāja remonts",
+      "unit": "m2",
+      "unit_price": 15.84
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pretvēja izolācija",
+      "unit": "m2",
+      "unit_price": 1.5
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Onduline jumta seguma ieklāšana",
+      "unit": "m2",
+      "unit_price": 5.36
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores, karnīzes,vējmalas, sateknes skārda elementu montāža",
+      "unit": "m",
+      "unit_price": 4.6
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Latas montāža, s=400mm",
+      "unit": "m2",
+      "unit_price": 5.25
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pretvēja izolācija",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Bezazbesta šīfera jumta seguma ieklāšana",
+      "unit": "m2",
+      "unit_price": 6.6
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores, karnīzes,vējmalas, sateknes skārda elementu montāža",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pretvēja izolācija",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta skārda seguma ierīkošana",
+      "unit": "m2",
+      "unit_price": 10.4
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores, karnīzes,vējmalas, sateknes skārda elementu montāža",
+      "unit": "m",
+      "unit_price": 8.4
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pretvēja izolācija",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta skārda seguma ierīkošana",
+      "unit": "m2",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores, karnīzes,vējmalas, sateknes skārda elementu montāža",
+      "unit": "m",
+      "unit_price": 8.4
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Mitrumizturīgā OSB plāksnes montāža",
+      "unit": "m2",
+      "unit_price": 4.73
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Polimērbitumena apakšklāja montāža",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Karnīžu un vējmalu skārda elementu ierīkošna",
+      "unit": "m",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta pieslēgumu ierīkošana",
+      "unit": "m",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Koka šindeļu montāža",
+      "unit": "m2",
+      "unit_price": 25.0
+    },
+    {
+      "id": "Jumts, pārsegums:6.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kores dakstiņu montāža",
+      "unit": "m",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kausējama hidroizolācijas apakšklāja iebūve",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Kausējama hidroizolācijas virsklāja iebūve",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Jumts, pārsegums:row51",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta dakstiņu demontāža",
+      "unit": "m2",
+      "unit_price": 28.5
+    },
+    {
+      "id": "Jumts, pārsegums:row52",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta dakstiņu demontāža, montāža",
+      "unit": "m2",
+      "unit_price": 30.0
+    },
+    {
+      "id": "Jumts, pārsegums:row53",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta dakstiņu demontāža, montāža",
+      "unit": "m2",
+      "unit_price": 30.0
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Ūdensnotekas teknes montāža",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Ūdensnotekas caurules montāža",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Esošās ūdensnotekas teknes un caurules montāža",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta lūkas montāža",
+      "unit": "kpl.",
+      "unit_price": 60.5
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Dūmvada nosegcepures montāža",
+      "unit": "kpl.",
+      "unit_price": 50.0
+    },
+    {
+      "id": "Jumts, pārsegums:6.0",
+      "category": "Jumts, pārsegums",
+      "name": "Skārda sniega barjera montāža",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Jumts, pārsegums:7.0",
+      "category": "Jumts, pārsegums",
+      "name": "Jumta  sniega aiztures barjeras montāža  ( balsti 3 gab. ar ovālām caurulēm 3m 2gab. )",
+      "unit": "m",
+      "unit_price": 6.6
+    },
+    {
+      "id": "Jumts, pārsegums:1.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pārseguma koka siju montāža",
+      "unit": "m3",
+      "unit_price": 253.0
+    },
+    {
+      "id": "Jumts, pārsegums:2.0",
+      "category": "Jumts, pārsegums",
+      "name": "Melno koka griestu ierīkošana 25mm",
+      "unit": "m2",
+      "unit_price": 3.85
+    },
+    {
+      "id": "Jumts, pārsegums:3.0",
+      "category": "Jumts, pārsegums",
+      "name": "Tvaika izolācijas plēves ieklāšana",
+      "unit": "m2",
+      "unit_price": 1.3
+    },
+    {
+      "id": "Jumts, pārsegums:4.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pārseguma siltināšana ar beramo vati",
+      "unit": "m3",
+      "unit_price": 33.0
+    },
+    {
+      "id": "Jumts, pārsegums:5.0",
+      "category": "Jumts, pārsegums",
+      "name": "Pārseguma siltināšana ar akmens vati 100mm",
+      "unit": "m2",
+      "unit_price": 2.5
+    },
+    {
+      "id": "Fasāde:1.0",
+      "category": "Fasāde",
+      "name": "Plastikāta apdares dēlīšu (saiings) demontāža",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Fasāde:2.0",
+      "category": "Fasāde",
+      "name": "Ūdensnotekas caurules demontāža",
+      "unit": "m",
+      "unit_price": 1.65
+    },
+    {
+      "id": "Fasāde:3.0",
+      "category": "Fasāde",
+      "name": "Ūdensnotekas caurules demontāža saglabājot esošos",
+      "unit": "m",
+      "unit_price": 3.8
+    },
+    {
+      "id": "Fasāde:4.0",
+      "category": "Fasāde",
+      "name": "Fasādes apdares no dekoratīviem ķeģeļiem demontāža",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Fasāde:5.0",
+      "category": "Fasāde",
+      "name": "Ķieģeļu sienu demontāža",
+      "unit": "m3",
+      "unit_price": 35.2
+    },
+    {
+      "id": "Fasāde:6.0",
+      "category": "Fasāde",
+      "name": "Ķieģeļu starpsienu demontāža (līdz 120mm)",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Fasāde:7.0",
+      "category": "Fasāde",
+      "name": "Vecā dekorativā apmetuma noņemšana",
+      "unit": "m2",
+      "unit_price": 3.03
+    },
+    {
+      "id": "Fasāde:8.0",
+      "category": "Fasāde",
+      "name": "Fašādes siltinājumu demontāža",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Fasāde:1.0",
+      "category": "Fasāde",
+      "name": "Plastikāta apdares dēlīšu (saidings) montāža uz koka karkasa",
+      "unit": "m2",
+      "unit_price": 7.04
+    },
+    {
+      "id": "Fasāde:2.0",
+      "category": "Fasāde",
+      "name": "Karkasa apšūšana ar  koka apdares dēļiem",
+      "unit": "m2",
+      "unit_price": 7.7
+    },
+    {
+      "id": "Fasāde:3.0",
+      "category": "Fasāde",
+      "name": "Dēļu krāsošana",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Fasāde:4.0",
+      "category": "Fasāde",
+      "name": "Cokola profila montāža",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Fasāde:5.0",
+      "category": "Fasāde",
+      "name": "Mūra fasādes siltināšana ar akmens vati 100mm",
+      "unit": "m2",
+      "unit_price": 9.0
+    },
+    {
+      "id": "Fasāde:6.0",
+      "category": "Fasāde",
+      "name": "Mūra fasādes siltināšana ar polistirolu 100mm",
+      "unit": "m2",
+      "unit_price": 9.0
+    },
+    {
+      "id": "Fasāde:7.0",
+      "category": "Fasāde",
+      "name": "Sieta stiprināšana un izlīdzināšana ar līmjavu fasādes sienām",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Fasāde:8.0",
+      "category": "Fasāde",
+      "name": "Fasādes gruntēšana un apmešana ar faktūrapmetumu 2mm",
+      "unit": "m2",
+      "unit_price": 7.26
+    },
+    {
+      "id": "Fasāde:9.0",
+      "category": "Fasāde",
+      "name": "Apmestās fasādes gruntēšana un krāsošana divās kārtās ar tonētu fasādes krāsu",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Fasāde:10.0",
+      "category": "Fasāde",
+      "name": "Fasādes virsmas apmešana, līdz 10mm",
+      "unit": "m2",
+      "unit_price": 9.9
+    },
+    {
+      "id": "Fasāde:11.0",
+      "category": "Fasāde",
+      "name": "Fasādes apmetuma remonts",
+      "unit": "m2",
+      "unit_price": 16.5
+    },
+    {
+      "id": "Fasāde:12.0",
+      "category": "Fasāde",
+      "name": "Fasādes virsmas špaktelēšana un slīpēšana",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Fasāde:13.0",
+      "category": "Fasāde",
+      "name": "Fasādes logu un durvju aiļu malas siltināšana  ar akmens vati 30mm (līdz 150mm)",
+      "unit": "m",
+      "unit_price": 1.27
+    },
+    {
+      "id": "Fasāde:14.0",
+      "category": "Fasāde",
+      "name": "Sieta stiprināšana un izlīdzināšana ar līmjavu logu un durvju aiļu sānu malām (līdz 150mm)",
+      "unit": "m",
+      "unit_price": 1.16
+    },
+    {
+      "id": "Fasāde:15.0",
+      "category": "Fasāde",
+      "name": "Logu un durvju aiļu malas apmēšana ar faktūrapmetumu (līdz 150mm)",
+      "unit": "m",
+      "unit_price": 1.6
+    },
+    {
+      "id": "Fasāde:16.0",
+      "category": "Fasāde",
+      "name": "Apmesto aiļu malas virsmu krāsošana divās kārtās ar tonētu krāsu (līdz 150mm)",
+      "unit": "m",
+      "unit_price": 1.16
+    },
+    {
+      "id": "Fasāde:17.0",
+      "category": "Fasāde",
+      "name": "Fasādes apdare ar dekoratīviem ķeģeļiem",
+      "unit": "m2",
+      "unit_price": 14.3
+    },
+    {
+      "id": "Fasāde:18.0",
+      "category": "Fasāde",
+      "name": "Cokola siltināšana ar  putuplastu  50mm",
+      "unit": "m2",
+      "unit_price": 6.05
+    },
+    {
+      "id": "Fasāde:19.0",
+      "category": "Fasāde",
+      "name": "Armējošā slāņa iestrāde cokolam",
+      "unit": "m2",
+      "unit_price": 3.74
+    },
+    {
+      "id": "Fasāde:20.0",
+      "category": "Fasāde",
+      "name": "Cokola špaktelēšana, sagatavošana krāsošanai",
+      "unit": "m2",
+      "unit_price": 4.62
+    },
+    {
+      "id": "Fasāde:21.0",
+      "category": "Fasāde",
+      "name": "Cokola krāsošana",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Fasāde:1.0",
+      "category": "Fasāde",
+      "name": "Ārējās palodzes montāža līdz 250mm platumā",
+      "unit": "m",
+      "unit_price": 4.3
+    },
+    {
+      "id": "Fasāde:2.0",
+      "category": "Fasāde",
+      "name": "Ūdensnotekas caurules montāža",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Fasāde:3.0",
+      "category": "Fasāde",
+      "name": "Esošās ūdensnotekas caurules montāža",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Sienas, starpsienas:1",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu attīrīšana no esošā seguma",
+      "unit": "m2",
+      "unit_price": 1.6
+    },
+    {
+      "id": "Sienas, starpsienas:2",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apmetumu demontāža",
+      "unit": "m2",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Sienas, starpsienas:3",
+      "category": "Sienas, starpsienas",
+      "name": "Tapešu noņemšana no sienām",
+      "unit": "m2",
+      "unit_price": 1.65
+    },
+    {
+      "id": "Sienas, starpsienas:4",
+      "category": "Sienas, starpsienas",
+      "name": "Sienas flīžu demontāža",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Sienas, starpsienas:5",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu vates demontāža",
+      "unit": "m2",
+      "unit_price": 0.8
+    },
+    {
+      "id": "Sienas, starpsienas:6",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša starpsienu demontāža",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Sienas, starpsienas:7",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu  dekoratīvo līstu noņemšana",
+      "unit": "m",
+      "unit_price": 1.14
+    },
+    {
+      "id": "Sienas, starpsienas:8",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu ārsienu demontāža",
+      "unit": "m3",
+      "unit_price": 30.8
+    },
+    {
+      "id": "Sienas, starpsienas:9",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu starpsienu demontāža, b=120mm",
+      "unit": "m2",
+      "unit_price": 7.7
+    },
+    {
+      "id": "Sienas, starpsienas:1",
+      "category": "Sienas, starpsienas",
+      "name": "Ārsienas koka karkasa montāža",
+      "unit": "m3",
+      "unit_price": 253.0
+    },
+    {
+      "id": "Sienas, starpsienas:2",
+      "category": "Sienas, starpsienas",
+      "name": "Ārsienu siltināšana ar akmens vati, 200mm",
+      "unit": "m2",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Sienas, starpsienas:3",
+      "category": "Sienas, starpsienas",
+      "name": "Ārsienu siltināšana ar celulozes siltumizolācijas materiālu,200mm",
+      "unit": "m3",
+      "unit_price": 9.02
+    },
+    {
+      "id": "Sienas, starpsienas:4",
+      "category": "Sienas, starpsienas",
+      "name": "Koka karkasa apšūšana ar  ar ēvelētiem dēļiem 20mm",
+      "unit": "m2",
+      "unit_price": 5.0
+    },
+    {
+      "id": "Sienas, starpsienas:5",
+      "category": "Sienas, starpsienas",
+      "name": "Koka karkasa apšūšana ar OSB  (12mm) plāksnēm no ārpuses",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Sienas, starpsienas:6",
+      "category": "Sienas, starpsienas",
+      "name": "Pretvēja izolācija",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Sienas, starpsienas:7",
+      "category": "Sienas, starpsienas",
+      "name": "Koka latas montāža no ārpuses vai iekšpuses, s=400mm",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Sienas, starpsienas:8",
+      "category": "Sienas, starpsienas",
+      "name": "Karkasa apšūšana ar  koka apdares dēļiem",
+      "unit": "m2",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Sienas, starpsienas:9",
+      "category": "Sienas, starpsienas",
+      "name": "Dēļu krāsošana",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Sienas, starpsienas:10",
+      "category": "Sienas, starpsienas",
+      "name": "Plastikāta apdares dēlīšu (saidings) montāža uz koka karkasa",
+      "unit": "m2",
+      "unit_price": 7.04
+    },
+    {
+      "id": "Sienas, starpsienas:11",
+      "category": "Sienas, starpsienas",
+      "name": "Tvaika izolācijas plēves ieklāšana no iekšpuses",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Sienas, starpsienas:12",
+      "category": "Sienas, starpsienas",
+      "name": "Ārsienu siltināšana ar akmens vati  50mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Sienas, starpsienas:13",
+      "category": "Sienas, starpsienas",
+      "name": "Ārsienu siltināšana ar akmens vati  100mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Sienas, starpsienas:14",
+      "category": "Sienas, starpsienas",
+      "name": "Ārējo nesošo sienu mūrēšana no gāzbetona (fibo) blokiem",
+      "unit": "m3",
+      "unit_price": 52.5
+    },
+    {
+      "id": "Sienas, starpsienas:15",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu ārsienu mūrēšana, līdz 5m3",
+      "unit": "m3",
+      "unit_price": 63.5
+    },
+    {
+      "id": "Sienas, starpsienas:16",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu ārsienu atjaunošana",
+      "unit": "m3",
+      "unit_price": 93.5
+    },
+    {
+      "id": "Sienas, starpsienas:17",
+      "category": "Sienas, starpsienas",
+      "name": "Skursteņa mūrēšana",
+      "unit": "m3",
+      "unit_price": 93.5
+    },
+    {
+      "id": "Sienas, starpsienas:18",
+      "category": "Sienas, starpsienas",
+      "name": "Mūra skursteņa atjaunošana",
+      "unit": "m3",
+      "unit_price": 132.0
+    },
+    {
+      "id": "Sienas, starpsienas:1",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu starpsienu mūrēšana , b=120mm",
+      "unit": "m2",
+      "unit_price": 20.0
+    },
+    {
+      "id": "Sienas, starpsienas:2",
+      "category": "Sienas, starpsienas",
+      "name": "Ķieģeļu starpsienu atjaunošana, b=120mm",
+      "unit": "m3",
+      "unit_price": 30.0
+    },
+    {
+      "id": "Sienas, starpsienas:3",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-100mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKB 1kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 12.0
+    },
+    {
+      "id": "Sienas, starpsienas:4",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-100mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKBI 1kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 12.0
+    },
+    {
+      "id": "Sienas, starpsienas:5",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-125mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKB 2kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 17.6
+    },
+    {
+      "id": "Sienas, starpsienas:6",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-125mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKBI 2kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 17.6
+    },
+    {
+      "id": "Sienas, starpsienas:7",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-125mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-100mm, apšūtu ar reģipsi  GKB 1kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 12.0
+    },
+    {
+      "id": "Sienas, starpsienas:8",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-125mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-100mm, apšūtu ar reģipsi  GKBI 1kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 12.0
+    },
+    {
+      "id": "Sienas, starpsienas:9",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-150mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-100mm, apšūtu ar reģipsi  GKB 2kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 17.6
+    },
+    {
+      "id": "Sienas, starpsienas:10",
+      "category": "Sienas, starpsienas",
+      "name": "Montēt reģipša starpsienas b-150mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-100mm, apšūtu ar reģipsi  GKBI 2kārtās no abām  pusēm",
+      "unit": "m2",
+      "unit_price": 17.6
+    },
+    {
+      "id": "Sienas, starpsienas:1",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apstrāde pret pelējumu",
+      "unit": "m2",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Sienas, starpsienas:2",
+      "category": "Sienas, starpsienas",
+      "name": "Savienojuma vietu aizdarear  akrila hermētiķi",
+      "unit": "m",
+      "unit_price": 0.43
+    },
+    {
+      "id": "Sienas, starpsienas:3",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apmešana sausās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:4",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apmešana mitrās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:5",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apmetuma atjaunošana sausās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 14.99
+    },
+    {
+      "id": "Sienas, starpsienas:6",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apmetuma atjaunošana mitrās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 14.99
+    },
+    {
+      "id": "Sienas, starpsienas:7",
+      "category": "Sienas, starpsienas",
+      "name": "Apmesto sienu sagatavošana krāsošanai sausās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:8",
+      "category": "Sienas, starpsienas",
+      "name": "Apmesto sienu sagatavošana tapešu līmēšanai (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:9",
+      "category": "Sienas, starpsienas",
+      "name": "Apmesto sienu sagatavošana krāsošanai mitrās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:10",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša sienu  sagatavošana krāsošanai sausās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:11",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša sienu sagatavošana krāsošanai mitrās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:12",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša sienu sagatavošana tapešu līmēšanai (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:12.1",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša sienu  sagatavošana flīzēšanai",
+      "unit": "m2",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Sienas, starpsienas:14",
+      "category": "Sienas, starpsienas",
+      "name": "Krāsojamo tapešu līmēšana uz sienām",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Sienas, starpsienas:13",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu gruntēšana un krāsošana divos slāņos",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Sienas, starpsienas:15",
+      "category": "Sienas, starpsienas",
+      "name": "Tapešu līmēšana uz sienām",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Sienas, starpsienas:16",
+      "category": "Sienas, starpsienas",
+      "name": "Fototapešu līmēšana uz sienām",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Sienas, starpsienas:17",
+      "category": "Sienas, starpsienas",
+      "name": "Hidroizolācijas ieklāšana sienām",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Sienas, starpsienas:18",
+      "category": "Sienas, starpsienas",
+      "name": "Flīžu ierīkošana sienām",
+      "unit": "m2",
+      "unit_price": 35.0
+    },
+    {
+      "id": "Sienas, starpsienas:19",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu flīzējuma remonts",
+      "unit": "m2",
+      "unit_price": 45.0
+    },
+    {
+      "id": "Sienas, starpsienas:20",
+      "category": "Sienas, starpsienas",
+      "name": "Ģipškartona lokšņu pielīmēšana pie sienas",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:21",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu koka karkasu apšūšana ar reģipsi GKB  1kārtā",
+      "unit": "m2",
+      "unit_price": 3.58
+    },
+    {
+      "id": "Sienas, starpsienas:22",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu koka karkasu apšūšana ar reģipsi GKBI  1kārtā",
+      "unit": "m2",
+      "unit_price": 3.58
+    },
+    {
+      "id": "Sienas, starpsienas:23",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu koka karkasu apšūšana ar reģipsi GKB  2kārtās",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:24",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu koka karkasu apšūšana ar reģipsi GKBI  2kārtās",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:25",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša metāla karkasu montāža pie sienas , līdz 10m2",
+      "unit": "m2",
+      "unit_price": 6.6
+    },
+    {
+      "id": "Sienas, starpsienas:26",
+      "category": "Sienas, starpsienas",
+      "name": "Reģipša metāla karkasu montāža pie sienas, virs 10m2",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Sienas, starpsienas:27",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu metāla karkasu apšūšana ar reģipsi GKB  1kārtā",
+      "unit": "m2",
+      "unit_price": 3.58
+    },
+    {
+      "id": "Sienas, starpsienas:28",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu metāla karkasu apšūšana ar reģipsi GKBI  1kārtā",
+      "unit": "m2",
+      "unit_price": 3.58
+    },
+    {
+      "id": "Sienas, starpsienas:29",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu metāla karkasu apšūšana ar reģipsi GKB  2kārtās",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:30",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu metāla karkasu apšūšana ar reģipsi GKBI  2kārtās",
+      "unit": "m2",
+      "unit_price": 7.15
+    },
+    {
+      "id": "Sienas, starpsienas:31",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu  vai starpsienu siltināšana ar akmens vati  50mm no iekšpuses",
+      "unit": "m2",
+      "unit_price": 3.5
+    },
+    {
+      "id": "Sienas, starpsienas:32",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu vai starpsienu vates montāža,100mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Sienas, starpsienas:33",
+      "category": "Sienas, starpsienas",
+      "name": "Tvaika izolācijas plēves ieklāšana",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Sienas, starpsienas:34",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu  dekoratīvo līstu montāža (65x75mm)",
+      "unit": "m",
+      "unit_price": 1.68
+    },
+    {
+      "id": "Sienas, starpsienas:35",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu dekoratīvo līstu krāsošana (65x75mm)",
+      "unit": "m",
+      "unit_price": 1.65
+    },
+    {
+      "id": "Sienas, starpsienas:36",
+      "category": "Sienas, starpsienas",
+      "name": "Flīžu šuvju atjaunošana",
+      "unit": "m2",
+      "unit_price": 6.7
+    },
+    {
+      "id": "Sienas, starpsienas:37",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu virsmas dekoratīvais pārklājums (venēcijas apmetums)",
+      "unit": "m2",
+      "unit_price": 35.0
+    },
+    {
+      "id": "Sienas, starpsienas:37a",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu virsmas dekoratīvais pārklājums (šķidrās tapetes)",
+      "unit": "m2",
+      "unit_price": 11.5
+    },
+    {
+      "id": "Sienas, starpsienas:38",
+      "category": "Sienas, starpsienas",
+      "name": "Sienu apšūšana ar PVC apdares paneliem",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Sienas, starpsienas:39",
+      "category": "Sienas, starpsienas",
+      "name": "Durvju apmaļu apšūšana ar PVC apdares paneliem",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Griesti:row176",
+      "category": "Griesti",
+      "name": "Griestu apmetumu demontāža",
+      "unit": "m2",
+      "unit_price": 2.5
+    },
+    {
+      "id": "Griesti:row177",
+      "category": "Griesti",
+      "name": "Reģipša griestu demontāža ar metāla karkasu",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Griesti:row178",
+      "category": "Griesti",
+      "name": "Griestu PVC apdares dēļu demontāža",
+      "unit": "m2",
+      "unit_price": 1.75
+    },
+    {
+      "id": "Griesti:row179",
+      "category": "Griesti",
+      "name": "Griestu koka apdares dēļu demontāža",
+      "unit": "m2",
+      "unit_price": 2.8
+    },
+    {
+      "id": "Griesti:row180",
+      "category": "Griesti",
+      "name": "Griestu līstes demontāža",
+      "unit": "m",
+      "unit_price": 1.14
+    },
+    {
+      "id": "Griesti:row181",
+      "category": "Griesti",
+      "name": "Griestu vates demontāža",
+      "unit": "m2",
+      "unit_price": 0.7
+    },
+    {
+      "id": "Griesti:row182",
+      "category": "Griesti",
+      "name": "Griestu attīrīšana no esošā seguma",
+      "unit": "m2",
+      "unit_price": 1.6
+    },
+    {
+      "id": "Griesti:row183",
+      "category": "Griesti",
+      "name": "Tapešu noņemšana no  griestiem",
+      "unit": "m2",
+      "unit_price": 1.65
+    },
+    {
+      "id": "Griesti:row184",
+      "category": "Griesti",
+      "name": "Nostiepjamo griestu demontāža",
+      "unit": "m2",
+      "unit_price": 1.98
+    },
+    {
+      "id": "Griesti:row185",
+      "category": "Griesti",
+      "name": "Piekaramo griestu paneļu demontāža",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Griesti:row186",
+      "category": "Griesti",
+      "name": "Piekaramo griestu demontāža",
+      "unit": "m2",
+      "unit_price": 2.15
+    },
+    {
+      "id": "Griesti:1.0",
+      "category": "Griesti",
+      "name": "Griestu apstrāde pret pelējumu",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Griesti:2.0",
+      "category": "Griesti",
+      "name": "Griestu apmetumu remonts sausās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 15.0
+    },
+    {
+      "id": "Griesti:3.0",
+      "category": "Griesti",
+      "name": "Griestu apmetumu remonts mitrās telpās (10mm)",
+      "unit": "m2",
+      "unit_price": 15.0
+    },
+    {
+      "id": "Griesti:4.0",
+      "category": "Griesti",
+      "name": "Melno koka griestu ierīkošana 25mm",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:5.0",
+      "category": "Griesti",
+      "name": "Apmesto griestu sagatavošana apdarei sausās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:6.0",
+      "category": "Griesti",
+      "name": "Apmesto griestu sagatavošana apdarei mitrās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:7.0",
+      "category": "Griesti",
+      "name": "Regipša griestu sagatavošana apdarei sausās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:8.0",
+      "category": "Griesti",
+      "name": "Regipša griestu sagatavošana apdarei mitrās telpās (gruntēšana,špaktelēšana,slīpēšana)",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:9.0",
+      "category": "Griesti",
+      "name": "Griestu gruntēšana un krāsošana divos slāņos",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Griesti:10.0",
+      "category": "Griesti",
+      "name": "Krāsojamo tapešu līmēšana uz griestiem",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Griesti:11.0",
+      "category": "Griesti",
+      "name": "Tapešu līmēšana uz griestiem",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Griesti:12.0",
+      "category": "Griesti",
+      "name": "Putuplasta griestu plāksnes pielīmēšana pie griestiem",
+      "unit": "m2",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Griesti:13.0",
+      "category": "Griesti",
+      "name": "Griestu līstes montāža (35x35mm)",
+      "unit": "m",
+      "unit_price": 3.25
+    },
+    {
+      "id": "Griesti:14.0",
+      "category": "Griesti",
+      "name": "Griestu dekoratīvo līstu krāsošana (35x35mm)",
+      "unit": "m",
+      "unit_price": 2.5
+    },
+    {
+      "id": "Griesti:15.0",
+      "category": "Griesti",
+      "name": "Piekaramo griestu plākšņu montāža, līdz 10m2",
+      "unit": "m2",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Griesti:16.0",
+      "category": "Griesti",
+      "name": "Piekaramo griestu plākšņu montāža,  virs 10m2",
+      "unit": "m2",
+      "unit_price": 1.5
+    },
+    {
+      "id": "Griesti:17.0",
+      "category": "Griesti",
+      "name": "Piekaramo griestu  karkasu montāža , līdz 10m2",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Griesti:18.0",
+      "category": "Griesti",
+      "name": "Piekaramo griestu  karkasu montāža, virs 10m2",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Griesti:19.0",
+      "category": "Griesti",
+      "name": "Savienojuma vietu aizdare ar akrila hermētiķi",
+      "unit": "m",
+      "unit_price": 0.6
+    },
+    {
+      "id": "Griesti:20.0",
+      "category": "Griesti",
+      "name": "Reģīpša griestu metāla karkasu montāža,  līdz 10m2",
+      "unit": "m2",
+      "unit_price": 7.7
+    },
+    {
+      "id": "Griesti:21.0",
+      "category": "Griesti",
+      "name": "Reģīpša griestu metāla karkasu montāža,  virs 10m2",
+      "unit": "m2",
+      "unit_price": 4.95
+    },
+    {
+      "id": "Griesti:22.0",
+      "category": "Griesti",
+      "name": "Griestu  apšūšana ar ģipškartona plāksnēm GKB uz koka karkasa",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:23.0",
+      "category": "Griesti",
+      "name": "Griestu  apšūšana ar  mitrumizturīga ģipškartona plāksnēm GKBI  uz koka karkasa",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:24.0",
+      "category": "Griesti",
+      "name": "Griestu metāla karkasu apšūšana ar reģipsi GKB",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:25.0",
+      "category": "Griesti",
+      "name": "Griestu metāla karkasu apšūšana ar reģipsi GKBI",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:26.0",
+      "category": "Griesti",
+      "name": "Griestu siltināšana ar akmens vati  50mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Griesti:27.0",
+      "category": "Griesti",
+      "name": "Griestu siltināšana ar akmens vati 100mm",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Griesti:28.0",
+      "category": "Griesti",
+      "name": "Tvaika izolācijas plēves ieklāšana griestiem",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Griesti:29.0",
+      "category": "Griesti",
+      "name": "Griestu apšūšana ar saplāksņi uz koka karksa",
+      "unit": "m2",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Griesti:30.0",
+      "category": "Griesti",
+      "name": "Saplākšņa griestu lakošana",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Griesti:31.0",
+      "category": "Griesti",
+      "name": "Iekārto griestu koka karkasu montāža, līdz 10m2",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:32.0",
+      "category": "Griesti",
+      "name": "Iekārto griestu koka karkasu montāža, virs 10m2",
+      "unit": "m2",
+      "unit_price": 7.82
+    },
+    {
+      "id": "Griesti:33.0",
+      "category": "Griesti",
+      "name": "Griestu apšūšana ar PVC apdares paneliem, līdz 10m2",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Griesti:34.0",
+      "category": "Griesti",
+      "name": "Griestu apšūšana ar PVC apdares paneliem, virs 10m2",
+      "unit": "m2",
+      "unit_price": 7.5
+    },
+    {
+      "id": "Griesti:35.0",
+      "category": "Griesti",
+      "name": "Griestu apšūšana ar  koka apdares dēļiem",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Griesti:36.0",
+      "category": "Griesti",
+      "name": "Dēļu krāsošana",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Griesti:37.0",
+      "category": "Griesti",
+      "name": "Iestiepto griestu montāža",
+      "unit": "m2",
+      "unit_price": 20.0
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Grīdas seguma pamatnes demontāža (preskartons 3,2mm, MDF 6mm)",
+      "unit": "m2",
+      "unit_price": 1.5
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Grīdas seguma pamatnes demontāža (OSB, saplāksnis)",
+      "unit": "m2",
+      "unit_price": 2.5
+    },
+    {
+      "id": "Grīdas:3",
+      "category": "Grīdas",
+      "name": "Lamināta apakšslāņa demontāža",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Grīdas:4",
+      "category": "Grīdas",
+      "name": "Grīdas dēļu demontāža",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Grīdas:5",
+      "category": "Grīdas",
+      "name": "Grīdas koka siju demontāža",
+      "unit": "m2",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Grīdas:6",
+      "category": "Grīdas",
+      "name": "Grīdlīstes demontāža",
+      "unit": "m",
+      "unit_price": 1.14
+    },
+    {
+      "id": "Grīdas:7",
+      "category": "Grīdas",
+      "name": "Peldošo grīdu demontāža",
+      "unit": "m2",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Grīdas:8",
+      "category": "Grīdas",
+      "name": "Vecās krāsas noņemšana no grīdas",
+      "unit": "m2",
+      "unit_price": 3.52
+    },
+    {
+      "id": "Grīdas:9",
+      "category": "Grīdas",
+      "name": "Linoleja noņemšana",
+      "unit": "m2",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Grīdas:10",
+      "category": "Grīdas",
+      "name": "Mīkstā seguma noņemšana",
+      "unit": "m2",
+      "unit_price": 2.25
+    },
+    {
+      "id": "Grīdas:11",
+      "category": "Grīdas",
+      "name": "Grīdas flīžu demontāža",
+      "unit": "m2",
+      "unit_price": 5.0
+    },
+    {
+      "id": "Grīdas:12",
+      "category": "Grīdas",
+      "name": "Līmēta parketa demontāža",
+      "unit": "m2",
+      "unit_price": 8.0
+    },
+    {
+      "id": "Grīdas:row236",
+      "category": "Grīdas",
+      "name": "Ieklāta parketa dēļu demontāža",
+      "unit": "m2",
+      "unit_price": 5.0
+    },
+    {
+      "id": "Grīdas:13",
+      "category": "Grīdas",
+      "name": "Lamināta demontāža",
+      "unit": "m2",
+      "unit_price": 2.0
+    },
+    {
+      "id": "Grīdas:14",
+      "category": "Grīdas",
+      "name": "Starptelpu sliekšņu demontāža,  saglabājot esošās",
+      "unit": "m",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Grīdu betonēšana (mazie apjomi)",
+      "unit": "m3",
+      "unit_price": 99.0
+    },
+    {
+      "id": "Grīdas:1.1",
+      "category": "Grīdas",
+      "name": "Grīdu betonēšana",
+      "unit": "m3",
+      "unit_price": 60.5
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Grīdas lāgu montāža, s=400mm",
+      "unit": "m2",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Grīdas:3",
+      "category": "Grīdas",
+      "name": "Grīdas latojomu montāža, s=400mm",
+      "unit": "m2",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Grīdas:4",
+      "category": "Grīdas",
+      "name": "Grīdu siltināšana ar akmens vati 100mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Grīdas:5",
+      "category": "Grīdas",
+      "name": "Grīdu siltināšana ar akmens vati 50mm",
+      "unit": "m2",
+      "unit_price": 4.0
+    },
+    {
+      "id": "Grīdas:6",
+      "category": "Grīdas",
+      "name": "Tvaika izolācijas plēves ieklāšana",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Grīdas:7",
+      "category": "Grīdas",
+      "name": "Mitrumizturīgā OSB plāksnes montāža",
+      "unit": "m2",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Grīdas:8",
+      "category": "Grīdas",
+      "name": "Saplāksņa montāža",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Grīdas:8a",
+      "category": "Grīdas",
+      "name": "Saplāksņa montāža",
+      "unit": "m²",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Grīdas:9",
+      "category": "Grīdas",
+      "name": "Grīdas seguma pamatnes montāža (MDF b=6mm)",
+      "unit": "m2",
+      "unit_price": 2.75
+    },
+    {
+      "id": "Grīdas:10",
+      "category": "Grīdas",
+      "name": "Lamināta vai parketa apakšklāja montāža",
+      "unit": "m2",
+      "unit_price": 1.32
+    },
+    {
+      "id": "Grīdas:10a",
+      "category": "Grīdas",
+      "name": "Lamināta vai parketa apakšklāja montāža",
+      "unit": "m2",
+      "unit_price": 1.32
+    },
+    {
+      "id": "Grīdas:10b",
+      "category": "Grīdas",
+      "name": "Lamināta vai parketa apakšklāja montāža",
+      "unit": "m2",
+      "unit_price": 1.32
+    },
+    {
+      "id": "Grīdas:11",
+      "category": "Grīdas",
+      "name": "Lamināta apakšklāja montāža (putu polietilēna plēve,4mm)",
+      "unit": "m2",
+      "unit_price": 0.5
+    },
+    {
+      "id": "Grīdas:12",
+      "category": "Grīdas",
+      "name": "Koka grīdas pamatnes sagatavošana hidroizolācijas ieklāšanai tualetē (līdz 5mm biezumā)",
+      "unit": "m2",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Grīdas:13",
+      "category": "Grīdas",
+      "name": "Betona grīdas pamatnes sagatavošana parketa, linoleja un mīkstā seguma ieklāšanai - izlīdzināšana ar pašizlīdzinošo sastāvu  līdz 5mm",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Grīdas:14",
+      "category": "Grīdas",
+      "name": "Grīdas pamatnes sagatavošana linoleja un mīkstā seguma ieklāšanai - špaktelēšana (līdz 10mm) un slīpēšana",
+      "unit": "m2",
+      "unit_price": 2.5
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Koka parketa grīdas atjaunošana (slīpēšana un lakošana)",
+      "unit": "m2",
+      "unit_price": 16.0
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Dēlīšu parketa ieklāšana, slīpēšana un lakošana (pamīšus)",
+      "unit": "m2",
+      "unit_price": 26.75
+    },
+    {
+      "id": "Grīdas:3",
+      "category": "Grīdas",
+      "name": "Trīsslāņu parketa līmēšana",
+      "unit": "m2",
+      "unit_price": 19.5
+    },
+    {
+      "id": "Grīdas:4",
+      "category": "Grīdas",
+      "name": "Divslāņu parketa līmēšana",
+      "unit": "m2",
+      "unit_price": 19.5
+    },
+    {
+      "id": "Grīdas:5",
+      "category": "Grīdas",
+      "name": "Trīsslāņu parketa ieklāšana",
+      "unit": "m2",
+      "unit_price": 15.0
+    },
+    {
+      "id": "Grīdas:6",
+      "category": "Grīdas",
+      "name": "Divslāņu parketa ieklāšana",
+      "unit": "m2",
+      "unit_price": 15.0
+    },
+    {
+      "id": "Grīdas:7",
+      "category": "Grīdas",
+      "name": "Lamināta ieklāšana",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Grīdas:8",
+      "category": "Grīdas",
+      "name": "Mīkstā seguma ieklāšana",
+      "unit": "m2",
+      "unit_price": 6.5
+    },
+    {
+      "id": "Grīdas:9",
+      "category": "Grīdas",
+      "name": "Linoleja ieklāšana",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Grīdas:10",
+      "category": "Grīdas",
+      "name": "Hidroizolācijas ieklāšana grīdām",
+      "unit": "m2",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Grīdas:11",
+      "category": "Grīdas",
+      "name": "Flīžu ierīkošana grīdām",
+      "unit": "m2",
+      "unit_price": 30.0
+    },
+    {
+      "id": "Grīdas:12",
+      "category": "Grīdas",
+      "name": "Grīdu flīzējuma remonts",
+      "unit": "m2",
+      "unit_price": 45.0
+    },
+    {
+      "id": "Grīdas:13",
+      "category": "Grīdas",
+      "name": "Dēļu grīdas montāža",
+      "unit": "m2",
+      "unit_price": 9.0
+    },
+    {
+      "id": "Grīdas:14",
+      "category": "Grīdas",
+      "name": "Koka grīdu sagatavošana krāsošanai",
+      "unit": "m2",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Grīdas:15",
+      "category": "Grīdas",
+      "name": "Koka grīdu pārkrāsošana",
+      "unit": "m2",
+      "unit_price": 3.85
+    },
+    {
+      "id": "Grīdas:16",
+      "category": "Grīdas",
+      "name": "Flīžu šuvju atjaunošana",
+      "unit": "m2",
+      "unit_price": 10.0
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Starptelpu sliekšņu montāža",
+      "unit": "m",
+      "unit_price": 9.0
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Flīžu grīdlīstu ierīkošana  h=150mm",
+      "unit": "m",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Grīdas:3",
+      "category": "Grīdas",
+      "name": "Koka grīdlīstes montāža",
+      "unit": "m",
+      "unit_price": 6.0
+    },
+    {
+      "id": "Grīdas:4",
+      "category": "Grīdas",
+      "name": "Koka grīdlīstes krāsošana",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Grīdas:5",
+      "category": "Grīdas",
+      "name": "MDF grīdlīstes montāža",
+      "unit": "m",
+      "unit_price": 4.5
+    },
+    {
+      "id": "Grīdas:6",
+      "category": "Grīdas",
+      "name": "PVC grīdlīstes montāža",
+      "unit": "m",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Grīdas:7",
+      "category": "Grīdas",
+      "name": "Esošās grīdlīstes montāža",
+      "unit": "m",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Grīdas:8",
+      "category": "Grīdas",
+      "name": "Durvju atdures montāža",
+      "unit": "kpl.",
+      "unit_price": 3.0
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Ūdeni apsildāmo grīdu ierīkošana",
+      "unit": "m2",
+      "unit_price": 34.15
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Elektriski apsildāmo grīdu ierīkošana",
+      "unit": "m2",
+      "unit_price": 19.8
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Peldošo grīdu uzstādīšana ar ğipškartona loksnēm 2 kārtās, ierīkojot  keramzīts 100mm",
+      "unit": "m2",
+      "unit_price": 15.4
+    },
+    {
+      "id": "Grīdas:1",
+      "category": "Grīdas",
+      "name": "Blietēt grunti mehāniski",
+      "unit": "m2",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Grīdas:2",
+      "category": "Grīdas",
+      "name": "Pabērt un blietēt šķembas zem grīdas 150mm",
+      "unit": "m2",
+      "unit_price": 1.98
+    },
+    {
+      "id": "Grīdas:3",
+      "category": "Grīdas",
+      "name": "Grīdu hidroizolācija",
+      "unit": "m2",
+      "unit_price": 1.1
+    },
+    {
+      "id": "Grīdas:4",
+      "category": "Grīdas",
+      "name": "Siltināt grīdas ar putuplastsu 100mm",
+      "unit": "m2",
+      "unit_price": 3.6
+    },
+    {
+      "id": "Grīdas:5",
+      "category": "Grīdas",
+      "name": "\"Estrich\" betona klona grīdu izbūve b=70mm",
+      "unit": "m2",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Grīdas:6",
+      "category": "Grīdas",
+      "name": "Keramzītbetona  grīdu izbūve b=100mm",
+      "unit": "m2",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Logi un durvis:1",
+      "category": "Logi un durvis",
+      "name": "Loga bloka demontāža",
+      "unit": "m2",
+      "unit_price": 20.0
+    },
+    {
+      "id": "Logi un durvis:2",
+      "category": "Logi un durvis",
+      "name": "Ārējo palodžu demontāža",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Logi un durvis:3",
+      "category": "Logi un durvis",
+      "name": "Iekšējo palodžu demontāža",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Logi un durvis:4",
+      "category": "Logi un durvis",
+      "name": "Iekšejo durvju bloku demontāža",
+      "unit": "m2",
+      "unit_price": 20.0
+    },
+    {
+      "id": "Logi un durvis:5",
+      "category": "Logi un durvis",
+      "name": "Durvju aplodu demontāža",
+      "unit": "m",
+      "unit_price": 0.55
+    },
+    {
+      "id": "Logi un durvis:6",
+      "category": "Logi un durvis",
+      "name": "Durvju aplodu demontāža (saglabājot esošās)",
+      "unit": "m",
+      "unit_price": 0.77
+    },
+    {
+      "id": "Logi un durvis:1",
+      "category": "Logi un durvis",
+      "name": "Koka durvju sagatavošana krāsošanai",
+      "unit": "m2",
+      "unit_price": 6.6
+    },
+    {
+      "id": "Logi un durvis:2",
+      "category": "Logi un durvis",
+      "name": "Durvju pārkrāsošana",
+      "unit": "m2",
+      "unit_price": 5.2
+    },
+    {
+      "id": "Logi un durvis:3",
+      "category": "Logi un durvis",
+      "name": "Vienvērtņu ārējo durvju bloku montāža (līdz 1000 mm platumā)",
+      "unit": "gb.",
+      "unit_price": 120.0
+    },
+    {
+      "id": "Logi un durvis:4",
+      "category": "Logi un durvis",
+      "name": "Vienvērtņu ieksējo durvju bloku montāža (līdz 1000 mm platumā)",
+      "unit": "gb.",
+      "unit_price": 100.0
+    },
+    {
+      "id": "Logi un durvis:4a",
+      "category": "Logi un durvis",
+      "name": "Vienvērtņu ieksējo durvju bloku montāža (līdz 1000 mm platumā)",
+      "unit": "gb.",
+      "unit_price": 100.0
+    },
+    {
+      "id": "Logi un durvis:4b",
+      "category": "Logi un durvis",
+      "name": "Vienvērtņu ieksējo durvju bloku montāža (līdz 1000 mm platumā)",
+      "unit": "gb.",
+      "unit_price": 100.0
+    },
+    {
+      "id": "Logi un durvis:4c",
+      "category": "Logi un durvis",
+      "name": "Vienvērtņu ieksējo durvju bloku montāža (līdz 1000 mm platumā)",
+      "unit": "gb.",
+      "unit_price": 100.0
+    },
+    {
+      "id": "Logi un durvis:5",
+      "category": "Logi un durvis",
+      "name": "Divvērtņu ieksējo durvju bloku montāža",
+      "unit": "gb.",
+      "unit_price": 120.0
+    },
+    {
+      "id": "Logi un durvis:6",
+      "category": "Logi un durvis",
+      "name": "Durvju aplodu montāža",
+      "unit": "m",
+      "unit_price": 2.0
+    },
+    {
+      "id": "Logi un durvis:7",
+      "category": "Logi un durvis",
+      "name": "PVC loga bloka montāža",
+      "unit": "m2",
+      "unit_price": 35.0
+    },
+    {
+      "id": "Logi un durvis:8",
+      "category": "Logi un durvis",
+      "name": "PVC stikla paketes nomaiņa",
+      "unit": "m2",
+      "unit_price": 35.0
+    },
+    {
+      "id": "Logi un durvis:9",
+      "category": "Logi un durvis",
+      "name": "Jumta logu montāža",
+      "unit": "gb.",
+      "unit_price": 90.0
+    },
+    {
+      "id": "Logi un durvis:10",
+      "category": "Logi un durvis",
+      "name": "Difūzijas un tvaika izolācijas lentu pielīmēšana pie logiem",
+      "unit": "m",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Logi un durvis:1",
+      "category": "Logi un durvis",
+      "name": "Ārējās palodzes montāža (līdz 250mm platumā)",
+      "unit": "m",
+      "unit_price": 4.3
+    },
+    {
+      "id": "Logi un durvis:2",
+      "category": "Logi un durvis",
+      "name": "Iekšējās palodzes  montāža (līdz 300 mm platumā)",
+      "unit": "m",
+      "unit_price": 7.0
+    },
+    {
+      "id": "Logi un durvis:3",
+      "category": "Logi un durvis",
+      "name": "Logu un durvju apmaļu apmešana (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Logi un durvis:4",
+      "category": "Logi un durvis",
+      "name": "Logu iekšējo apmaļu aplīmēšana ar ģipškartona plāksnēm (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Logi un durvis:5",
+      "category": "Logi un durvis",
+      "name": "Logu un durvju bloku iekšējo apmaļu aizšūšana ar ģipškartona plāksnēm (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 5.5
+    },
+    {
+      "id": "Logi un durvis:6",
+      "category": "Logi un durvis",
+      "name": "Logu un durvju apmaļu  sagatavošana krāsošanai (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Logi un durvis:7",
+      "category": "Logi un durvis",
+      "name": "Loga iekšējo apmaļu  krāsošana ar lateksa krāsu  (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 3.3
+    },
+    {
+      "id": "Logi un durvis:8",
+      "category": "Logi un durvis",
+      "name": "Iekšējo palodžu  sagatavošana krāsošanai un krāsošana (līdz 400mm platumā)",
+      "unit": "m",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Logi un durvis:9",
+      "category": "Logi un durvis",
+      "name": "Iekšējo palodžu pārkrāsošana",
+      "unit": "m2",
+      "unit_price": 3.85
+    },
+    {
+      "id": "Inžen.komun.darbi :1.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Bojātās un sadegušās elektroinstalācijas pārbaude, objekts līdz 100m2",
+      "unit": "obj.",
+      "unit_price": 120.0
+    },
+    {
+      "id": "Inžen.komun.darbi :2.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Elektomontāžas darbi",
+      "unit": "c/h",
+      "unit_price": 12.6
+    },
+    {
+      "id": "Inžen.komun.darbi :3.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Gaismekļu, rozešu un slēdžu demontāža, montāža un pieslēgšana",
+      "unit": "gb.",
+      "unit_price": 12.1
+    },
+    {
+      "id": "Inžen.komun.darbi :4.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Ventilācijas difuzoru demontāža, montāža un pieslēgšana",
+      "unit": "gb.",
+      "unit_price": 12.1
+    },
+    {
+      "id": "Inžen.komun.darbi :5.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Gaismekļu, rozešu un slēdžu demontāža",
+      "unit": "gb.",
+      "unit_price": 2.2
+    },
+    {
+      "id": "Inžen.komun.darbi :6.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Jauno gaismekļu montāža",
+      "unit": "gb.",
+      "unit_price": 9.9
+    },
+    {
+      "id": "Inžen.komun.darbi :7.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Rozešu un slēdžu montāža",
+      "unit": "gb.",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Inžen.komun.darbi :8.0",
+      "category": "Inžen.komun.darbi",
+      "name": "WC vantilatora montāža",
+      "unit": "gb.",
+      "unit_price": 11.0
+    },
+    {
+      "id": "Inžen.komun.darbi :9.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Kabeļu kanālu montāža",
+      "unit": "m",
+      "unit_price": 1.05
+    },
+    {
+      "id": "Inžen.komun.darbi :10.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Elektriskās grīdas pieslēgšana",
+      "unit": "kpl.",
+      "unit_price": 25.0
+    },
+    {
+      "id": "Inžen.komun.darbi :11.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Elektro plīts virsmas demontāža, montāža un pieslēgšana",
+      "unit": "kpl",
+      "unit_price": 30.0
+    },
+    {
+      "id": "Inžen.komun.darbi :1.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Klozetpoda demontāža un montāža",
+      "unit": "gb.",
+      "unit_price": 44.0
+    },
+    {
+      "id": "Inžen.komun.darbi :2.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Dvieļu žavētājs demontāža un montāža",
+      "unit": "gb.",
+      "unit_price": 44.0
+    },
+    {
+      "id": "Inžen.komun.darbi :3.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Radiatora demontāža un montāža",
+      "unit": "gb.",
+      "unit_price": 44.0
+    },
+    {
+      "id": "Inžen.komun.darbi :4.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Vannas demontāža un montāža",
+      "unit": "gb.",
+      "unit_price": 77.0
+    },
+    {
+      "id": "Inžen.komun.darbi :5.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Radiatoru uzstadīšana",
+      "unit": "gb.",
+      "unit_price": 55.0
+    },
+    {
+      "id": "Inžen.komun.darbi :6.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Dušas kabīne ar jaucējkrānu montāža un pieslēgšana",
+      "unit": "kpl",
+      "unit_price": 90.0
+    },
+    {
+      "id": "Inžen.komun.darbi :7.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Klozetpoda montāža un pieslēgšana",
+      "unit": "kpl",
+      "unit_price": 44.0
+    },
+    {
+      "id": "Inžen.komun.darbi :8.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Izlietnes montāža un pieslēgšana",
+      "unit": "kpl",
+      "unit_price": 44.0
+    },
+    {
+      "id": "Inžen.komun.darbi :9.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Izletnes ūdens maisītāja nomaiņa",
+      "unit": "kpl",
+      "unit_price": 16.5
+    },
+    {
+      "id": "Inžen.komun.darbi :10.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Bojātās kanalizācijas caurules remonts (50,100mm)",
+      "unit": "m",
+      "unit_price": 25.0
+    },
+    {
+      "id": "Inžen.komun.darbi :11.0",
+      "category": "Inžen.komun.darbi",
+      "name": "Bojātās ūdens caurules remonts",
+      "unit": "m",
+      "unit_price": 25.0
+    },
+    {
+      "id": "Iekartas:1.0",
+      "category": "Iekartas",
+      "name": "Sastatnes PARTNER montāža,demontāža, noma (darba augstums līdz 1,5m)",
+      "unit": "diena",
+      "unit_price": 4.4
+    },
+    {
+      "id": "Iekartas:2.0",
+      "category": "Iekartas",
+      "name": "Alumīnija torņa  montāža,demontāža, noma - h=4m-6m",
+      "unit": "diena",
+      "unit_price": 8.8
+    },
+    {
+      "id": "Iekartas:3.0",
+      "category": "Iekartas",
+      "name": "Alumīnija torņa  montāža,demontāža, noma - h=6m-12m",
+      "unit": "diena",
+      "unit_price": 17.6
+    },
+    {
+      "id": "Iekartas:4.0",
+      "category": "Iekartas",
+      "name": "Fasādes sastatņu montāža un demontāža",
+      "unit": "m2",
+      "unit_price": 2.99
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.0",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Mēbeļu demontāža, parvietošana, montāža",
+      "unit": "c/h",
+      "unit_price": 6.8
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.1",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu sagatavošana remontdarbiem (telpa līdz 30 m2)",
+      "unit": "kpl.",
+      "unit_price": 40.0
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.2",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu sagatavošana remontdarbiem  (telpa līdz 60 m2)",
+      "unit": "kpl.",
+      "unit_price": 65.0
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.3",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu sagatavošana remontdarbiem  (telpa līdz 100 m2)",
+      "unit": "kpl.",
+      "unit_price": 85.0
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.4",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu uzkopšana pēc remonta darbu pabeigšanas (telpa līdz 30 m2)",
+      "unit": "kpl.",
+      "unit_price": 70.5
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.5",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu uzkopšana pēc remonta darbu pabeigšanas (telpa līdz 60 m2)",
+      "unit": "kpl.",
+      "unit_price": 141.0
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.6",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Telpu uzkopšana pēc remonta darbu pabeigšanas (telpa līdz 100 m2)",
+      "unit": "kpl.",
+      "unit_price": 235.0
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.7",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Logu,durvju,vārtu,grīdu aplīmēšana  ar plēvi remonta laikā",
+      "unit": "m2",
+      "unit_price": 0.5
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.8",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Būvgružu savākšana un izvešana (Rīga un Rīgas rajons)",
+      "unit": "m3",
+      "unit_price": 22.93
+    },
+    {
+      "id": "Sagat.un uzkopš.darbi:1.0",
+      "category": "Sagat.un uzkopš.darbi",
+      "name": "Mobilo žoga montāža un demontāža, noma (transportēšana uz objektu un atpakaļ, Rīga)",
+      "unit": "m",
+      "unit_price": 1.36
+    },
+    {
+      "id": "Sīkie remonta darbi:1.0",
+      "category": "Sīkie remonta darbi",
+      "name": "Sīkie remonta darbi",
+      "unit": "c/h",
+      "unit_price": 10.2
+    }
+  ]
+}

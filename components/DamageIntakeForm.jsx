@@ -3,10 +3,9 @@ import * as XLSX from "xlsx";
 
 // ==========================
 //  Damage Intake – STEP WIZARD (1..12)
-//  After selecting rooms (9), Step 10 lists all room instances (e.g., Virtuve 1, Virtuve 2).
-//  Expert opens one room -> per-room editor (areas + positions/quantities) -> save -> back to list.
-//  When ALL rooms have positions entered, Step 10 shows a bottom button
-//  "Viss pabeigts — izveidot tāmi" which exports Excel and saves to profile.
+//  Pricing integration for BALTA via public/prices/balta.json
+//  - Step 11 rows are priced items (category + item) with auto unit & unit price
+//  - Totals per room & overall, Excel export with pricing breakdown
 // ==========================
 
 // Helper types
@@ -36,19 +35,6 @@ const AREA_OPTIONS = [
   "Logs",
   "Elektroinstalācija",
   "Mēbeles",
-  "Cits",
-];
-
-const ACTION_OPTIONS = [
-  "Demontāža",
-  "Tīrīšana",
-  "Gruntēšana",
-  "Špaktelēšana",
-  "Krāsošana",
-  "Lamināta ieklāšana",
-  "Flīzēšana",
-  "Grīdas atjaunošana",
-  "Žāvēšana",
   "Cits",
 ];
 
@@ -112,11 +98,36 @@ export default function DamageIntakeForm() {
   // structure: { id, type, index, areas: string[], note?: string }
   const [roomInstances, setRoomInstances] = useState([]);
 
-  // Per-room actions: { [roomId]: Array<{action:string, quantity:string, unit:string}> }
+  // Per-room priced actions rows: { [roomId]: Array<{category:string,itemId:string, action:string, quantity:string, unit:string, unit_price:number|null}> }
   const [roomActions, setRoomActions] = useState({});
 
   // Which room is currently being edited (for step 11)
   const [editingRoomId, setEditingRoomId] = useState(null);
+
+  // Pricing catalog (Balta)
+  const [priceCatalog, setPriceCatalog] = useState([]); // {id,category,name,unit,unit_price}[]
+  const [catalogError, setCatalogError] = useState("");
+
+  useEffect(() => {
+    // Load price list only when Balta chosen
+    if (insurer === "Balta") {
+      setCatalogError("");
+      fetch("prices/balta.json")
+        .then((r) => {
+          if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+          return r.json();
+        })
+        .then((data) => setPriceCatalog(Array.isArray(data.items) ? data.items : []))
+        .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
+    } else {
+      setPriceCatalog([]);
+    }
+  }, [insurer]);
+
+  const categories = useMemo(() => {
+    const set = new Set(priceCatalog.map((i) => i.category));
+    return Array.from(set);
+  }, [priceCatalog]);
 
   // Saved estimates (local profile)
   const [saved, setSaved] = useState([]);
@@ -130,7 +141,6 @@ export default function DamageIntakeForm() {
         const cnt = Math.max(1, Number(meta.count) || 1);
         for (let i = 1; i <= cnt; i++) {
           const id = `${type}-${i}`;
-          // Preserve existing areas/notes if exist
           const existing = roomInstances.find((r) => r.id === id);
           instances.push({
             id,
@@ -143,10 +153,9 @@ export default function DamageIntakeForm() {
       }
     });
     setRoomInstances(instances);
-    // Clean up roomActions for removed rooms
     setRoomActions((prev) => {
       const next = {};
-      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ action: "", quantity: "", unit: "m2" }]));
+      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }]));
       return next;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +163,7 @@ export default function DamageIntakeForm() {
 
   // Actions helpers for a specific room
   function addActionRow(roomId) {
-    setRoomActions((ra) => ({ ...ra, [roomId]: [...(ra[roomId] || []), { action: "", quantity: "", unit: "m2" }] }));
+    setRoomActions((ra) => ({ ...ra, [roomId]: [...(ra[roomId] || []), { category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }] }));
   }
   function removeActionRow(roomId, idx) {
     setRoomActions((ra) => {
@@ -163,10 +172,30 @@ export default function DamageIntakeForm() {
       return { ...ra, [roomId]: list.filter((_, i) => i !== idx) };
     });
   }
-  function setActionField(roomId, idx, key, value) {
+  function setRowField(roomId, idx, key, value) {
     setRoomActions((ra) => {
-      const list = [...(ra[roomId] || [{ action: "", quantity: "", unit: "m2" }])];
-      list[idx] = { ...list[idx], [key]: value };
+      const list = [...(ra[roomId] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }])];
+      const nextRow = { ...list[idx], [key]: value };
+      list[idx] = nextRow;
+      return { ...ra, [roomId]: list };
+    });
+  }
+  function setRowCategory(roomId, idx, category) {
+    setRoomActions((ra) => {
+      const list = [...(ra[roomId] || [])];
+      list[idx] = { category, itemId: "", action: "", quantity: list[idx]?.quantity || "", unit: "m2", unit_price: null };
+      return { ...ra, [roomId]: list };
+    });
+  }
+  function setRowItem(roomId, idx, itemId) {
+    const item = priceCatalog.find((i) => i.id === itemId);
+    setRoomActions((ra) => {
+      const list = [...(ra[roomId] || [])];
+      if (item) {
+        list[idx] = { ...list[idx], itemId, action: item.name, unit: item.unit || "m2", unit_price: item.unit_price };
+      } else {
+        list[idx] = { ...list[idx], itemId: "", action: "", unit: "m2", unit_price: null };
+      }
       return { ...ra, [roomId]: list };
     });
   }
@@ -212,7 +241,6 @@ export default function DamageIntakeForm() {
   const next = () => setStep((s) => Math.min(totalSteps, s + 1));
   const back = () => {
     if (step === 11) {
-      // going back from per-room editor returns to room list
       setEditingRoomId(null);
       setStep(10);
     } else {
@@ -220,8 +248,18 @@ export default function DamageIntakeForm() {
     }
   };
 
+  const rowLineTotal = (row) => {
+    const qty = Number(row.quantity) || 0;
+    const up = Number(row.unit_price) || 0;
+    return +(qty * up).toFixed(2);
+  };
+  const roomSubtotal = (roomId) => {
+    const list = roomActions[roomId] || [];
+    return list.reduce((sum, r) => sum + rowLineTotal(r), 0);
+  };
+
   // Completion checks
-  const roomHasPositions = (roomId) => (roomActions[roomId] || []).some((r) => r.action && r.quantity);
+  const roomHasPositions = (roomId) => (roomActions[roomId] || []).some((r) => r.itemId && r.quantity);
   const allRoomsCompleted = roomInstances.length > 0 && roomInstances.every((ri) => roomHasPositions(ri.id));
 
   // ===== Excel export =====
@@ -252,33 +290,41 @@ export default function DamageIntakeForm() {
     ];
 
     const roomsSheet = [
-      ["#", "Telpa", "Bojātās vietas", "Piezīmes"],
+      ["#", "Telpa", "Bojātās vietas", "Piezīmes", "Starpsumma (€)"] ,
       ...roomInstances.map((ri, idx) => [
         idx + 1,
         `${ri.type} ${ri.index}`,
         ri.areas.join(", ") || "—",
         ri.note || "",
+        roomSubtotal(ri.id),
       ]),
     ];
 
     const actionsByRoomSheet = [
-      ["Telpa", "Pozīcija", "Daudzums", "Mērvienība"],
+      ["Telpa", "Kategorija", "Darbs", "Mērv.", "Daudz.", "Cena/1", "Summa"],
       ...roomInstances.flatMap((ri) =>
         (roomActions[ri.id] || [])
-          .filter((a) => a.action && a.quantity)
+          .filter((a) => a.itemId && a.quantity)
           .map((a) => [
             `${ri.type} ${ri.index}`,
+            a.category,
             a.action,
-            a.quantity,
-            a.unit || "m2",
+            a.unit,
+            Number(a.quantity) || 0,
+            Number(a.unit_price) || 0,
+            rowLineTotal(a),
           ])
       ),
     ];
+
+    const total = roomInstances.reduce((sum, ri) => sum + roomSubtotal(ri.id), 0);
+    const totalsSheet = [["Kopā (€)", total.toFixed(2)]];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), "Pieteikums");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(roomsSheet), "Telpas");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actionsByRoomSheet), "Darbi pa telpām");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalsSheet), "Kopsavilkums");
 
     const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
     const filename = `tame_${(estimatorName || "tametajs").replaceAll(/[^a-zA-Z0-9_\-]/g, "_")}_${prettyDate()}.xlsx`;
@@ -318,13 +364,13 @@ export default function DamageIntakeForm() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
+      <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
         <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi no 1 līdz 12. Kad 10. solī visas telpas ir aizpildītas, varēsi ģenerēt tāmi.</div>
+            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi. Ja izvēlēta apdrošināšana <b>Balta</b>, 11. solī izmantosi tās cenrādi.</div>
           </div>
-          <div style={{ background: "white", padding: 12, borderRadius: 12, width: 320 }}>
+          <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
             <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }} placeholder="Vārds, Uzvārds" value={estimatorName} onChange={(e) => setEstimatorName(e.target.value)} />
             <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="E-pasts" value={estimatorEmail} onChange={(e) => setEstimatorEmail(e.target.value)} />
@@ -336,7 +382,7 @@ export default function DamageIntakeForm() {
           <div style={{ width: `${progressPct}%`, height: 8, background: "#10b981", borderRadius: 999 }} />
         </div>
 
-        {/* Steps 1..9 same as before */}
+        {/* Steps 1..9 */}
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
@@ -355,6 +401,11 @@ export default function DamageIntakeForm() {
                 ))}
               </select>
             </LabeledRow>
+            {insurer === "Balta" && (
+              <div style={{ fontSize: 12, color: catalogError ? "#b91c1c" : "#065f46" }}>
+                {catalogError ? catalogError : priceCatalog.length ? `Ielādēts BALTA cenrādis (${priceCatalog.length} pozīcijas)` : "Notiek BALTA cenrāža ielāde..."}
+              </div>
+            )}
           </StepShell>
         )}
 
@@ -499,11 +550,11 @@ export default function DamageIntakeForm() {
                     <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
                       <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
-                        Bojātās vietas: {areasCount > 0 ? areasCount : "—"}
+                        Bojātās vietas: {areasCount > 0 ? areasCount : "—"} · Starpsumma: {roomSubtotal(ri.id).toFixed(2)} €
                       </div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Atvērt</button>
-                        {completed && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>Saglabāts</span>}
+                        {completed && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>✓ Saglabāts</span>}
                       </div>
                     </div>
                   );
@@ -520,7 +571,7 @@ export default function DamageIntakeForm() {
 
         {step === 11 && editingRoomId && (
           <StepShell title={`11. Pozīcijas un apjomi – ${roomInstances.find(r=>r.id===editingRoomId)?.type} ${roomInstances.find(r=>r.id===editingRoomId)?.index}`}>
-            {/* Areas (was step 10 in spec) */}
+            {/* Areas (from step 10 of spec) */}
             <LabeledRow label="Bojātās vietas šajā telpā">
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {AREA_OPTIONS.map((a) => (
@@ -534,42 +585,67 @@ export default function DamageIntakeForm() {
               <input value={roomInstances.find(r=>r.id===editingRoomId)?.note || ''} onChange={(e) => setRoomNote(editingRoomId, e.target.value)} placeholder="Papildus informācija" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
             </LabeledRow>
 
-            {/* Positions for this room */}
+            {/* Priced rows for this room */}
             <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
-            {(roomActions[editingRoomId] || [{ action: "", quantity: "", unit: "m2" }]).map((row, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 110px auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
-                <div>
-                  <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-                  <select value={row.action} onChange={(e) => setActionField(editingRoomId, idx, 'action', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
-                    <option value="">— Izvēlies —</option>
-                    {ACTION_OPTIONS.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
+            {(roomActions[editingRoomId] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }]).map((row, idx) => {
+              const itemsInCategory = priceCatalog.filter((i) => !row.category || i.category === row.category);
+              return (
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 2.4fr 0.8fr 0.8fr 0.9fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
+                    <select value={row.category} onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                      <option value="">— visas —</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Darbs</div>
+                    <select value={row.itemId} onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                      <option value="">— izvēlies pozīciju —</option>
+                      {itemsInCategory.slice(0, 1500).map((it) => (
+                        <option key={it.id} value={it.id}>{it.name} · {it.unit || '—'} · {it.unit_price}€</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
+                    <input value={row.unit || ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
+                    <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setRowField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Cena/1</div>
+                    <input type="number" min={0} step="0.01" value={row.unit_price ?? ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit_price', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ minWidth: 90, textAlign: "right", fontWeight: 700 }}>{rowLineTotal(row).toFixed(2)} €</div>
+                    <button type="button" onClick={() => addActionRow(editingRoomId)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Rinda</button>
+                    <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, marginBottom: 4 }}>Daudzums</div>
-                  <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setActionField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="m2" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
-                  <input value={row.unit} onChange={(e) => setActionField(editingRoomId, idx, 'unit', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={() => addActionRow(editingRoomId)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Pievienot</button>
-                  <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-              <button type="button" onClick={back} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}>← Atpakaļ uz telpu sarakstu</button>
-              <button type="button" onClick={() => { setEditingRoomId(null); setStep(10); }} style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Saglabāt un atgriezties</button>
+              <div style={{ fontWeight: 700 }}>Telpas starpsumma: {roomSubtotal(editingRoomId).toFixed(2)} €</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={back} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}>← Atpakaļ uz telpu sarakstu</button>
+                <button type="button" onClick={() => { setEditingRoomId(null); setStep(10); }} style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Saglabāt un atgriezties</button>
+              </div>
             </div>
           </StepShell>
         )}
 
-        {/* Navigation bar (hide default Next on steps 10 & 11) */}
+        {/* Navigation bar (hide default on steps 10 & 11) */}
         {[1,2,3,4,5,6,7,8,9,12].includes(step) && (
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <button type="button" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}>← Atpakaļ</button>
@@ -607,7 +683,7 @@ export default function DamageIntakeForm() {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: šī versija glabā tāmju failus lokāli (LocalStorage). Servera glabāšanai pievieno Supabase Storage un saglabā base64 saturu bucketā.
+          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> tikai, ja izvēlēta "Balta". Pārējām kompānijām vari pievienot savus JSON failus un nosacījumus.
         </footer>
       </div>
     </div>
