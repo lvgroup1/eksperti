@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 
+// ==========================
+//  Damage Intake – STEP WIZARD (1..12)
+//  Shows fields strictly in order, one step at a time.
+//  Export to Excel at Step 12. Local profile save via localStorage.
+// ==========================
+
 // Helper types
 const INSURERS = ["Swedbank", "Gjensidige", "Compensa", "IF", "BTA", "Balta"];
 const LOCATION_TYPES = ["Komerctelpa", "Dzīvojamā ēka"];
@@ -67,50 +73,48 @@ function saveEntry(entry) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
-export default function DamageIntakeApp() {
-  // Profile
+export default function DamageIntakeForm() {
+  // Wizard step (1..12)
+  const [step, setStep] = useState(1);
+
+  // Profile (optional metadata for the Excel header)
   const [estimatorName, setEstimatorName] = useState("");
   const [estimatorEmail, setEstimatorEmail] = useState("");
 
   // Core fields
-  const [address, setAddress] = useState("");
-  const [insurer, setInsurer] = useState("");
-  const [locationType, setLocationType] = useState("");
-  const [dwellingSubtype, setDwellingSubtype] = useState("");
-  const [dwellingOther, setDwellingOther] = useState("");
+  const [address, setAddress] = useState(""); // 1
+  const [insurer, setInsurer] = useState(""); // 2
+  const [locationType, setLocationType] = useState(""); // 3
+  const [dwellingSubtype, setDwellingSubtype] = useState(""); // 3.1
+  const [dwellingOther, setDwellingOther] = useState(""); // 3.1.1
 
-  const [incidentType, setIncidentType] = useState("");
-  const [incidentOther, setIncidentOther] = useState("");
+  const [incidentType, setIncidentType] = useState(""); // 4
+  const [incidentOther, setIncidentOther] = useState(""); // 4.1
 
-  const [electricity, setElectricity] = useState("Nē"); // Ir/Nav -> use Jā/Nē UI but store Ir/Nav? Spec uses Ir/Nav; we'll keep Jā/Nē UI text for consistency elsewhere
-  const [needsDrying, setNeedsDrying] = useState("Nē");
-  const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē");
+  const [electricity, setElectricity] = useState("Nē"); // 5 (Ir/Nav UI, bet saglabājam Jā/Nē semantiku)
+  const [needsDrying, setNeedsDrying] = useState("Nē"); // 6
+  const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē"); // 7
 
-  const [lossKnown, setLossKnown] = useState("Nē");
-  const [lossAmount, setLossAmount] = useState("");
+  const [lossKnown, setLossKnown] = useState("Nē"); // 8
+  const [lossAmount, setLossAmount] = useState(""); // 8.1
 
-  // Rooms: {type, count, customName?}
+  // Rooms (9-10)
   const [rooms, setRooms] = useState(
     ROOM_TYPES.reduce((acc, r) => {
       acc[r] = { checked: false, count: 1, custom: "" };
       return acc;
     }, /** @type {Record<string,{checked:boolean,count:number,custom:string}>} */ ({}))
   );
+  const [roomInstances, setRoomInstances] = useState([]); // { id, type, index, areas: string[], note?: string }
 
-  // For each concrete room instance we keep damaged areas
-  // structure: { id, type, index, areas: string[], note?: string }
-  const [roomInstances, setRoomInstances] = useState([]);
-
-  // Actions list: array of {action, quantity, unit}
+  // Actions (11)
   const [actions, setActions] = useState([{ action: "", quantity: "", unit: "m2" }]);
 
+  // Saved estimates (local profile)
   const [saved, setSaved] = useState([]);
+  useEffect(() => setSaved(loadSaved()), []);
 
-  useEffect(() => {
-    setSaved(loadSaved());
-  }, []);
-
-  // Recompute room instances when rooms selection changes
+  // Build room instances when rooms change
   useEffect(() => {
     const instances = [];
     Object.entries(rooms).forEach(([type, meta]) => {
@@ -130,42 +134,66 @@ export default function DamageIntakeApp() {
     setRoomInstances(instances);
   }, [rooms]);
 
-  // Add / remove action rows
+  // Actions rows
   const addActionRow = () => setActions((a) => [...a, { action: "", quantity: "", unit: "m2" }]);
-  const removeActionRow = (idx) =>
-    setActions((a) => (a.length === 1 ? a : a.filter((_, i) => i !== idx)));
-
-  const valid = useMemo(() => {
-    if (!address || !insurer || !locationType) return false;
-    if (locationType === "Dzīvojamā ēka" && !dwellingSubtype) return false;
-    if (dwellingSubtype === "Cits" && !dwellingOther.trim()) return false;
-    if (!incidentType) return false;
-    if (incidentType === "Cits" && !incidentOther.trim()) return false;
-    return true;
-  }, [address, insurer, locationType, dwellingSubtype, dwellingOther, incidentType, incidentOther]);
+  const removeActionRow = (idx) => setActions((a) => (a.length === 1 ? a : a.filter((_, i) => i !== idx)));
 
   function handleInstanceAreaToggle(id, area) {
     setRoomInstances((arr) =>
       arr.map((ri) =>
         ri.id === id
-          ? {
-              ...ri,
-              areas: ri.areas.includes(area)
-                ? ri.areas.filter((a) => a !== area)
-                : [...ri.areas, area],
-            }
+          ? { ...ri, areas: ri.areas.includes(area) ? ri.areas.filter((a) => a !== area) : [...ri.areas, area] }
           : ri
       )
     );
   }
-
   function setInstanceNote(id, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === id ? { ...ri, note } : ri)));
   }
 
-  // Excel export
+  // ===== Validation per step =====
+  const stepValid = useMemo(() => {
+    switch (step) {
+      case 1:
+        return !!address.trim();
+      case 2:
+        return !!insurer;
+      case 3:
+        return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
+      case 4:
+        return (
+          !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim())
+        );
+      case 5:
+        return ["Jā", "Nē"].includes(electricity);
+      case 6:
+        return ["Jā", "Nē"].includes(needsDrying);
+      case 7:
+        return ["Jā", "Nē"].includes(commonPropertyDamaged);
+      case 8:
+        return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
+      case 9:
+        // At least one room selected OR allow continue anyway
+        return Object.values(rooms).some((r) => r.checked);
+      case 10:
+        // If rooms selected, allow
+        return true;
+      case 11:
+        // Either empty list or valid rows with action+quantity
+        return actions.every((a) => (a.action && a.quantity) || (!a.action && !a.quantity));
+      case 12:
+        return true;
+      default:
+        return true;
+    }
+  }, [step, address, insurer, locationType, dwellingSubtype, incidentType, incidentOther, electricity, needsDrying, commonPropertyDamaged, lossKnown, lossAmount, rooms, actions]);
+
+  const totalSteps = 12;
+  const next = () => setStep((s) => Math.min(totalSteps, s + 1));
+  const back = () => setStep((s) => Math.max(1, s - 1));
+
+  // ===== Excel export =====
   function exportToExcel() {
-    // Build sheets
     const summary = [
       ["Tāmētājs", estimatorName],
       ["E-pasts", estimatorEmail],
@@ -185,12 +213,12 @@ export default function DamageIntakeApp() {
         "Kas notika ar nekustamo īpašumu?",
         incidentType === "Cits" ? `Cits: ${incidentOther}` : incidentType,
       ],
-      ["Elektrības traucējumi", electricity],
-      ["Nepieciešama žāvēšana", needsDrying],
-      ["Bojāts kopīpašums", commonPropertyDamaged],
+      ["Elektrības traucējumi", electricity === "Jā" ? "Ir" : "Nav"],
+      ["Vai nepieciešama žāvēšana?", needsDrying],
+      ["Vai bojāts kopīpašums?", commonPropertyDamaged],
       [
         "Zaudējuma novērtējums pēc klienta vārdiem",
-        lossKnown === "Jā" ? `${lossAmount} EUR` : "Nav"
+        lossKnown === "Jā" ? `${lossAmount} EUR` : "Nav",
       ],
     ];
 
@@ -220,14 +248,12 @@ export default function DamageIntakeApp() {
     XLSX.utils.book_append_sheet(wb, wsRooms, "Telpas");
     XLSX.utils.book_append_sheet(wb, wsActions, "Darbi");
 
-    // Create binary and base64
     const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
     const filename = `tame_${(estimatorName || "tametajs").replaceAll(
       /[^a-zA-Z0-9_\-]/g,
       "_"
     )}_${prettyDate()}.xlsx`;
 
-    // Trigger download
     const link = document.createElement("a");
     link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
     link.download = filename;
@@ -235,7 +261,6 @@ export default function DamageIntakeApp() {
     link.click();
     document.body.removeChild(link);
 
-    // Save to local profile (so estimator sees their generated tāmēs later)
     const entry = {
       id: crypto.randomUUID(),
       filename,
@@ -247,489 +272,297 @@ export default function DamageIntakeApp() {
     setSaved(loadSaved());
   }
 
-  function downloadSaved(id) {
-    const entry = saved.find((e) => e.id === id);
-    if (!entry) return;
-    const link = document.createElement("a");
-    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${entry.base64}`;
-    link.download = entry.filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // ===== UI helpers =====
+  function LabeledRow({ label, children }) {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+        <div>{children}</div>
+      </div>
+    );
   }
 
-  function resetForm() {
-    setAddress("");
-    setInsurer("");
-    setLocationType("");
-    setDwellingSubtype("");
-    setDwellingOther("");
-    setIncidentType("");
-    setIncidentOther("");
-    setElectricity("Nē");
-    setNeedsDrying("Nē");
-    setCommonPropertyDamaged("Nē");
-    setLossKnown("Nē");
-    setLossAmount("");
-    setRooms(
-      ROOM_TYPES.reduce((acc, r) => {
-        acc[r] = { checked: false, count: 1, custom: "" };
-        return acc;
-      }, {})
+  function StepShell({ title, children }) {
+    return (
+      <div style={{ background: "white", padding: 16, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</div>
+        {children}
+      </div>
     );
-    setActions([{ action: "", quantity: "", unit: "m2" }]);
   }
+
+  const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="max-w-5xl mx-auto p-6 space-y-8">
-        <header className="flex items-start justify-between gap-4">
+    <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
+        <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
-            <h1 className="text-2xl font-bold">Apskates forma – Tāmēšana</h1>
-            <p className="text-sm text-gray-600">
-              Aizpildi laukus. Nospiežot <span className="font-semibold">Pabeigt apskati</span>, tiks
-              ģenerēta Excel tāme un saglabāta jūsu profilā šajā pārlūkā.
-            </p>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
+            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi no 1 līdz 12. Pēdējā solī tiks ģenerēta Excel tāme.</div>
           </div>
-          <div className="bg-white p-4 rounded-2xl shadow-sm w-full max-w-sm">
-            <h2 className="font-semibold mb-2">Tāmētāja profils</h2>
-            <div className="space-y-2">
-              <input
-                className="w-full border rounded-xl px-3 py-2"
-                placeholder="Vārds, Uzvārds"
-                value={estimatorName}
-                onChange={(e) => setEstimatorName(e.target.value)}
-              />
-              <input
-                className="w-full border rounded-xl px-3 py-2"
-                placeholder="E-pasts"
-                value={estimatorEmail}
-                onChange={(e) => setEstimatorEmail(e.target.value)}
-              />
-            </div>
+          <div style={{ background: "white", padding: 12, borderRadius: 12, width: 320 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
+            <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }} placeholder="Vārds, Uzvārds" value={estimatorName} onChange={(e) => setEstimatorName(e.target.value)} />
+            <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="E-pasts" value={estimatorEmail} onChange={(e) => setEstimatorEmail(e.target.value)} />
           </div>
         </header>
 
-        {/* Core form */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold">1–8. Pamatinformācija</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm mb-1">1. Objekta adrese</label>
-              <input
-                className="w-full border rounded-xl px-3 py-2"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Iela 1, Pilsēta"
-              />
-            </div>
+        {/* Progress bar */}
+        <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, marginBottom: 16 }}>
+          <div style={{ width: `${progressPct}%`, height: 8, background: "#10b981", borderRadius: 999 }} />
+        </div>
 
-            <div>
-              <label className="block text-sm mb-1">2. Apdrošināšanas kompānija</label>
-              <select
-                className="w-full border rounded-xl px-3 py-2 bg-white"
-                value={insurer}
-                onChange={(e) => setInsurer(e.target.value)}
-              >
+        {/* Steps */}
+        {step === 1 && (
+          <StepShell title="1. Objekta adrese">
+            <LabeledRow label="Objekta adrese">
+              <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Iela 1, Pilsēta" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+            </LabeledRow>
+          </StepShell>
+        )}
+
+        {step === 2 && (
+          <StepShell title="2. Apdrošināšanas kompānija">
+            <LabeledRow label="Izvēlies kompāniju">
+              <select value={insurer} onChange={(e) => setInsurer(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                 <option value="">— Izvēlies —</option>
                 {INSURERS.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
+                  <option key={i} value={i}>{i}</option>
                 ))}
               </select>
-            </div>
+            </LabeledRow>
+          </StepShell>
+        )}
 
-            <div>
-              <label className="block text-sm mb-1">3. Kur notika negadījums?</label>
-              <select
-                className="w-full border rounded-xl px-3 py-2 bg-white"
-                value={locationType}
-                onChange={(e) => setLocationType(e.target.value)}
-              >
+        {step === 3 && (
+          <StepShell title="3. Kur notika negadījums?">
+            <LabeledRow label="Vieta">
+              <select value={locationType} onChange={(e) => setLocationType(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                 <option value="">— Izvēlies —</option>
                 {LOCATION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
-            </div>
-
+            </LabeledRow>
             {locationType === "Dzīvojamā ēka" && (
               <>
-                <div>
-                  <label className="block text-sm mb-1">3.1. Dzīvojamās ēkas tips</label>
-                  <select
-                    className="w-full border rounded-xl px-3 py-2 bg-white"
-                    value={dwellingSubtype}
-                    onChange={(e) => setDwellingSubtype(e.target.value)}
-                  >
+                <LabeledRow label="3.1. Dzīvojamās ēkas tips">
+                  <select value={dwellingSubtype} onChange={(e) => setDwellingSubtype(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                     <option value="">— Izvēlies —</option>
                     {DWELLING_SUBTYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
+                      <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                </div>
+                </LabeledRow>
                 {dwellingSubtype === "Cits" && (
-                  <div>
-                    <label className="block text-sm mb-1">3.1.1. Norādi</label>
-                    <input
-                      className="w-full border rounded-xl px-3 py-2"
-                      value={dwellingOther}
-                      onChange={(e) => setDwellingOther(e.target.value)}
-                      placeholder="NI tips"
-                    />
-                  </div>
+                  <LabeledRow label="3.1.1. Norādi">
+                    <input value={dwellingOther} onChange={(e) => setDwellingOther(e.target.value)} placeholder="NI tips" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                  </LabeledRow>
                 )}
               </>
             )}
+          </StepShell>
+        )}
 
-            <div>
-              <label className="block text-sm mb-1">4. Kas notika ar nekustamo īpašumu?</label>
-              <select
-                className="w-full border rounded-xl px-3 py-2 bg-white"
-                value={incidentType}
-                onChange={(e) => setIncidentType(e.target.value)}
-              >
+        {step === 4 && (
+          <StepShell title="4. Kas notika ar nekustamo īpašumu?">
+            <LabeledRow label="Notikuma veids">
+              <select value={incidentType} onChange={(e) => setIncidentType(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                 <option value="">— Izvēlies —</option>
                 {INCIDENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
-            </div>
+            </LabeledRow>
             {incidentType === "Cits" && (
-              <div>
-                <label className="block text-sm mb-1">4.1. Norādi</label>
-                <input
-                  className="w-full border rounded-xl px-3 py-2"
-                  value={incidentOther}
-                  onChange={(e) => setIncidentOther(e.target.value)}
-                  placeholder="Notikuma apraksts"
-                />
-              </div>
+              <LabeledRow label="4.1. Norādi">
+                <input value={incidentOther} onChange={(e) => setIncidentOther(e.target.value)} placeholder="Notikuma apraksts" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+              </LabeledRow>
             )}
+          </StepShell>
+        )}
 
-            <div>
-              <label className="block text-sm mb-1">5. Elektrības traucējumi</label>
-              <div className="flex gap-4">
-                {YES_NO.map((yn) => (
-                  <label key={yn} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="electricity"
-                      checked={electricity === yn}
-                      onChange={() => setElectricity(yn)}
-                    />
-                    {yn === "Jā" ? "Ir" : "Nav"}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1">6. Vai nepieciešama žāvēšana?</label>
-              <div className="flex gap-4">
-                {YES_NO.map((yn) => (
-                  <label key={yn} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="drying"
-                      checked={needsDrying === yn}
-                      onChange={() => setNeedsDrying(yn)}
-                    />
-                    {yn}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1">7. Vai bojāts kopīpašums?</label>
-              <div className="flex gap-4">
-                {YES_NO.map((yn) => (
-                  <label key={yn} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="common"
-                      checked={commonPropertyDamaged === yn}
-                      onChange={() => setCommonPropertyDamaged(yn)}
-                    />
-                    {yn}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm mb-1">
-                8. Zaudējuma novērtējums pēc klienta vārdiem
+        {step === 5 && (
+          <StepShell title="5. Elektrības traucējumi">
+            <LabeledRow label="Elektrības traucējumi">
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
+                <input type="radio" name="el" checked={electricity === "Jā"} onChange={() => setElectricity("Jā")} /> Ir
               </label>
-              <div className="flex items-center gap-4">
-                {YES_NO.map((yn) => (
-                  <label key={yn} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="loss"
-                      checked={lossKnown === yn}
-                      onChange={() => setLossKnown(yn)}
-                    />
-                    {yn}
-                  </label>
-                ))}
-                {lossKnown === "Jā" && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="border rounded-xl px-3 py-2 w-40"
-                      value={lossAmount}
-                      onChange={(e) => setLossAmount(e.target.value)}
-                      placeholder="€ summa"
-                      min={0}
-                    />
-                    <span>EUR</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <input type="radio" name="el" checked={electricity === "Nē"} onChange={() => setElectricity("Nē")} /> Nav
+              </label>
+            </LabeledRow>
+          </StepShell>
+        )}
 
-        {/* Rooms */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold">9–10. Telpas un bojātās vietas</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {ROOM_TYPES.map((rt) => (
-              <div key={rt} className="border rounded-2xl p-4">
-                <label className="flex items-center gap-2 font-medium">
-                  <input
-                    type="checkbox"
-                    checked={rooms[rt].checked}
-                    onChange={(e) =>
-                      setRooms({
-                        ...rooms,
-                        [rt]: { ...rooms[rt], checked: e.target.checked },
-                      })
-                    }
-                  />
-                  {rt}
+        {step === 6 && (
+          <StepShell title="6. Vai nepieciešama žāvēšana?">
+            <LabeledRow label="Žāvēšana">
+              {YES_NO.map((yn) => (
+                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
+                  <input type="radio" name="dry" checked={needsDrying === yn} onChange={() => setNeedsDrying(yn)} /> {yn}
                 </label>
-                {rooms[rt].checked && (
-                  <div className="mt-3 space-y-2">
-                    {rt === "Cits" && (
-                      <input
-                        className="w-full border rounded-xl px-3 py-2"
-                        placeholder="Telpas nosaukums"
-                        value={rooms[rt].custom}
-                        onChange={(e) =>
-                          setRooms({
-                            ...rooms,
-                            [rt]: { ...rooms[rt], custom: e.target.value },
-                          })
-                        }
-                      />
-                    )}
-                    <div className="flex items-center gap-2">
-                      <span>Daudzums:</span>
-                      <input
-                        type="number"
-                        min={1}
-                        className="border rounded-xl px-3 py-1 w-24"
-                        value={rooms[rt].count}
-                        onChange={(e) =>
-                          setRooms({
-                            ...rooms,
-                            [rt]: { ...rooms[rt], count: Number(e.target.value || 1) },
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </LabeledRow>
+          </StepShell>
+        )}
 
-          {roomInstances.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2">10. Vietas katrā telpā, kas tika bojātas</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                {roomInstances.map((ri) => (
-                  <div key={ri.id} className="border rounded-2xl p-4 bg-gray-50">
-                    <div className="font-medium mb-2">
-                      {ri.type} {ri.index}
+        {step === 7 && (
+          <StepShell title="7. Vai bojāts kopīpašums?">
+            <LabeledRow label="Kopīpašums">
+              {YES_NO.map((yn) => (
+                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
+                  <input type="radio" name="common" checked={commonPropertyDamaged === yn} onChange={() => setCommonPropertyDamaged(yn)} /> {yn}
+                </label>
+              ))}
+            </LabeledRow>
+          </StepShell>
+        )}
+
+        {step === 8 && (
+          <StepShell title="8. Zaudējuma novērtējums pēc klienta vārdiem">
+            <LabeledRow label="Vai ir zināma summa?">
+              {YES_NO.map((yn) => (
+                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
+                  <input type="radio" name="loss" checked={lossKnown === yn} onChange={() => setLossKnown(yn)} /> {yn}
+                </label>
+              ))}
+            </LabeledRow>
+            {lossKnown === "Jā" && (
+              <LabeledRow label="Summa EUR">
+                <input type="number" min={0} value={lossAmount} onChange={(e) => setLossAmount(e.target.value)} placeholder="€ summa" style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+              </LabeledRow>
+            )}
+          </StepShell>
+        )}
+
+        {step === 9 && (
+          <StepShell title="9. Izvēlies telpu/as, kas tika bojātas">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 12 }}>
+              {ROOM_TYPES.map((rt) => (
+                <div key={rt} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12 }}>
+                  <label style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" checked={rooms[rt].checked} onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], checked: e.target.checked } })} />
+                    {rt}
+                  </label>
+                  {rooms[rt].checked && (
+                    <div style={{ marginTop: 8 }}>
+                      {rt === "Cits" && (
+                        <input placeholder="Telpas nosaukums" value={rooms[rt].custom} onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], custom: e.target.value } })} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 8 }} />
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span>Daudzums:</span>
+                        <input type="number" min={1} value={rooms[rt].count} onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], count: Number(e.target.value || 1) } })} style={{ width: 90, border: "1px solid #e5e7eb", borderRadius: 10, padding: 6 }} />
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 mb-2">
+                  )}
+                </div>
+              ))}
+            </div>
+          </StepShell>
+        )}
+
+        {step === 10 && (
+          <StepShell title="10. Vietas katrā telpā, kas tika bojātas">
+            {roomInstances.length === 0 ? (
+              <div style={{ color: "#6b7280" }}>Nav izvēlētas telpas 9. solī.</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
+                {roomInstances.map((ri) => (
+                  <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>{ri.type} {ri.index}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
                       {AREA_OPTIONS.map((a) => (
-                        <label key={a} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={ri.areas.includes(a)}
-                            onChange={() => handleInstanceAreaToggle(ri.id, a)}
-                          />
-                          {a}
+                        <label key={a} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          <input type="checkbox" checked={ri.areas.includes(a)} onChange={() => handleInstanceAreaToggle(ri.id, a)} /> {a}
                         </label>
                       ))}
                     </div>
-                    <input
-                      className="w-full border rounded-xl px-3 py-2"
-                      placeholder="Piezīmes (papildus informācija)"
-                      value={ri.note}
-                      onChange={(e) => setInstanceNote(ri.id, e.target.value)}
-                    />
+                    <input placeholder="Piezīmes (papildus info)" value={ri.note} onChange={(e) => setInstanceNote(ri.id, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
                   </div>
                 ))}
               </div>
+            )}
+          </StepShell>
+        )}
+
+        {step === 11 && (
+          <StepShell title="11. Pozīcijas un apjomi">
+            <div style={{ display: "grid", gap: 12 }}>
+              {actions.map((row, idx) => (
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 110px auto", gap: 8, alignItems: "end" }}>
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
+                    <select value={row.action} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, action: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                      <option value="">— Izvēlies —</option>
+                      {ACTION_OPTIONS.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Daudzums</div>
+                    <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, quantity: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="m2" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
+                    <input value={row.unit} onChange={(e) => setActions((a) => a.map((r, i) => (i === idx ? { ...r, unit: e.target.value } : r)))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={addActionRow} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Pievienot</button>
+                    <button type="button" onClick={() => removeActionRow(idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </section>
+          </StepShell>
+        )}
 
-        {/* Actions */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold">11. Pozīcijas un apjomi</h2>
-          <div className="space-y-3">
-            {actions.map((row, idx) => (
-              <div key={idx} className="grid md:grid-cols-[2fr,1fr,100px,auto] gap-3 items-end">
-                <div>
-                  <label className="block text-sm mb-1">Pozīcija</label>
-                  <select
-                    className="w-full border rounded-xl px-3 py-2 bg-white"
-                    value={row.action}
-                    onChange={(e) =>
-                      setActions((a) =>
-                        a.map((r, i) => (i === idx ? { ...r, action: e.target.value } : r))
-                      )
-                    }
-                  >
-                    <option value="">— Izvēlies —</option>
-                    {ACTION_OPTIONS.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Daudzums</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    className="w-full border rounded-xl px-3 py-2"
-                    value={row.quantity}
-                    onChange={(e) =>
-                      setActions((a) =>
-                        a.map((r, i) => (i === idx ? { ...r, quantity: e.target.value } : r))
-                      )
-                    }
-                    placeholder="m2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Mērv.</label>
-                  <input
-                    className="w-full border rounded-xl px-3 py-2"
-                    value={row.unit}
-                    onChange={(e) =>
-                      setActions((a) =>
-                        a.map((r, i) => (i === idx ? { ...r, unit: e.target.value } : r))
-                      )
-                    }
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={addActionRow}
-                    className="px-3 py-2 rounded-xl bg-gray-900 text-white"
-                  >
-                    + Pievienot
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeActionRow(idx)}
-                    className="px-3 py-2 rounded-xl border"
-                  >
-                    Dzēst
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {step === 12 && (
+          <StepShell title="12. Pabeigt apskati – ģenerēt Excel tāmi">
+            <div style={{ marginBottom: 12, color: "#374151" }}>Nospiežot pogu, tiks izveidota Excel tāme no ievadītajiem datiem un saglabāta jūsu profilā (šajā pārlūkā).</div>
+            <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Ģenerēt Excel</button>
+          </StepShell>
+        )}
 
-        {/* Footer actions */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={!valid}
-            onClick={exportToExcel}
-            className={`px-5 py-3 rounded-2xl text-white ${
-              valid ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400"
-            }`}
-            title={valid ? "" : "Aizpildi obligātos laukus"}
-          >
-            12. Pabeigt apskati — ģenerēt Excel tāmi
-          </button>
-          <button
-            type="button"
-            onClick={resetForm}
-            className="px-5 py-3 rounded-2xl border"
-          >
-            Notīrīt formu
-          </button>
+        {/* Navigation */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+          <button type="button" onClick={back} disabled={step === 1} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}>← Atpakaļ</button>
+          <button type="button" onClick={next} disabled={!stepValid || step === totalSteps} style={{ padding: "10px 14px", borderRadius: 10, background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827", color: "white", border: 0 }}>{step === totalSteps ? "Beigas" : "Tālāk →"}</button>
         </div>
 
         {/* Saved estimates */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
-          <h2 className="text-lg font-semibold">Saglabātās tāmēs (šajā pārlūkā)</h2>
+        <div style={{ background: "white", padding: 16, borderRadius: 12, marginTop: 20 }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Saglabātās tāmēs (šajā pārlūkā)</div>
           {saved.length === 0 ? (
-            <p className="text-sm text-gray-600">Vēl nav saglabātu tāmju.</p>
+            <div style={{ color: "#6b7280" }}>Vēl nav saglabātu tāmju.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 14 }}>
                 <thead>
-                  <tr className="text-left border-b">
-                    <th className="py-2 pr-4">Fails</th>
-                    <th className="py-2 pr-4">Tāmētājs</th>
-                    <th className="py-2 pr-4">Datums</th>
-                    <th className="py-2">Darbības</th>
+                  <tr style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
+                    <th style={{ padding: "8px 12px" }}>Fails</th>
+                    <th style={{ padding: "8px 12px" }}>Tāmētājs</th>
+                    <th style={{ padding: "8px 12px" }}>Datums</th>
                   </tr>
                 </thead>
                 <tbody>
                   {saved.map((e) => (
-                    <tr key={e.id} className="border-b last:border-b-0">
-                      <td className="py-2 pr-4 font-mono">{e.filename}</td>
-                      <td className="py-2 pr-4">{e.estimator}</td>
-                      <td className="py-2 pr-4">
-                        {new Date(e.createdAtISO).toLocaleString()}
-                      </td>
-                      <td className="py-2">
-                        <button
-                          onClick={() => downloadSaved(e.id)}
-                          className="px-3 py-1 rounded-xl bg-gray-900 text-white"
-                        >
-                          Lejupielādēt
-                        </button>
-                      </td>
+                    <tr key={e.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                      <td style={{ padding: "8px 12px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>{e.filename}</td>
+                      <td style={{ padding: "8px 12px" }}>{e.estimator}</td>
+                      <td style={{ padding: "8px 12px" }}>{new Date(e.createdAtISO).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </section>
+        </div>
 
-        <footer className="pb-10 text-xs text-gray-500">
-          <p>
-            Piezīme: šī versija glabā tāmju failus lokāli (LocalStorage). Ja vēlies glabāt uz
-            servera un dalīties starp darbiniekiem, pieslēdz Supabase Storage un saglabā
-            base64 saturu kā failu bucketā, pievienojot rindu datubāzē ar metadatiem.
-          </p>
+        <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
+          Piezīme: šī versija glabā tāmju failus lokāli (LocalStorage). Servera glabāšanai pievieno Supabase Storage un saglabā base64 saturu bucketā.
         </footer>
       </div>
     </div>
