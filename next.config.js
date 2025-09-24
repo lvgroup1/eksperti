@@ -1,10 +1,9 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
+  output: 'export',          // ģenerē statisku HTML
+  trailingSlash: true,       // katrai lapai būs sava index.html mape
   images: { unoptimized: true },
-  basePath: '/REPO_NAME',       // ← nomaini uz savu repo nosaukumu, piem. '/my-claims-app'
-  assetPrefix: '/REPO_NAME/',    // ← tas pats
-}
-module.exports = nextConfig
+  basePath: '/eksperti',     // TAVS repo nosaukums
+  assetPrefix: '/eksperti/', // tas pats ar slīpsvītru
+};
+module.exports = nextConfig;
