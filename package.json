@@ -6,6 +6,9 @@
     "deploy": "gh-pages -d out -t true"
   },
   "dependencies": {
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',          // ģenerē statisku HTML
-  trailingSlash: true,       // katrai lapai būs sava index.html mape
+module.exports = {
+  output: 'export',
+  trailingSlash: true,
   images: { unoptimized: true },
-  basePath: '/eksperti',     // TAVS repo nosaukums
-  assetPrefix: '/eksperti/', // tas pats ar slīpsvītru
+  assetPrefix: '.',   // relatīvi resursi, strādā /eksperti/ apakšceļā
 };
-module.exports = nextConfig;
