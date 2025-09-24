@@ -4,8 +4,9 @@ import * as XLSX from "xlsx";
 // ==========================
 //  Damage Intake – STEP WIZARD (1..12)
 //  Pricing integration for BALTA via public/prices/balta.json
-//  - Step 11 rows are priced items (category + item) with auto unit & unit price
-//  - Totals per room & overall, Excel export with pricing breakdown
+//  - Expert only picks item and enters QUANTITY; unit & price autofill (unit can be changed from a dropdown)
+//  - Hierarchical flow: areas (e.g. Jumts/Pārsegums) → suggested category → pick item
+//  - Full auto totals per room & overall; Excel export carries all priced rows
 // ==========================
 
 // Helper types
@@ -27,16 +28,30 @@ const ROOM_TYPES = [
   "Cits",
 ];
 
+// Areas inside a room (used to suggest pricing categories)
 const AREA_OPTIONS = [
+  "Jumts/Pārsegums",
   "Griesti",
   "Siena",
   "Grīda",
   "Durvis",
   "Logs",
-  "Elektroinstalācija",
-  "Mēbeles",
+  "Fasāde",
+  "Inženierkomunikācijas",
   "Cits",
 ];
+
+// Map areas → price catalog categories (from BALTA sheets)
+const AREA_TO_CATEGORY = {
+  "Jumts/Pārsegums": ["Jumts, pārsegums"],
+  "Griesti": ["Griesti"],
+  "Siena": ["Sienas, starpsienas"],
+  "Grīda": ["Grīdas"],
+  "Durvis": ["Logi un durvis"],
+  "Logs": ["Logi un durvis"],
+  "Fasāde": ["Fasāde"],
+  "Inženierkomunikācijas": ["Inžen.komun.darbi"],
+};
 
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
@@ -44,6 +59,23 @@ function prettyDate(d = new Date()) {
     d.getHours()
   )}-${pad(d.getMinutes())}`;
 }
+
+// Normalise units (Excel has variants like m² / m2, gb. / gab)
+function normalizeUnit(u) {
+  if (!u) return "";
+  const x = String(u).trim().toLowerCase().replace("²", "2").replace(" ", " ");
+  if (x === "gb." || x === "gab." || x === "gab") return "gab";
+  if (x === "m2" || x === "m 2" || x === "m^2") return "m2";
+  if (x === "m3" || x === "m 3" || x === "m^3") return "m3";
+  if (x === "m") return "m";
+  if (x === "kpl" || x === "kpl.") return "kpl";
+  if (x === "diena") return "diena";
+  if (x === "c/h") return "c/h";
+  if (x === "obj." || x === "obj") return "obj";
+  return x;
+}
+
+const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"]; // dropdown options
 
 // LocalStorage helpers (simple "profile" save)
 const STORAGE_KEY = "tames_profils_saglabatie"; // array of {id, filename, createdAtISO, estimator, base64}
@@ -71,7 +103,7 @@ export default function DamageIntakeForm() {
 
   // Core fields
   const [address, setAddress] = useState(""); // 1
-  const [insurer, setInsurer] = useState(""); // 2
+  const [insurer, setInsurer] = useState("Balta"); // 2 (default to Balta for pricing flow)
   const [locationType, setLocationType] = useState(""); // 3
   const [dwellingSubtype, setDwellingSubtype] = useState(""); // 3.1
   const [dwellingOther, setDwellingOther] = useState(""); // 3.1.1
@@ -79,7 +111,7 @@ export default function DamageIntakeForm() {
   const [incidentType, setIncidentType] = useState(""); // 4
   const [incidentOther, setIncidentOther] = useState(""); // 4.1
 
-  const [electricity, setElectricity] = useState("Nē"); // 5 (Ir/Nav UI, bet saglabājam Jā/Nē semantiku)
+  const [electricity, setElectricity] = useState("Nē"); // 5
   const [needsDrying, setNeedsDrying] = useState("Nē"); // 6
   const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē"); // 7
 
@@ -94,11 +126,11 @@ export default function DamageIntakeForm() {
     }, /** @type {Record<string,{checked:boolean,count:number,custom:string}>} */ ({}))
   );
 
-  // For visible list of selected room instances
+  // Visible list of selected room instances
   // structure: { id, type, index, areas: string[], note?: string }
   const [roomInstances, setRoomInstances] = useState([]);
 
-  // Per-room priced actions rows: { [roomId]: Array<{category:string,itemId:string, action:string, quantity:string, unit:string, unit_price:number|null}> }
+  // Per-room priced rows: { [roomId]: Array<{category:string,itemId:string, itemName:string, quantity:string, unit:string, unit_price:number|null, filter:string}> }
   const [roomActions, setRoomActions] = useState({});
 
   // Which room is currently being edited (for step 11)
@@ -117,7 +149,14 @@ export default function DamageIntakeForm() {
           if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
           return r.json();
         })
-        .then((data) => setPriceCatalog(Array.isArray(data.items) ? data.items : []))
+        .then((data) => {
+          const items = Array.isArray(data.items) ? data.items : [];
+          // normalise units
+          setPriceCatalog(items.map((it) => ({
+            ...it,
+            unit: normalizeUnit(it.unit),
+          })));
+        })
         .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
     } else {
       setPriceCatalog([]);
@@ -126,6 +165,12 @@ export default function DamageIntakeForm() {
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category));
+    return Array.from(set);
+  }, [priceCatalog]);
+
+  const allUnits = useMemo(() => {
+    const set = new Set(DEFAULT_UNITS);
+    priceCatalog.forEach((i) => i.unit && set.add(normalizeUnit(i.unit)));
     return Array.from(set);
   }, [priceCatalog]);
 
@@ -155,15 +200,21 @@ export default function DamageIntakeForm() {
     setRoomInstances(instances);
     setRoomActions((prev) => {
       const next = {};
-      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }]));
+      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" }]));
       return next;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-  // Actions helpers for a specific room
-  function addActionRow(roomId) {
-    setRoomActions((ra) => ({ ...ra, [roomId]: [...(ra[roomId] || []), { category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }] }));
+  // Actions helpers
+  function addActionRow(roomId, presetCategory = "") {
+    setRoomActions((ra) => ({
+      ...ra,
+      [roomId]: [
+        ...(ra[roomId] || []),
+        { category: presetCategory || "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" },
+      ],
+    }));
   }
   function removeActionRow(roomId, idx) {
     setRoomActions((ra) => {
@@ -174,7 +225,7 @@ export default function DamageIntakeForm() {
   }
   function setRowField(roomId, idx, key, value) {
     setRoomActions((ra) => {
-      const list = [...(ra[roomId] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }])];
+      const list = [...(ra[roomId] || [])];
       const nextRow = { ...list[idx], [key]: value };
       list[idx] = nextRow;
       return { ...ra, [roomId]: list };
@@ -183,7 +234,7 @@ export default function DamageIntakeForm() {
   function setRowCategory(roomId, idx, category) {
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
-      list[idx] = { category, itemId: "", action: "", quantity: list[idx]?.quantity || "", unit: "m2", unit_price: null };
+      list[idx] = { category, itemId: "", itemName: "", quantity: list[idx]?.quantity || "", unit: "", unit_price: null, filter: "" };
       return { ...ra, [roomId]: list };
     });
   }
@@ -192,9 +243,9 @@ export default function DamageIntakeForm() {
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
       if (item) {
-        list[idx] = { ...list[idx], itemId, action: item.name, unit: item.unit || "m2", unit_price: item.unit_price };
+        list[idx] = { ...list[idx], itemId, itemName: item.name, unit: item.unit || "", unit_price: item.unit_price };
       } else {
-        list[idx] = { ...list[idx], itemId: "", action: "", unit: "m2", unit_price: null };
+        list[idx] = { ...list[idx], itemId: "", itemName: "", unit: "", unit_price: null };
       }
       return { ...ra, [roomId]: list };
     });
@@ -222,7 +273,7 @@ export default function DamageIntakeForm() {
   const stepValid = useMemo(() => {
     switch (step) {
       case 1: return !!address.trim();
-      case 2: return !!insurer;
+      case 2: return !!insurer; // and pricing loads for Balta automatically
       case 3: return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
       case 4: return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
       case 5: return ["Jā", "Nē"].includes(electricity);
@@ -261,6 +312,16 @@ export default function DamageIntakeForm() {
   // Completion checks
   const roomHasPositions = (roomId) => (roomActions[roomId] || []).some((r) => r.itemId && r.quantity);
   const allRoomsCompleted = roomInstances.length > 0 && roomInstances.every((ri) => roomHasPositions(ri.id));
+
+  // Suggested categories for current room based on areas
+  function suggestedCategoriesFor(roomId) {
+    const ri = roomInstances.find((r) => r.id === roomId);
+    if (!ri) return [];
+    const set = new Set();
+    ri.areas.forEach((a) => (AREA_TO_CATEGORY[a] || []).forEach((c) => set.add(c)));
+    // Always allow all
+    return Array.from(set);
+  }
 
   // ===== Excel export =====
   function exportToExcel() {
@@ -301,15 +362,15 @@ export default function DamageIntakeForm() {
     ];
 
     const actionsByRoomSheet = [
-      ["Telpa", "Kategorija", "Darbs", "Mērv.", "Daudz.", "Cena/1", "Summa"],
+      ["Telpa", "Kategorija", "Darbs (BALTA)", "Mērv.", "Daudz.", "Cena/1", "Summa"],
       ...roomInstances.flatMap((ri) =>
         (roomActions[ri.id] || [])
           .filter((a) => a.itemId && a.quantity)
           .map((a) => [
             `${ri.type} ${ri.index}`,
             a.category,
-            a.action,
-            a.unit,
+            a.itemName,
+            a.unit || "",
             Number(a.quantity) || 0,
             Number(a.unit_price) || 0,
             rowLineTotal(a),
@@ -364,11 +425,11 @@ export default function DamageIntakeForm() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
-      <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
         <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>Aizpildi laukus secīgi. Ja izvēlēta apdrošināšana <b>Balta</b>, 11. solī izmantosi tās cenrādi.</div>
+            <div style={{ fontSize: 13, color: "#4b5563" }}>Tāmētājs ievada tikai daudzumu. Izvēloties <b>Balta</b>, pozīcijām cena un mērvienība aizpildās automātiski (mērv. var mainīt).</div>
           </div>
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
@@ -395,7 +456,6 @@ export default function DamageIntakeForm() {
           <StepShell title="2. Apdrošināšanas kompānija">
             <LabeledRow label="Izvēlies kompāniju">
               <select value={insurer} onChange={(e) => setInsurer(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
-                <option value="">— Izvēlies —</option>
                 {INSURERS.map((i) => (
                   <option key={i} value={i}>{i}</option>
                 ))}
@@ -546,12 +606,20 @@ export default function DamageIntakeForm() {
                 {roomInstances.map((ri) => {
                   const completed = roomHasPositions(ri.id);
                   const areasCount = ri.areas.length;
+                  const suggested = suggestedCategoriesFor(ri.id);
                   return (
                     <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
                       <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
-                        Bojātās vietas: {areasCount > 0 ? areasCount : "—"} · Starpsumma: {roomSubtotal(ri.id).toFixed(2)} €
+                        Bojātās vietas: {areasCount > 0 ? ri.areas.join(", ") : "—"} · Starpsumma: {roomSubtotal(ri.id).toFixed(2)} €
                       </div>
+                      {suggested.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                          {suggested.map((c) => (
+                            <span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Atvērt</button>
                         {completed && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>✓ Saglabāts</span>}
@@ -586,26 +654,37 @@ export default function DamageIntakeForm() {
             </LabeledRow>
 
             {/* Priced rows for this room */}
-            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
-            {(roomActions[editingRoomId] || [{ category: "", itemId: "", action: "", quantity: "", unit: "m2", unit_price: null }]).map((row, idx) => {
-              const itemsInCategory = priceCatalog.filter((i) => !row.category || i.category === row.category);
+            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi (Balta)</div>
+            {(roomActions[editingRoomId] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" }]).map((row, idx) => {
+              // Suggested categories based on areas
+              const suggested = suggestedCategoriesFor(editingRoomId);
+              const baseCategory = row.category || suggested[0] || "";
+              const itemsAll = priceCatalog.filter((it) => !baseCategory || it.category === baseCategory);
+              const filter = row.filter || "";
+              const itemsFiltered = itemsAll.filter((it) => it.name.toLowerCase().includes(filter.toLowerCase()));
+              const unitOptions = allUnits;
+
               return (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 2.4fr 0.8fr 0.8fr 0.9fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr 1fr 0.8fr 0.9fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-                    <select value={row.category} onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
-                      <option value="">— visas —</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                    <select value={baseCategory} onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                      {suggested.length > 0 && <optgroup label="Ieteiktās">{suggested.map((c) => (<option key={c} value={c}>{c}</option>))}</optgroup>}
+                      <optgroup label="Visas">
+                        <option value="">— visas —</option>
+                        {categories.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
 
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Darbs</div>
+                    <input value={filter} onChange={(e) => setRowField(editingRoomId, idx, 'filter', e.target.value)} placeholder="Filtrēt pēc nosaukuma…" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }} />
                     <select value={row.itemId} onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                       <option value="">— izvēlies pozīciju —</option>
-                      {itemsInCategory.slice(0, 1500).map((it) => (
+                      {itemsFiltered.slice(0, 1200).map((it) => (
                         <option key={it.id} value={it.id}>{it.name} · {it.unit || '—'} · {it.unit_price}€</option>
                       ))}
                     </select>
@@ -613,12 +692,17 @@ export default function DamageIntakeForm() {
 
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
-                    <input value={row.unit || ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                    <select value={normalizeUnit(row.unit) || ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit', normalizeUnit(e.target.value))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
+                      <option value="">—</option>
+                      {unitOptions.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
-                    <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setRowField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
+                    <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setRowField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="Skaitlis" />
                   </div>
 
                   <div>
@@ -628,7 +712,7 @@ export default function DamageIntakeForm() {
 
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <div style={{ minWidth: 90, textAlign: "right", fontWeight: 700 }}>{rowLineTotal(row).toFixed(2)} €</div>
-                    <button type="button" onClick={() => addActionRow(editingRoomId)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Rinda</button>
+                    <button type="button" onClick={() => addActionRow(editingRoomId, baseCategory)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Rinda</button>
                     <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
                   </div>
                 </div>
@@ -683,7 +767,7 @@ export default function DamageIntakeForm() {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> tikai, ja izvēlēta "Balta". Pārējām kompānijām vari pievienot savus JSON failus un nosacījumus.
+          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024). Pārējām kompānijām pievieno savus JSON.
         </footer>
       </div>
     </div>
