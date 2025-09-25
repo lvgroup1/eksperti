@@ -307,154 +307,213 @@ export default function DamageIntakeForm() {
   }
 
   // ===== Excel export (BALTA template; only filled rows) =====
-  async function exportToExcel() {
-    // Load template
-    const resp = await fetch("templates/balta_template.xlsx");
-    if (!resp || !resp.ok) {
-      alert("Neizdevās ielādēt templates/balta_template.xlsx (ieliec to public/templates/)");
-      return;
-    }
-    const buf = await resp.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
-    const ws = wb.Sheets["Tāme"] || wb.Sheets[wb.SheetNames[0]];
-
-    // helper writer
-    const set = (addr, val) => {
-      ws[addr] = (typeof val === "number")
-        ? { t: "n", v: val }
-        : { t: "s", v: (val == null ? "" : String(val)) };
-    };
-
-    // Meta header
-    const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
-    set("A1", `Pasūtītājs: ${insurer || "Balta"}`);
-    set("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
-    set("A3", `Objekta adrese: ${address || ""}`);
-    set("A8", `Rīga, ${humanDate}`);
-    set("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
-
-    // Gather ONLY entered rows (item chosen + qty > 0)
-    const selections = [];
-    roomInstances.forEach((ri) => {
-      (roomActions[ri.id] || []).forEach((a) => {
-        const qty = Number(a.quantity) || 0;
-        if (a.itemId && qty > 0) {
-          selections.push({
-            room: `${ri.type} ${ri.index}`,
-            name: a.itemName || "",
-            unit: normalizeUnit(a.unit) || "",
-            qty,
-            unitPrice: Number(a.unit_price) || 0,
-          });
-        }
-      });
-    });
-    if (selections.length === 0) {
-      alert("Nav ievadītu pozīciju ar daudzumu.");
-      return;
-    }
-
-    // Clear data zone (keep formatting) A15:L2000
-    const cols = ["A","B","C","D","E","F","G","H","I","J","K","L"];
-    for (let r = 15; r <= 2000; r++) {
-      for (const c of cols) {
-        const addr = `${c}${r}`;
-        if (ws[addr]) {
-          if ("f" in ws[addr]) delete ws[addr].f; // drop old formulas
-          ws[addr].t = "s";
-          ws[addr].v = "";
-        }
-      }
-    }
-
-    // Write rows grouped by room
-    let r = 15;
-    let nr = 1;
-    let first = null;
-    let last = null;
-
-    const byRoom = selections.reduce((acc, s) => {
-      (acc[s.room] ||= []).push(s);
-      return acc;
-    }, {});
-
-    for (const roomName of Object.keys(byRoom)) {
-      // section row with room title
-      set(`B${r}`, roomName);
-      r++;
-      for (const s of byRoom[roomName]) {
-        set(`A${r}`, nr++);        // Nr.p.k.
-        set(`B${r}`, s.name);      // Darbs
-        set(`C${r}`, s.unit);      // Mērv.
-        set(`D${r}`, s.qty);       // Daudz.
-
-        // Vienības izmaksas (we only have a single unit price -> put into E; F,G=0; H sums)
-        set(`E${r}`, s.unitPrice); // Darba alga vien.
-        set(`F${r}`, 0);           // Materiāli vien.
-        set(`G${r}`, 0);           // Mehānismi vien.
-        ws[`H${r}`] = { t: "n", f: `ROUND(SUM(E${r}:G${r}),2)` }; // Kopā (vien.)
-
-        // Kopā uz visu apjomu
-        ws[`I${r}`] = { t: "n", f: `ROUND(E${r}*D${r},2)` }; // Darba alga kopā
-        ws[`J${r}`] = { t: "n", f: `ROUND(F${r}*D${r},2)` }; // Materiāli kopā
-        ws[`K${r}`] = { t: "n", f: `ROUND(G${r}*D${r},2)` }; // Mehānismi kopā
-        ws[`L${r}`] = { t: "n", f: `ROUND(H${r}*D${r},2)` }; // Summa kopā
-
-        if (first === null) first = r;
-        last = r;
-        r++;
-      }
-    }
-
-    // Totals
-    let tRow = r + 1;
-    set(`B${tRow}`, "Kopā ");
-    if (first) {
-      ws[`I${tRow}`] = { t: "n", f: `SUM(I${first}:I${last})` };
-      ws[`J${tRow}`] = { t: "n", f: `SUM(J${first}:J${last})` };
-      ws[`K${tRow}`] = { t: "n", f: `SUM(K${first}:K${last})` };
-      ws[`L${tRow}`] = { t: "n", f: `SUM(L${first}:L${last})` };
-    } else {
-      set(`I${tRow}`, 0); set(`J${tRow}`, 0); set(`K${tRow}`, 0); set(`L${tRow}`, 0);
-    }
-
-    tRow += 2;
-    set(`B${tRow}`, "Tiešās izmaksas kopā");
-    ws[`I${tRow}`] = { t: "n", f: `I${tRow-2}` };
-    ws[`J${tRow}`] = { t: "n", f: `J${tRow-2}` };
-    ws[`K${tRow}`] = { t: "n", f: `K${tRow-2}` };
-    ws[`L${tRow}`] = { t: "n", f: `L${tRow-2}` };
-
-    const pvnRow = tRow + 5;
-    set(`B${pvnRow}`, "PVN");
-    set(`C${pvnRow}`, 0.21);
-    ws[`L${pvnRow}`] = { t: "n", f: `ROUND(L${tRow}*C${pvnRow},2)` };
-
-    const grandRow = pvnRow + 1;
-    set(`B${grandRow}`, "Pavisam kopā");
-    ws[`L${grandRow}`] = { t: "n", f: `ROUND(L${tRow}+L${pvnRow},2)` };
-
-    // Top-right summary (adjust addresses if your template differs)
-    set("J9",  "Tāmes summa euro :"); ws["L9"]  = { t: "n", f: `L${tRow}` };
-    set("J10", "PVN 21%:");           ws["L10"] = { t: "n", f: `L${pvnRow}` };
-    set("J11", "Pavisam kopā euro:"); ws["L11"] = { t: "n", f: `L${grandRow}` };
-
-    ws["!ref"] = `A1:L${grandRow+3}`;
-
-    const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-    const filename = `Tame_Balta_${prettyDate()}.xlsx`;
-
-    const link = document.createElement("a");
-    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
-    saveEntry(entry);
-    setSaved(loadSaved());
+async function exportToExcel() {
+  // Load the styled template
+  const resp = await fetch("templates/balta_template.xlsx");
+  if (!resp || !resp.ok) {
+    alert("Neizdevās ielādēt templates/balta_template.xlsx (ieliec to public/templates/)");
+    return;
   }
+  const buf = await resp.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const wsName = wb.SheetNames.includes("Tāme") ? "Tāme" : wb.SheetNames[0];
+  const ws = wb.Sheets[wsName];
+
+  // Helpers that PRESERVE styles
+  const put = (addr, t, v) => {
+    const cell = ws[addr] || {};
+    cell.t = t;
+    if (v === null || v === undefined) {
+      delete cell.v;
+      delete cell.f;
+    } else {
+      cell.v = v;
+      delete cell.f;
+    }
+    ws[addr] = cell; // keep existing .s (style) if any
+  };
+  const putF = (addr, f) => {
+    const cell = ws[addr] || {};
+    cell.t = "n";
+    cell.f = f;
+    delete cell.v;
+    ws[addr] = cell; // keep existing .s (style) if any
+  };
+  const clearKeepStyle = (addr) => {
+    const cell = ws[addr];
+    if (!cell) return;
+    // drop old values/formulas but keep style `s`
+    delete cell.v;
+    delete cell.f;
+    cell.t = "s";
+    cell.v = "";
+  };
+
+  // Header/meta (keeps template formatting)
+  const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+  put("A1", "s", `Pasūtītājs: ${insurer || "Balta"}`);
+  put("A2", "s", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
+  put("A3", "s", `Objekta adrese: ${address || ""}`);
+  put("A8", "s", `Rīga, ${humanDate}`);
+  put("A9", "s", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
+
+  // Gather ONLY entered rows (item chosen + qty > 0)
+  const selections = [];
+  roomInstances.forEach((ri) => {
+    (roomActions[ri.id] || []).forEach((a) => {
+      const qty = Number(a.quantity) || 0;
+      if (a.itemId && qty > 0) {
+        selections.push({
+          room: `${ri.type} ${ri.index}`,
+          name: a.itemName || "",
+          unit: normalizeUnit(a.unit) || "",
+          qty,
+          unitPrice: Number(a.unit_price) || 0,
+        });
+      }
+    });
+  });
+  if (selections.length === 0) {
+    alert("Nav ievadītu pozīciju ar daudzumu.");
+    return;
+  }
+
+  // OPTIONAL: sort by room then name for tidy tables
+  selections.sort((a, b) => (a.room.localeCompare(b.room) || a.name.localeCompare(b.name)));
+
+  // Clear data region but KEEP styles (so wrap, borders, and CF remain)
+  const COLS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+  const START = 15, END = 2000;
+  for (let r = START; r <= END; r++) {
+    for (const c of COLS) clearKeepStyle(`${c}${r}`);
+  }
+
+  // Write section rows + data rows
+  // Section rows: A empty, B = room (template CF can color these)
+  let r = START;
+  let nr = 1;
+  let firstRow = null;
+  let lastRow = null;
+
+  // group by room
+  const byRoom = selections.reduce((acc, s) => {
+    (acc[s.room] ||= []).push(s);
+    return acc;
+  }, {});
+
+  // track values for auto-fit
+  const seen = { A:[], B:[], C:[], D:[], E:[], F:[], G:[], H:[], I:[], J:[], K:[], L:[] };
+
+  const pushSeen = (addr, val) => {
+    const col = addr.replace(/[0-9]/g, "");
+    // stringify values for width calc
+    const str = (typeof val === "number") ? String(val) : (val || "");
+    seen[col].push(str);
+  };
+
+  for (const roomName of Object.keys(byRoom)) {
+    // section line
+    put(`A${r}`, "s", "");              pushSeen(`A${r}`, "");
+    put(`B${r}`, "s", roomName);        pushSeen(`B${r}`, roomName);
+    r++;
+
+    for (const s of byRoom[roomName]) {
+      put(`A${r}`, "n", nr++);          pushSeen(`A${r}`, nr-1);
+      put(`B${r}`, "s", s.name);        pushSeen(`B${r}`, s.name);
+      put(`C${r}`, "s", s.unit);        pushSeen(`C${r}`, s.unit);
+      put(`D${r}`, "n", s.qty);         pushSeen(`D${r}`, s.qty);
+
+      // Unit prices (we only have one -> E; F/G=0; H sums)
+      put(`E${r}`, "n", s.unitPrice);   pushSeen(`E${r}`, s.unitPrice);
+      put(`F${r}`, "n", 0);             pushSeen(`F${r}`, 0);
+      put(`G${r}`, "n", 0);             pushSeen(`G${r}`, 0);
+      putF(`H${r}`, `ROUND(SUM(E${r}:G${r}),2)`); pushSeen(`H${r}`, ""); // formula
+
+      // Totals per qty
+      putF(`I${r}`, `ROUND(E${r}*D${r},2)`);  pushSeen(`I${r}`, "");
+      putF(`J${r}`, `ROUND(F${r}*D${r},2)`);  pushSeen(`J${r}`, "");
+      putF(`K${r}`, `ROUND(G${r}*D${r},2)`);  pushSeen(`K${r}`, "");
+      putF(`L${r}`, `ROUND(H${r}*D${r},2)`);  pushSeen(`L${r}`, "");
+
+      if (firstRow === null) firstRow = r;
+      lastRow = r;
+      r++;
+    }
+  }
+
+  // Totals
+  let tRow = r + 1;
+  put(`B${tRow}`, "s", "Kopā ");
+  if (firstRow) {
+    putF(`I${tRow}`, `SUM(I${firstRow}:I${lastRow})`);
+    putF(`J${tRow}`, `SUM(J${firstRow}:J${lastRow})`);
+    putF(`K${tRow}`, `SUM(K${firstRow}:K${lastRow})`);
+    putF(`L${tRow}`, `SUM(L${firstRow}:L${lastRow})`);
+  } else {
+    put(`I${tRow}`, "n", 0); put(`J${tRow}`, "n", 0); put(`K${tRow}`, "n", 0); put(`L${tRow}`, "n", 0);
+  }
+
+  tRow += 2;
+  put(`B${tRow}`, "s", "Tiešās izmaksas kopā");
+  putF(`I${tRow}`, `I${tRow-2}`);
+  putF(`J${tRow}`, `J${tRow-2}`);
+  putF(`K${tRow}`, `K${tRow-2}`);
+  putF(`L${tRow}`, `L${tRow-2}`);
+
+  const pvnRow = tRow + 5;
+  put(`B${pvnRow}`, "s", "PVN");
+  put(`C${pvnRow}`, "n", 0.21);
+  putF(`L${pvnRow}`, `ROUND(L${tRow}*C${pvnRow},2)`);
+
+  const grandRow = pvnRow + 1;
+  put(`B${grandRow}`, "s", "Pavisam kopā");
+  putF(`L${grandRow}`, `ROUND(L${tRow}+L${pvnRow},2)`);
+
+  // Top-right summary
+  put("J9", "s", "Tāmes summa euro :");  putF("L9",  `L${tRow}`);
+  put("J10","s", "PVN 21%:");            putF("L10", `L${pvnRow}`);
+  put("J11","s", "Pavisam kopā euro:");  putF("L11", `L${grandRow}`);
+
+  // Auto-fit column widths (A..L) from written values
+  // rough width: max(len) with a small padding
+  const toWch = (texts) => {
+    const maxLen = texts.reduce((m, s) => Math.max(m, String(s || "").length), 0);
+    return Math.min(80, Math.max(8, Math.ceil(maxLen * 1.1)));
+  };
+  ws["!cols"] = [
+    { wch: toWch(seen.A) },
+    { wch: toWch(seen.B) },
+    { wch: toWch(seen.C) },
+    { wch: toWch(seen.D) },
+    { wch: toWch(seen.E) },
+    { wch: toWch(seen.F) },
+    { wch: toWch(seen.G) },
+    { wch: toWch(seen.H) },
+    { wch: toWch(seen.I) },
+    { wch: toWch(seen.J) },
+    { wch: toWch(seen.K) },
+    { wch: toWch(seen.L) },
+  ];
+
+  // Keep sheet range tight
+  ws["!ref"] = `A1:L${grandRow+3}`;
+
+  // Write and download
+  const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const filename = `Tame_Balta_${prettyDate()}.xlsx`;
+
+  const link = document.createElement("a");
+  link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
+  saveEntry(entry);
+  setSaved(loadSaved());
+}
+
 
   // ===== UI helpers =====
   function LabeledRow({ label, children }) {
