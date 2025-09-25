@@ -319,96 +319,143 @@ export default function DamageIntakeForm() {
   }
 
   // ===== Excel export (BALTA-style, with formulas & VAT 21%) =====
-  function exportToExcel() {
-    // Title & meta
-    const meta = [
-      ["Tāme"],
-      ["Pasūtītājs:", insurer || "Balta"],
-      ["Izpildītājs:", 'SIA "LV  GROUP", reģ.Nr.40103160668'],
-      ["Objekts:", locationType ? (locationType + (dwellingSubtype ? ` – ${dwellingSubtype}` : '')) : ''],
-      ["Adrese:", address],
-      ["Datums:", new Date().toLocaleDateString()],
-      [],
-    ];
-
-    const header = [["Nr.p.k.", "Darbs", "Mērvienība", "Cena (euro)", "Daudzums", "Summa (euro)"]];
-
-    // Rows grouped by room (insert a section line per room)
-    const body = [];
-    let idx = 1;
-    roomInstances.forEach((ri) => {
-      const list = (roomActions[ri.id] || []).filter((a) => a.itemId && a.quantity);
-      if (!list.length) return;
-      body.push(["", `${ri.type} ${ri.index}`, "", "", "", ""]);
-      list.forEach((a) => {
-        body.push([idx++, a.itemName || "", a.unit || "", Number(a.unit_price) || 0, Number(a.quantity) || 0, null]);
-      });
-    });
-
-    const aoa = [...meta, ...header, ...body];
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    // Merge title across A..F
-    ws['!merges'] = ws['!merges'] || [];
-    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } });
-
-    // Column widths
-    ws['!cols'] = [
-      { wch: 8 },   // Nr
-      { wch: 64 },  // Darbs
-      { wch: 12 },  // Mērv.
-      { wch: 14 },  // Cena
-      { wch: 12 },  // Daudz.
-      { wch: 16 },  // Summa
-    ];
-
-    // Put formulas in F (Summa) for item rows, and numeric values in D/E
-    const startDataRow = meta.length + 2; // header row is meta.length + 1 (1-based), data starts next
-    let firstSumRow = null;
-    let lastSumRow = null;
-    for (let i = 0; i < body.length; i++) {
-      const excelRow = startDataRow + i; // 1-based index for Excel
-      const isSection = body[i][0] === "" && body[i][1] && body[i][3] === "";
-      if (isSection) continue;
-      const d = `D${excelRow}`; // price
-      const e = `E${excelRow}`; // qty
-      const f = `F${excelRow}`; // amount
-      // Ensure numeric cells
-      if (typeof body[i][3] === 'number') ws[d] = { t: 'n', v: body[i][3] };
-      if (typeof body[i][4] === 'number') ws[e] = { t: 'n', v: body[i][4] };
-      ws[f] = { t: 'n', f: `ROUND(${d}*${e},2)` };
-      if (firstSumRow === null) firstSumRow = excelRow;
-      lastSumRow = excelRow;
-    }
-
-    // Totals + VAT block
-    let base = meta.length + 2 + body.length + 1; // spacer row after table
-    ws[`E${base}`] = { t: 's', v: 'Kopā:' };
-    ws[`F${base}`] = { t: 'n', f: firstSumRow ? `SUM(F${firstSumRow}:F${lastSumRow})` : '0' };
-
-    ws[`E${base+1}`] = { t: 's', v: 'PVN 21%:' };
-    ws[`F${base+1}`] = { t: 'n', f: `ROUND(F${base}*0.21,2)` };
-
-    ws[`E${base+2}`] = { t: 's', v: 'Kopā ar PVN:' };
-    ws[`F${base+2}`] = { t: 'n', f: `ROUND(F${base}+F${base+1},2)` };
-
-    XLSX.utils.book_append_sheet(wb, ws, "Tāme");
-
-    const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-    const filename = `Tame_Balta_${prettyDate()}.xlsx`;
-
-    const link = document.createElement("a");
-    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
-    saveEntry(entry);
-    setSaved(loadSaved());
+async function exportToExcel() {
+  // 1) Load the styled BALTA template (keeps borders/merges/fonts)
+  const resp = await fetch("templates/balta_template.xlsx");
+  if (!resp.ok) {
+    alert("Neizdevās ielādēt balta_template.xlsx no public/templates/");
+    return;
   }
+  const buf = await resp.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const ws = wb.Sheets["Tāme"] || wb.Sheets[wb.SheetNames[0]];
+
+  // Tiny helper to set a cell with correct type
+  const set = (addr, val) => {
+    ws[addr] = (typeof val === "number")
+      ? { t: "n", v: val }
+      : { t: "s", v: (val == null ? "" : String(val)) };
+  };
+
+  // 2) Fill meta (keeps the template’s design; only updates text)
+  const humanDate = new Date().toLocaleDateString("lv-LV", { year:"numeric", month:"long", day:"numeric" });
+  set("A1", `Pasūtītājs: ${insurer || "Balta"}`);
+  set("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
+  set("A3", `Objekta adrese: ${address || ""}`);
+  set("A8", `Rīga, ${humanDate}`);
+  // If you want, also fill A9 with Pamatojums:
+  // set("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}, objekta apskates akts`);
+
+  // 3) Write table rows in BALTA layout
+  // In your example the header rows are at 13-14 (1-based), so data starts at row 15.
+  const START = 15;
+  let r = START;
+  const itemRows = []; // track numeric rows for SUM ranges
+
+  // Optionally: add a small helper to render section row per room
+  const sectionRow = (title) => {
+    set(`B${r}`, title); // A empty, B has the room name
+    r++;
+  };
+
+  let number = 1;
+  roomInstances.forEach((ri) => {
+    const list = (roomActions[ri.id] || []).filter(a => a.itemId && a.quantity);
+    if (!list.length) return;
+
+    // Section line with the room name like in your example (“Virtuve 1”, etc.)
+    sectionRow(`${ri.type} ${ri.index}`);
+
+    list.forEach((a) => {
+      const qty = Number(a.quantity) || 0;
+      const up  = Number(a.unit_price) || 0; // your catalog unit price
+
+      // A: Nr.p.k.
+      set(`A${r}`, number++);
+      // B: Darba nosaukums (we use item name; you can prepend room if you want)
+      set(`B${r}`, a.itemName || "");
+      // C: Mērvienība
+      set(`C${r}`, normalizeUnit(a.unit) || "");
+      // D: Daudzums
+      set(`D${r}`, qty);
+
+      // E–H: Vienības izmaksas (we only know total; put it into E and sum to H)
+      set(`E${r}`, up);  // Darba alga (vienības)
+      set(`F${r}`, 0);   // Materiāli (vienības)
+      set(`G${r}`, 0);   // Mehānismi (vienības)
+      ws[`H${r}`] = { t: "n", f: `ROUND(SUM(E${r}:G${r}),2)` }; // Kopā (vienības)
+
+      // I–L: Kopā uz visu apjomu
+      ws[`I${r}`] = { t: "n", f: `ROUND(E${r}*D${r},2)` }; // Darba alga (kopā)
+      ws[`J${r}`] = { t: "n", f: `ROUND(F${r}*D${r},2)` }; // Materiāli (kopā)
+      ws[`K${r}`] = { t: "n", f: `ROUND(G${r}*D${r},2)` }; // Mehānismi (kopā)
+      ws[`L${r}`] = { t: "n", f: `ROUND(H${r}*D${r},2)` }; // Summa (kopā)
+
+      itemRows.push(r);
+      r++;
+    });
+  });
+
+  // If nothing selected, prevent empty export
+  if (itemRows.length === 0) {
+    alert("Nav nevienas pozīcijas ar daudzumu. Pievieno vismaz vienu rindu.");
+    return;
+  }
+
+  const first = itemRows[0];
+  const last  = itemRows[itemRows.length - 1];
+
+  // 4) Totals area under the table (same layout as your sample)
+  let tRow = r + 1;
+  set(`B${tRow}`, "Kopā ");
+  ws[`I${tRow}`] = { t: "n", f: `SUM(I${first}:I${last})` };
+  ws[`J${tRow}`] = { t: "n", f: `SUM(J${first}:J${last})` };
+  ws[`K${tRow}`] = { t: "n", f: `SUM(K${first}:K${last})` };
+  ws[`L${tRow}`] = { t: "n", f: `SUM(L${first}:L${last})` };
+
+  tRow += 2;
+  set(`B${tRow}`, "Tiešās izmaksas kopā");
+  ws[`I${tRow}`] = { t: "n", f: `I${tRow-2}` };
+  ws[`J${tRow}`] = { t: "n", f: `J${tRow-2}` };
+  ws[`K${tRow}`] = { t: "n", f: `K${tRow-2}` };
+  ws[`L${tRow}`] = { t: "n", f: `L${tRow-2}` };
+
+  // PVN + Pavisam kopā (use same rows every time right below)
+  const PVN = 0.21;
+  const pvnRow = tRow + 5;              // leave visual space like the example
+  set(`B${pvnRow}`, "PVN");
+  set(`C${pvnRow}`, PVN);               // 0.21
+  ws[`L${pvnRow}`] = { t: "n", f: `ROUND(L${tRow}*C${pvnRow},2)` };
+
+  const grandRow = pvnRow + 1;
+  set(`B${grandRow}`, "Pavisam kopā");
+  ws[`L${grandRow}`] = { t: "n", f: `ROUND(L${tRow}+L${pvnRow},2)` };
+
+  // 5) Top-right summary (J9:L11) to mirror your sample
+  set("J9",  "Tāmes summa euro :");
+  ws["L9"]  = { t: "n", f: `L${tRow}` };
+
+  set("J10", "PVN 21%:");
+  ws["L10"] = { t: "n", f: `L${pvnRow}` };
+
+  set("J11", "Pavisam kopā euro:");
+  ws["L11"] = { t: "n", f: `L${grandRow}` };
+
+  // 6) Export
+  const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const filename = `Tame_Balta_${prettyDate()}.xlsx`;
+
+  const link = document.createElement("a");
+  link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
+  saveEntry(entry);
+  setSaved(loadSaved());
+}
 
   // ===== UI helpers =====
   function LabeledRow({ label, children }) {
@@ -434,17 +481,33 @@ export default function DamageIntakeForm() {
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
-        <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.</div>
-          </div>
-          <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
-            <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }} placeholder="Vārds, Uzvārds" value={estimatorName} onChange={(e) => setEstimatorName(e.target.value)} />
-            <input style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="E-pasts" value={estimatorEmail} onChange={(e) => setEstimatorEmail(e.target.value)} />
-          </div>
-        </header>
+ <header style={{ display:"flex", justifyContent:"space-between", gap:12, marginBottom:16 }}>
+  <div>
+    <div style={{ fontSize:22, fontWeight:800 }}>
+      Apskates forma – solis {step}/{totalSteps}
+    </div>
+    <div style={{ fontSize:13, color:"#4b5563" }}>
+      Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.
+    </div>
+  </div>
+
+  <div style={{ background:"white", padding:12, borderRadius:12, width:360 }}>
+    <div style={{ fontWeight:600, marginBottom:6 }}>Tāmētāja profils (neobligāti)</div>
+    <input
+      style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8, marginBottom:6 }}
+      placeholder="Vārds, Uzvārds"
+      value={estimatorName}
+      onChange={(e) => setEstimatorName(e.target.value)}
+    />
+    <input
+      style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8 }}
+      placeholder="E-pasts"
+      value={estimatorEmail}
+      onChange={(e) => setEstimatorEmail(e.target.value)}
+    />
+  </div>
+</header>
+
 
         {/* Progress bar */}
         <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, marginBottom: 16 }}>
@@ -676,8 +739,6 @@ export default function DamageIntakeForm() {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Darbs</div>
-                    <input value={filter} onChange={(e) => setRowField(editingRoomId, idx, 'filter', e.target.value)} placeholder="Filtrēt pēc nosaukuma…" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }} />
                     <select value={row.itemId} onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                       <option value="">— izvēlies pozīciju —</option>
                       {itemsFiltered.slice(0, 1200).map((it) => (
