@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 //  Damage Intake – STEP WIZARD (1..12)
 //  BALTA pricing via public/prices/balta.json
 //  UI hides ALL prices; expert enters ONLY quantities/units.
-//  Excel export renders a BALTA-style sheet with formulas & VAT.
+//  Excel export uses a BALTA-style template with formulas & VAT.
 // ==========================
 
 // Helper types
@@ -27,20 +27,7 @@ const ROOM_TYPES = [
   "Cits",
 ];
 
-// Areas inside a room (used to suggest pricing categories)
-const AREA_OPTIONS = [
-  "Jumts/Pārsegums",
-  "Griesti",
-  "Siena",
-  "Grīda",
-  "Durvis",
-  "Logs",
-  "Fasāde",
-  "Inženierkomunikācijas",
-  "Cits",
-];
-
-// Map areas → price catalog categories (from BALTA sheets)
+// (areas kept only for future suggestions; the UI does not show prices)
 const AREA_TO_CATEGORY = {
   "Jumts/Pārsegums": ["Jumts, pārsegums"],
   "Griesti": ["Griesti"],
@@ -62,7 +49,7 @@ function prettyDate(d = new Date()) {
 // Normalise units (Excel has variants like m² / m2, gb. / gab)
 function normalizeUnit(u) {
   if (!u) return "";
-  const x = String(u).trim().toLowerCase().replace("²", "2").replace(" ", " ");
+  const x = String(u).trim().toLowerCase().replace("²", "2").replace(" ", " ");
   if (x === "gb." || x === "gab." || x === "gab") return "gab";
   if (x === "m2" || x === "m 2" || x === "m^2") return "m2";
   if (x === "m3" || x === "m 3" || x === "m^3") return "m3";
@@ -74,10 +61,10 @@ function normalizeUnit(u) {
   return x;
 }
 
-const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"]; // dropdown options
+const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
-// LocalStorage helpers (simple "profile" save)
-const STORAGE_KEY = "tames_profils_saglabatie"; // array of {id, filename, createdAtISO, estimator, base64}
+// LocalStorage helpers
+const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
 function loadSaved() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -100,20 +87,20 @@ export default function DamageIntakeForm() {
   const [estimatorName, setEstimatorName] = useState("");
   const [estimatorEmail, setEstimatorEmail] = useState("");
 
+  // NEW: Claim number (Lietas Nr.) at the very start
+  const [claimNumber, setClaimNumber] = useState("");
+
   // Core fields
   const [address, setAddress] = useState(""); // 1
-  const [insurer, setInsurer] = useState("Balta"); // 2 (default to Balta for pricing flow)
+  const [insurer, setInsurer] = useState("Balta"); // 2
   const [locationType, setLocationType] = useState(""); // 3
   const [dwellingSubtype, setDwellingSubtype] = useState(""); // 3.1
   const [dwellingOther, setDwellingOther] = useState(""); // 3.1.1
-
   const [incidentType, setIncidentType] = useState(""); // 4
   const [incidentOther, setIncidentOther] = useState(""); // 4.1
-
   const [electricity, setElectricity] = useState("Nē"); // 5
   const [needsDrying, setNeedsDrying] = useState("Nē"); // 6
   const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē"); // 7
-
   const [lossKnown, setLossKnown] = useState("Nē"); // 8
   const [lossAmount, setLossAmount] = useState(""); // 8.1
 
@@ -129,7 +116,8 @@ export default function DamageIntakeForm() {
   // structure: { id, type, index, areas: string[], note?: string }
   const [roomInstances, setRoomInstances] = useState([]);
 
-  // Per-room priced rows: { [roomId]: Array<{category:string,itemId:string, itemName:string, quantity:string, unit:string, unit_price:number|null, filter:string}> }
+  // Per-room priced rows:
+  // { [roomId]: Array<{category,itemId,itemName,quantity,unit,unit_price|null}> }
   const [roomActions, setRoomActions] = useState({});
 
   // Which room is currently being edited (for step 11)
@@ -140,7 +128,6 @@ export default function DamageIntakeForm() {
   const [catalogError, setCatalogError] = useState("");
 
   useEffect(() => {
-    // Load price list only when Balta chosen
     if (insurer === "Balta") {
       setCatalogError("");
       fetch("prices/balta.json")
@@ -150,11 +137,7 @@ export default function DamageIntakeForm() {
         })
         .then((data) => {
           const items = Array.isArray(data.items) ? data.items : [];
-          // normalise units
-          setPriceCatalog(items.map((it) => ({
-            ...it,
-            unit: normalizeUnit(it.unit),
-          })));
+          setPriceCatalog(items.map((it) => ({ ...it, unit: normalizeUnit(it.unit) })));
         })
         .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
     } else {
@@ -199,10 +182,10 @@ export default function DamageIntakeForm() {
     setRoomInstances(instances);
     setRoomActions((prev) => {
       const next = {};
-      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" }]));
+      instances.forEach((ri) => (next[ri.id] = prev[ri.id] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null }]));
       return next;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
   // Actions helpers
@@ -211,7 +194,7 @@ export default function DamageIntakeForm() {
       ...ra,
       [roomId]: [
         ...(ra[roomId] || []),
-        { category: presetCategory || "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" },
+        { category: presetCategory || "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
       ],
     }));
   }
@@ -233,7 +216,7 @@ export default function DamageIntakeForm() {
   function setRowCategory(roomId, idx, category) {
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
-      list[idx] = { category, itemId: "", itemName: "", quantity: list[idx]?.quantity || "", unit: "", unit_price: null, filter: "" };
+      list[idx] = { category, itemId: "", itemName: "", quantity: list[idx]?.quantity || "", unit: "", unit_price: null };
       return { ...ra, [roomId]: list };
     });
   }
@@ -249,21 +232,6 @@ export default function DamageIntakeForm() {
       return { ...ra, [roomId]: list };
     });
   }
-
-  function toggleArea(roomId, area) {
-    setRoomInstances((arr) =>
-      arr.map((ri) =>
-        ri.id === roomId
-          ? {
-              ...ri,
-              areas: ri.areas.includes(area)
-                ? ri.areas.filter((a) => a !== area)
-                : [...ri.areas, area],
-            }
-          : ri
-      )
-    );
-  }
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
   }
@@ -272,7 +240,7 @@ export default function DamageIntakeForm() {
   const stepValid = useMemo(() => {
     switch (step) {
       case 1: return !!address.trim();
-      case 2: return !!insurer; // and pricing loads for Balta automatically
+      case 2: return !!insurer;
       case 3: return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
       case 4: return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
       case 5: return ["Jā", "Nē"].includes(electricity);
@@ -280,182 +248,173 @@ export default function DamageIntakeForm() {
       case 7: return ["Jā", "Nē"].includes(commonPropertyDamaged);
       case 8: return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
       case 9: return Object.values(rooms).some((r) => r.checked);
-      case 10: return true; // list view of rooms — navigation handled in-UI
-      case 11: return true; // per-room editor handles its own save
+      case 10: return true;
+      case 11: return true;
       case 12: return true;
       default: return true;
     }
   }, [step, address, insurer, locationType, dwellingSubtype, incidentType, incidentOther, electricity, needsDrying, commonPropertyDamaged, lossKnown, lossAmount, rooms]);
 
   const totalSteps = 12;
-  const next = () => setStep((s) => Math.min(totalSteps, s + 1));
-  const back = () => {
-    if (step === 11) {
-      setEditingRoomId(null);
-      setStep(10);
-    } else {
-      setStep((s) => Math.max(1, s - 1));
-    }
-  };
 
-  // We keep totals helpers for export (UI does not show prices)
-  const rowLineTotal = (row) => {
-    const qty = Number(row.quantity) || 0;
-    const up = Number(row.unit_price) || 0;
-    return +(qty * up).toFixed(2);
-  };
-  const roomSubtotal = (roomId) => {
-    const list = roomActions[roomId] || [];
-    return list.reduce((sum, r) => sum + rowLineTotal(r), 0);
-  };
-
-  // Suggested categories for current room based on areas
+  // Suggested categories (from areas if you later enable them)
   function suggestedCategoriesFor(roomId) {
     const ri = roomInstances.find((r) => r.id === roomId);
     if (!ri) return [];
     const set = new Set();
-    ri.areas.forEach((a) => (AREA_TO_CATEGORY[a] || []).forEach((c) => set.add(c)));
+    (ri.areas || []).forEach((a) => (AREA_TO_CATEGORY[a] || []).forEach((c) => set.add(c)));
     return Array.from(set);
   }
 
-  // ===== Excel export (BALTA-style, with formulas & VAT 21%) =====
-async function exportToExcel() {
-  // 1) Load the styled BALTA template (keeps borders/merges/fonts)
-  const resp = await fetch("templates/balta_template.xlsx");
-  if (!resp.ok) {
-    alert("Neizdevās ielādēt balta_template.xlsx no public/templates/");
-    return;
-  }
-  const buf = await resp.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
-  const ws = wb.Sheets["Tāme"] || wb.Sheets[wb.SheetNames[0]];
+  // ===== Excel export (BALTA template; only filled rows) =====
+  async function exportToExcel() {
+    // Load template
+    const resp = await fetch("templates/balta_template.xlsx");
+    if (!resp || !resp.ok) {
+      alert("Neizdevās ielādēt templates/balta_template.xlsx (ieliec to public/templates/)");
+      return;
+    }
+    const buf = await resp.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const ws = wb.Sheets["Tāme"] || wb.Sheets[wb.SheetNames[0]];
 
-  // Tiny helper to set a cell with correct type
-  const set = (addr, val) => {
-    ws[addr] = (typeof val === "number")
-      ? { t: "n", v: val }
-      : { t: "s", v: (val == null ? "" : String(val)) };
-  };
+    // helper writer
+    const set = (addr, val) => {
+      ws[addr] = (typeof val === "number")
+        ? { t: "n", v: val }
+        : { t: "s", v: (val == null ? "" : String(val)) };
+    };
 
-  // 2) Fill meta (keeps the template’s design; only updates text)
-  const humanDate = new Date().toLocaleDateString("lv-LV", { year:"numeric", month:"long", day:"numeric" });
-  set("A1", `Pasūtītājs: ${insurer || "Balta"}`);
-  set("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
-  set("A3", `Objekta adrese: ${address || ""}`);
-  set("A8", `Rīga, ${humanDate}`);
-  // If you want, also fill A9 with Pamatojums:
-  // set("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}, objekta apskates akts`);
+    // Meta header
+    const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+    set("A1", `Pasūtītājs: ${insurer || "Balta"}`);
+    set("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
+    set("A3", `Objekta adrese: ${address || ""}`);
+    set("A8", `Rīga, ${humanDate}`);
+    set("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
 
-  // 3) Write table rows in BALTA layout
-  // In your example the header rows are at 13-14 (1-based), so data starts at row 15.
-  const START = 15;
-  let r = START;
-  const itemRows = []; // track numeric rows for SUM ranges
-
-  // Optionally: add a small helper to render section row per room
-  const sectionRow = (title) => {
-    set(`B${r}`, title); // A empty, B has the room name
-    r++;
-  };
-
-  let number = 1;
-  roomInstances.forEach((ri) => {
-    const list = (roomActions[ri.id] || []).filter(a => a.itemId && a.quantity);
-    if (!list.length) return;
-
-    // Section line with the room name like in your example (“Virtuve 1”, etc.)
-    sectionRow(`${ri.type} ${ri.index}`);
-
-    list.forEach((a) => {
-      const qty = Number(a.quantity) || 0;
-      const up  = Number(a.unit_price) || 0; // your catalog unit price
-
-      // A: Nr.p.k.
-      set(`A${r}`, number++);
-      // B: Darba nosaukums (we use item name; you can prepend room if you want)
-      set(`B${r}`, a.itemName || "");
-      // C: Mērvienība
-      set(`C${r}`, normalizeUnit(a.unit) || "");
-      // D: Daudzums
-      set(`D${r}`, qty);
-
-      // E–H: Vienības izmaksas (we only know total; put it into E and sum to H)
-      set(`E${r}`, up);  // Darba alga (vienības)
-      set(`F${r}`, 0);   // Materiāli (vienības)
-      set(`G${r}`, 0);   // Mehānismi (vienības)
-      ws[`H${r}`] = { t: "n", f: `ROUND(SUM(E${r}:G${r}),2)` }; // Kopā (vienības)
-
-      // I–L: Kopā uz visu apjomu
-      ws[`I${r}`] = { t: "n", f: `ROUND(E${r}*D${r},2)` }; // Darba alga (kopā)
-      ws[`J${r}`] = { t: "n", f: `ROUND(F${r}*D${r},2)` }; // Materiāli (kopā)
-      ws[`K${r}`] = { t: "n", f: `ROUND(G${r}*D${r},2)` }; // Mehānismi (kopā)
-      ws[`L${r}`] = { t: "n", f: `ROUND(H${r}*D${r},2)` }; // Summa (kopā)
-
-      itemRows.push(r);
-      r++;
+    // Gather ONLY entered rows (item chosen + qty > 0)
+    const selections = [];
+    roomInstances.forEach((ri) => {
+      (roomActions[ri.id] || []).forEach((a) => {
+        const qty = Number(a.quantity) || 0;
+        if (a.itemId && qty > 0) {
+          selections.push({
+            room: `${ri.type} ${ri.index}`,
+            name: a.itemName || "",
+            unit: normalizeUnit(a.unit) || "",
+            qty,
+            unitPrice: Number(a.unit_price) || 0,
+          });
+        }
+      });
     });
-  });
+    if (selections.length === 0) {
+      alert("Nav ievadītu pozīciju ar daudzumu.");
+      return;
+    }
 
-  // If nothing selected, prevent empty export
-  if (itemRows.length === 0) {
-    alert("Nav nevienas pozīcijas ar daudzumu. Pievieno vismaz vienu rindu.");
-    return;
+    // Clear data zone (keep formatting) A15:L2000
+    const cols = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+    for (let r = 15; r <= 2000; r++) {
+      for (const c of cols) {
+        const addr = `${c}${r}`;
+        if (ws[addr]) {
+          if ("f" in ws[addr]) delete ws[addr].f; // drop old formulas
+          ws[addr].t = "s";
+          ws[addr].v = "";
+        }
+      }
+    }
+
+    // Write rows grouped by room
+    let r = 15;
+    let nr = 1;
+    let first = null;
+    let last = null;
+
+    const byRoom = selections.reduce((acc, s) => {
+      (acc[s.room] ||= []).push(s);
+      return acc;
+    }, {});
+
+    for (const roomName of Object.keys(byRoom)) {
+      // section row with room title
+      set(`B${r}`, roomName);
+      r++;
+      for (const s of byRoom[roomName]) {
+        set(`A${r}`, nr++);        // Nr.p.k.
+        set(`B${r}`, s.name);      // Darbs
+        set(`C${r}`, s.unit);      // Mērv.
+        set(`D${r}`, s.qty);       // Daudz.
+
+        // Vienības izmaksas (we only have a single unit price -> put into E; F,G=0; H sums)
+        set(`E${r}`, s.unitPrice); // Darba alga vien.
+        set(`F${r}`, 0);           // Materiāli vien.
+        set(`G${r}`, 0);           // Mehānismi vien.
+        ws[`H${r}`] = { t: "n", f: `ROUND(SUM(E${r}:G${r}),2)` }; // Kopā (vien.)
+
+        // Kopā uz visu apjomu
+        ws[`I${r}`] = { t: "n", f: `ROUND(E${r}*D${r},2)` }; // Darba alga kopā
+        ws[`J${r}`] = { t: "n", f: `ROUND(F${r}*D${r},2)` }; // Materiāli kopā
+        ws[`K${r}`] = { t: "n", f: `ROUND(G${r}*D${r},2)` }; // Mehānismi kopā
+        ws[`L${r}`] = { t: "n", f: `ROUND(H${r}*D${r},2)` }; // Summa kopā
+
+        if (first === null) first = r;
+        last = r;
+        r++;
+      }
+    }
+
+    // Totals
+    let tRow = r + 1;
+    set(`B${tRow}`, "Kopā ");
+    if (first) {
+      ws[`I${tRow}`] = { t: "n", f: `SUM(I${first}:I${last})` };
+      ws[`J${tRow}`] = { t: "n", f: `SUM(J${first}:J${last})` };
+      ws[`K${tRow}`] = { t: "n", f: `SUM(K${first}:K${last})` };
+      ws[`L${tRow}`] = { t: "n", f: `SUM(L${first}:L${last})` };
+    } else {
+      set(`I${tRow}`, 0); set(`J${tRow}`, 0); set(`K${tRow}`, 0); set(`L${tRow}`, 0);
+    }
+
+    tRow += 2;
+    set(`B${tRow}`, "Tiešās izmaksas kopā");
+    ws[`I${tRow}`] = { t: "n", f: `I${tRow-2}` };
+    ws[`J${tRow}`] = { t: "n", f: `J${tRow-2}` };
+    ws[`K${tRow}`] = { t: "n", f: `K${tRow-2}` };
+    ws[`L${tRow}`] = { t: "n", f: `L${tRow-2}` };
+
+    const pvnRow = tRow + 5;
+    set(`B${pvnRow}`, "PVN");
+    set(`C${pvnRow}`, 0.21);
+    ws[`L${pvnRow}`] = { t: "n", f: `ROUND(L${tRow}*C${pvnRow},2)` };
+
+    const grandRow = pvnRow + 1;
+    set(`B${grandRow}`, "Pavisam kopā");
+    ws[`L${grandRow}`] = { t: "n", f: `ROUND(L${tRow}+L${pvnRow},2)` };
+
+    // Top-right summary (adjust addresses if your template differs)
+    set("J9",  "Tāmes summa euro :"); ws["L9"]  = { t: "n", f: `L${tRow}` };
+    set("J10", "PVN 21%:");           ws["L10"] = { t: "n", f: `L${pvnRow}` };
+    set("J11", "Pavisam kopā euro:"); ws["L11"] = { t: "n", f: `L${grandRow}` };
+
+    ws["!ref"] = `A1:L${grandRow+3}`;
+
+    const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+    const filename = `Tame_Balta_${prettyDate()}.xlsx`;
+
+    const link = document.createElement("a");
+    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
+    saveEntry(entry);
+    setSaved(loadSaved());
   }
-
-  const first = itemRows[0];
-  const last  = itemRows[itemRows.length - 1];
-
-  // 4) Totals area under the table (same layout as your sample)
-  let tRow = r + 1;
-  set(`B${tRow}`, "Kopā ");
-  ws[`I${tRow}`] = { t: "n", f: `SUM(I${first}:I${last})` };
-  ws[`J${tRow}`] = { t: "n", f: `SUM(J${first}:J${last})` };
-  ws[`K${tRow}`] = { t: "n", f: `SUM(K${first}:K${last})` };
-  ws[`L${tRow}`] = { t: "n", f: `SUM(L${first}:L${last})` };
-
-  tRow += 2;
-  set(`B${tRow}`, "Tiešās izmaksas kopā");
-  ws[`I${tRow}`] = { t: "n", f: `I${tRow-2}` };
-  ws[`J${tRow}`] = { t: "n", f: `J${tRow-2}` };
-  ws[`K${tRow}`] = { t: "n", f: `K${tRow-2}` };
-  ws[`L${tRow}`] = { t: "n", f: `L${tRow-2}` };
-
-  // PVN + Pavisam kopā (use same rows every time right below)
-  const PVN = 0.21;
-  const pvnRow = tRow + 5;              // leave visual space like the example
-  set(`B${pvnRow}`, "PVN");
-  set(`C${pvnRow}`, PVN);               // 0.21
-  ws[`L${pvnRow}`] = { t: "n", f: `ROUND(L${tRow}*C${pvnRow},2)` };
-
-  const grandRow = pvnRow + 1;
-  set(`B${grandRow}`, "Pavisam kopā");
-  ws[`L${grandRow}`] = { t: "n", f: `ROUND(L${tRow}+L${pvnRow},2)` };
-
-  // 5) Top-right summary (J9:L11) to mirror your sample
-  set("J9",  "Tāmes summa euro :");
-  ws["L9"]  = { t: "n", f: `L${tRow}` };
-
-  set("J10", "PVN 21%:");
-  ws["L10"] = { t: "n", f: `L${pvnRow}` };
-
-  set("J11", "Pavisam kopā euro:");
-  ws["L11"] = { t: "n", f: `L${grandRow}` };
-
-  // 6) Export
-  const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-  const filename = `Tame_Balta_${prettyDate()}.xlsx`;
-
-  const link = document.createElement("a");
-  link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  const entry = { id: crypto.randomUUID(), filename, createdAtISO: new Date().toISOString(), estimator: estimatorName || "Nezināms", base64: wbout };
-  saveEntry(entry);
-  setSaved(loadSaved());
-}
 
   // ===== UI helpers =====
   function LabeledRow({ label, children }) {
@@ -481,33 +440,45 @@ async function exportToExcel() {
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
- <header style={{ display:"flex", justifyContent:"space-between", gap:12, marginBottom:16 }}>
-  <div>
-    <div style={{ fontSize:22, fontWeight:800 }}>
-      Apskates forma – solis {step}/{totalSteps}
-    </div>
-    <div style={{ fontSize:13, color:"#4b5563" }}>
-      Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.
-    </div>
-  </div>
 
-  <div style={{ background:"white", padding:12, borderRadius:12, width:360 }}>
-    <div style={{ fontWeight:600, marginBottom:6 }}>Tāmētāja profils (neobligāti)</div>
-    <input
-      style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8, marginBottom:6 }}
-      placeholder="Vārds, Uzvārds"
-      value={estimatorName}
-      onChange={(e) => setEstimatorName(e.target.value)}
-    />
-    <input
-      style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8 }}
-      placeholder="E-pasts"
-      value={estimatorEmail}
-      onChange={(e) => setEstimatorEmail(e.target.value)}
-    />
-  </div>
-</header>
+        {/* Lietas Nr. (formas sākumā) */}
+        <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
+          <LabeledRow label="Lietas Nr.">
+            <input
+              value={claimNumber}
+              onChange={(e) => setClaimNumber(e.target.value)}
+              placeholder="Apdrošināšanas lietas numurs"
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+            />
+          </LabeledRow>
+        </div>
 
+        <header style={{ display:"flex", justifyContent:"space-between", gap:12, marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:22, fontWeight:800 }}>
+              Apskates forma – solis {step}/{totalSteps}
+            </div>
+            <div style={{ fontSize:13, color:"#4b5563" }}>
+              Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.
+            </div>
+          </div>
+
+          <div style={{ background:"white", padding:12, borderRadius:12, width:360 }}>
+            <div style={{ fontWeight:600, marginBottom:6 }}>Tāmētāja profils (neobligāti)</div>
+            <input
+              style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8, marginBottom:6 }}
+              placeholder="Vārds, Uzvārds"
+              value={estimatorName}
+              onChange={(e) => setEstimatorName(e.target.value)}
+            />
+            <input
+              style={{ width:"100%", border:"1px solid #e5e7eb", borderRadius:10, padding:8 }}
+              placeholder="E-pasts"
+              value={estimatorEmail}
+              onChange={(e) => setEstimatorEmail(e.target.value)}
+            />
+          </div>
+        </header>
 
         {/* Progress bar */}
         <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, marginBottom: 16 }}>
@@ -675,14 +646,13 @@ async function exportToExcel() {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
                 {roomInstances.map((ri) => {
-                  const areasCount = ri.areas.length;
-                  const count = (roomActions[ri.id]||[]).filter(a=>a.itemId&&a.quantity).length;
+                  const count = (roomActions[ri.id]||[]).filter(a=>a.itemId && a.quantity).length;
                   const suggested = suggestedCategoriesFor(ri.id);
                   return (
                     <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
                       <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
-                        Bojātās vietas: {areasCount > 0 ? ri.areas.join(", ") : "—"} · Pozīcijas: {count}
+                        Pozīcijas: {count}
                       </div>
                       {suggested.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
@@ -699,7 +669,7 @@ async function exportToExcel() {
                 })}
               </div>
             )}
-            {roomInstances.length > 0 && roomInstances.every((ri)=> (roomActions[ri.id]||[]).some(a=>a.itemId&&a.quantity)) && (
+            {roomInstances.length > 0 && roomInstances.every((ri)=> (roomActions[ri.id]||[]).some(a=>a.itemId && a.quantity)) && (
               <div style={{ marginTop: 16, textAlign: "right" }}>
                 <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Viss pabeigts — izveidot tāmi</button>
               </div>
@@ -709,19 +679,16 @@ async function exportToExcel() {
 
         {step === 11 && editingRoomId && (
           <StepShell title={`11. Pozīcijas un apjomi – ${roomInstances.find(r=>r.id===editingRoomId)?.type} ${roomInstances.find(r=>r.id===editingRoomId)?.index}`}>
-            {/* Areas */}
             <LabeledRow label="Piezīmes">
               <input value={roomInstances.find(r=>r.id===editingRoomId)?.note || ''} onChange={(e) => setRoomNote(editingRoomId, e.target.value)} placeholder="Papildus informācija" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
             </LabeledRow>
 
-            {/* Priced rows for this room (UI without prices) */}
             <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
-            {(roomActions[editingRoomId] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" }]).map((row, idx) => {
+            {(roomActions[editingRoomId] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null }]).map((row, idx) => {
               const suggested = suggestedCategoriesFor(editingRoomId);
               const baseCategory = row.category || suggested[0] || "";
               const itemsAll = priceCatalog.filter((it) => !baseCategory || it.category === baseCategory);
-              const filter = row.filter || "";
-              const itemsFiltered = itemsAll.filter((it) => it.name.toLowerCase().includes(filter.toLowerCase()));
+              const itemsFiltered = itemsAll; // no text filter UI
 
               return (
                 <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 2fr 1fr 0.8fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
@@ -773,7 +740,6 @@ async function exportToExcel() {
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
               <div style={{ fontWeight: 700 }}></div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" onClick={back} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}>← Atpakaļ uz telpu sarakstu</button>
                 <button type="button" onClick={() => { setEditingRoomId(null); setStep(10); }} style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Saglabāt un atgriezties</button>
               </div>
             </div>
