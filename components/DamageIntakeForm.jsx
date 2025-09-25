@@ -3,10 +3,9 @@ import * as XLSX from "xlsx";
 
 // ==========================
 //  Damage Intake – STEP WIZARD (1..12)
-//  Pricing integration for BALTA via public/prices/balta.json
-//  - Expert only picks item and enters QUANTITY; unit & price autofill (unit can be changed from a dropdown)
-//  - Hierarchical flow: areas (e.g. Jumts/Pārsegums) → suggested category → pick item
-//  - Full auto totals per room & overall; Excel export carries all priced rows
+//  BALTA pricing via public/prices/balta.json
+//  UI hides ALL prices; expert enters ONLY quantities/units.
+//  Excel export renders a BALTA-style sheet with formulas & VAT.
 // ==========================
 
 // Helper types
@@ -299,6 +298,7 @@ export default function DamageIntakeForm() {
     }
   };
 
+  // We keep totals helpers for export (UI does not show prices)
   const rowLineTotal = (row) => {
     const qty = Number(row.quantity) || 0;
     const up = Number(row.unit_price) || 0;
@@ -309,86 +309,94 @@ export default function DamageIntakeForm() {
     return list.reduce((sum, r) => sum + rowLineTotal(r), 0);
   };
 
-  // Completion checks
-  const roomHasPositions = (roomId) => (roomActions[roomId] || []).some((r) => r.itemId && r.quantity);
-  const allRoomsCompleted = roomInstances.length > 0 && roomInstances.every((ri) => roomHasPositions(ri.id));
-
   // Suggested categories for current room based on areas
   function suggestedCategoriesFor(roomId) {
     const ri = roomInstances.find((r) => r.id === roomId);
     if (!ri) return [];
     const set = new Set();
     ri.areas.forEach((a) => (AREA_TO_CATEGORY[a] || []).forEach((c) => set.add(c)));
-    // Always allow all
     return Array.from(set);
   }
 
-  // ===== Excel export =====
+  // ===== Excel export (BALTA-style, with formulas & VAT 21%) =====
   function exportToExcel() {
-    const summary = [
-      ["Tāmētājs", estimatorName],
-      ["E-pasts", estimatorEmail],
-      ["Datums", new Date().toLocaleString()],
-      ["Objekta adrese", address],
-      ["Apdrošināšanas kompānija", insurer],
-      ["Kur notika negadījums?", locationType],
-      [
-        "Dzīvojamās ēkas tips",
-        locationType === "Dzīvojamā ēka"
-          ? dwellingSubtype === "Cits"
-            ? `Cits: ${dwellingOther}`
-            : dwellingSubtype
-          : "—",
-      ],
-      [
-        "Kas notika ar nekustamo īpašumu?",
-        incidentType === "Cits" ? `Cits: ${incidentOther}` : incidentType,
-      ],
-      ["Elektrības traucējumi", electricity === "Jā" ? "Ir" : "Nav"],
-      ["Vai nepieciešama žāvēšana?", needsDrying],
-      ["Vai bojāts kopīpašums?", commonPropertyDamaged],
-      ["Zaudējuma novērtējums pēc klienta vārdiem", lossKnown === "Jā" ? `${lossAmount} EUR` : "Nav"],
+    // Title & meta
+    const meta = [
+      ["Tāme"],
+      ["Pasūtītājs:", insurer || "Balta"],
+      ["Izpildītājs:", 'SIA "LV  GROUP", reģ.Nr.40103160668'],
+      ["Objekts:", locationType ? (locationType + (dwellingSubtype ? ` – ${dwellingSubtype}` : '')) : ''],
+      ["Adrese:", address],
+      ["Datums:", new Date().toLocaleDateString()],
+      [],
     ];
 
-    const roomsSheet = [
-      ["#", "Telpa", "Bojātās vietas", "Piezīmes", "Starpsumma (€)"] ,
-      ...roomInstances.map((ri, idx) => [
-        idx + 1,
-        `${ri.type} ${ri.index}`,
-        ri.areas.join(", ") || "—",
-        ri.note || "",
-        roomSubtotal(ri.id),
-      ]),
-    ];
+    const header = [["Nr.p.k.", "Darbs", "Mērvienība", "Cena (euro)", "Daudzums", "Summa (euro)"]];
 
-    const actionsByRoomSheet = [
-      ["Telpa", "Kategorija", "Darbs (BALTA)", "Mērv.", "Daudz.", "Cena/1", "Summa"],
-      ...roomInstances.flatMap((ri) =>
-        (roomActions[ri.id] || [])
-          .filter((a) => a.itemId && a.quantity)
-          .map((a) => [
-            `${ri.type} ${ri.index}`,
-            a.category,
-            a.itemName,
-            a.unit || "",
-            Number(a.quantity) || 0,
-            Number(a.unit_price) || 0,
-            rowLineTotal(a),
-          ])
-      ),
-    ];
+    // Rows grouped by room (insert a section line per room)
+    const body = [];
+    let idx = 1;
+    roomInstances.forEach((ri) => {
+      const list = (roomActions[ri.id] || []).filter((a) => a.itemId && a.quantity);
+      if (!list.length) return;
+      body.push(["", `${ri.type} ${ri.index}`, "", "", "", ""]);
+      list.forEach((a) => {
+        body.push([idx++, a.itemName || "", a.unit || "", Number(a.unit_price) || 0, Number(a.quantity) || 0, null]);
+      });
+    });
 
-    const total = roomInstances.reduce((sum, ri) => sum + roomSubtotal(ri.id), 0);
-    const totalsSheet = [["Kopā (€)", total.toFixed(2)]];
-
+    const aoa = [...meta, ...header, ...body];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), "Pieteikums");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(roomsSheet), "Telpas");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actionsByRoomSheet), "Darbi pa telpām");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalsSheet), "Kopsavilkums");
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Merge title across A..F
+    ws['!merges'] = ws['!merges'] || [];
+    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } });
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 8 },   // Nr
+      { wch: 64 },  // Darbs
+      { wch: 12 },  // Mērv.
+      { wch: 14 },  // Cena
+      { wch: 12 },  // Daudz.
+      { wch: 16 },  // Summa
+    ];
+
+    // Put formulas in F (Summa) for item rows, and numeric values in D/E
+    const startDataRow = meta.length + 2; // header row is meta.length + 1 (1-based), data starts next
+    let firstSumRow = null;
+    let lastSumRow = null;
+    for (let i = 0; i < body.length; i++) {
+      const excelRow = startDataRow + i; // 1-based index for Excel
+      const isSection = body[i][0] === "" && body[i][1] && body[i][3] === "";
+      if (isSection) continue;
+      const d = `D${excelRow}`; // price
+      const e = `E${excelRow}`; // qty
+      const f = `F${excelRow}`; // amount
+      // Ensure numeric cells
+      if (typeof body[i][3] === 'number') ws[d] = { t: 'n', v: body[i][3] };
+      if (typeof body[i][4] === 'number') ws[e] = { t: 'n', v: body[i][4] };
+      ws[f] = { t: 'n', f: `ROUND(${d}*${e},2)` };
+      if (firstSumRow === null) firstSumRow = excelRow;
+      lastSumRow = excelRow;
+    }
+
+    // Totals + VAT block
+    let base = meta.length + 2 + body.length + 1; // spacer row after table
+    ws[`E${base}`] = { t: 's', v: 'Kopā:' };
+    ws[`F${base}`] = { t: 'n', f: firstSumRow ? `SUM(F${firstSumRow}:F${lastSumRow})` : '0' };
+
+    ws[`E${base+1}`] = { t: 's', v: 'PVN 21%:' };
+    ws[`F${base+1}`] = { t: 'n', f: `ROUND(F${base}*0.21,2)` };
+
+    ws[`E${base+2}`] = { t: 's', v: 'Kopā ar PVN:' };
+    ws[`F${base+2}`] = { t: 'n', f: `ROUND(F${base}+F${base+1},2)` };
+
+    XLSX.utils.book_append_sheet(wb, ws, "Tāme");
 
     const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-    const filename = `tame_${(estimatorName || "tametajs").replaceAll(/[^a-zA-Z0-9_\-]/g, "_")}_${prettyDate()}.xlsx`;
+    const filename = `Tame_Balta_${prettyDate()}.xlsx`;
 
     const link = document.createElement("a");
     link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
@@ -429,7 +437,7 @@ export default function DamageIntakeForm() {
         <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>Tāmētājs ievada tikai daudzumu. Izvēloties <b>Balta</b>, pozīcijām cena un mērvienība aizpildās automātiski (mērv. var mainīt).</div>
+            <div style={{ fontSize: 13, color: "#4b5563" }}>Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.</div>
           </div>
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
@@ -604,14 +612,14 @@ export default function DamageIntakeForm() {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
                 {roomInstances.map((ri) => {
-                  const completed = roomHasPositions(ri.id);
                   const areasCount = ri.areas.length;
+                  const count = (roomActions[ri.id]||[]).filter(a=>a.itemId&&a.quantity).length;
                   const suggested = suggestedCategoriesFor(ri.id);
                   return (
                     <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
                       <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
-                        Bojātās vietas: {areasCount > 0 ? ri.areas.join(", ") : "—"} · Starpsumma: {roomSubtotal(ri.id).toFixed(2)} €
+                        Bojātās vietas: {areasCount > 0 ? ri.areas.join(", ") : "—"} · Pozīcijas: {count}
                       </div>
                       {suggested.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
@@ -622,14 +630,13 @@ export default function DamageIntakeForm() {
                       )}
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Atvērt</button>
-                        {completed && <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>✓ Saglabāts</span>}
                       </div>
                     </div>
                   );
                 })}
               </div>
             )}
-            {allRoomsCompleted && (
+            {roomInstances.length > 0 && roomInstances.every((ri)=> (roomActions[ri.id]||[]).some(a=>a.itemId&&a.quantity)) && (
               <div style={{ marginTop: 16, textAlign: "right" }}>
                 <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Viss pabeigts — izveidot tāmi</button>
               </div>
@@ -639,7 +646,7 @@ export default function DamageIntakeForm() {
 
         {step === 11 && editingRoomId && (
           <StepShell title={`11. Pozīcijas un apjomi – ${roomInstances.find(r=>r.id===editingRoomId)?.type} ${roomInstances.find(r=>r.id===editingRoomId)?.index}`}>
-            {/* Areas (from step 10 of spec) */}
+            {/* Areas */}
             <LabeledRow label="Bojātās vietas šajā telpā">
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {AREA_OPTIONS.map((a) => (
@@ -653,19 +660,17 @@ export default function DamageIntakeForm() {
               <input value={roomInstances.find(r=>r.id===editingRoomId)?.note || ''} onChange={(e) => setRoomNote(editingRoomId, e.target.value)} placeholder="Papildus informācija" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
             </LabeledRow>
 
-            {/* Priced rows for this room */}
-            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi (Balta)</div>
+            {/* Priced rows for this room (UI without prices) */}
+            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
             {(roomActions[editingRoomId] || [{ category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null, filter: "" }]).map((row, idx) => {
-              // Suggested categories based on areas
               const suggested = suggestedCategoriesFor(editingRoomId);
               const baseCategory = row.category || suggested[0] || "";
               const itemsAll = priceCatalog.filter((it) => !baseCategory || it.category === baseCategory);
               const filter = row.filter || "";
               const itemsFiltered = itemsAll.filter((it) => it.name.toLowerCase().includes(filter.toLowerCase()));
-              const unitOptions = allUnits;
 
               return (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr 1fr 0.8fr 0.9fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 2fr 1fr 0.8fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
                     <select value={baseCategory} onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
@@ -685,7 +690,7 @@ export default function DamageIntakeForm() {
                     <select value={row.itemId} onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                       <option value="">— izvēlies pozīciju —</option>
                       {itemsFiltered.slice(0, 1200).map((it) => (
-                        <option key={it.id} value={it.id}>{it.name} · {it.unit || '—'} · {it.unit_price}€</option>
+                        <option key={it.id} value={it.id}>{it.name} · {it.unit || '—'}</option>
                       ))}
                     </select>
                   </div>
@@ -694,7 +699,7 @@ export default function DamageIntakeForm() {
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
                     <select value={normalizeUnit(row.unit) || ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit', normalizeUnit(e.target.value))} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}>
                       <option value="">—</option>
-                      {unitOptions.map((u) => (
+                      {allUnits.map((u) => (
                         <option key={u} value={u}>{u}</option>
                       ))}
                     </select>
@@ -705,13 +710,7 @@ export default function DamageIntakeForm() {
                     <input type="number" min={0} step="0.01" value={row.quantity} onChange={(e) => setRowField(editingRoomId, idx, 'quantity', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} placeholder="Skaitlis" />
                   </div>
 
-                  <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Cena/1</div>
-                    <input type="number" min={0} step="0.01" value={row.unit_price ?? ''} onChange={(e) => setRowField(editingRoomId, idx, 'unit_price', e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
-                  </div>
-
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <div style={{ minWidth: 90, textAlign: "right", fontWeight: 700 }}>{rowLineTotal(row).toFixed(2)} €</div>
                     <button type="button" onClick={() => addActionRow(editingRoomId, baseCategory)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Rinda</button>
                     <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
                   </div>
@@ -720,7 +719,7 @@ export default function DamageIntakeForm() {
             })}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-              <div style={{ fontWeight: 700 }}>Telpas starpsumma: {roomSubtotal(editingRoomId).toFixed(2)} €</div>
+              <div style={{ fontWeight: 700 }}></div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={back} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}>← Atpakaļ uz telpu sarakstu</button>
                 <button type="button" onClick={() => { setEditingRoomId(null); setStep(10); }} style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Saglabāt un atgriezties</button>
@@ -767,7 +766,7 @@ export default function DamageIntakeForm() {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024). Pārējām kompānijām pievieno savus JSON.
+          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024). Cenas netiek rādītas formā; tās parādās tikai gala tāmē.
         </footer>
       </div>
     </div>
