@@ -647,15 +647,6 @@ export default function DamageIntakeForm() {
         {step === 11 && editingRoomId && (
           <StepShell title={`11. Pozīcijas un apjomi – ${roomInstances.find(r=>r.id===editingRoomId)?.type} ${roomInstances.find(r=>r.id===editingRoomId)?.index}`}>
             {/* Areas */}
-            <LabeledRow label="Bojātās vietas šajā telpā">
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {AREA_OPTIONS.map((a) => (
-                  <label key={a} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <input type="checkbox" checked={roomInstances.find(r=>r.id===editingRoomId)?.areas.includes(a) || false} onChange={() => toggleArea(editingRoomId, a)} /> {a}
-                  </label>
-                ))}
-              </div>
-            </LabeledRow>
             <LabeledRow label="Piezīmes">
               <input value={roomInstances.find(r=>r.id===editingRoomId)?.note || ''} onChange={(e) => setRoomNote(editingRoomId, e.target.value)} placeholder="Papildus informācija" style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }} />
             </LabeledRow>
