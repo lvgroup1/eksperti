@@ -79,6 +79,46 @@ function saveEntry(entry) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
+function removeRoomInstance(roomId) {
+  // roomId formāts: "<tipa-atslēga>-<indekss>", piem. "Virtuve-2" vai "Cits-1"
+  const [baseType, idxStr] = roomId.split("-");
+  const idx = parseInt(idxStr, 10) || 1;
+
+  // 1) Pārbīdām roomActions atslēgas, lai dati nepazūd, kad indeksus reindeksējam
+  setRoomActions((ra) => {
+    const next = { ...ra };
+    const curCount = rooms[baseType]?.count || 1;
+
+    // piemēram, ja dzēšam Virtuve-2 un ir 3 virtuves:
+    // Virtuve-3 -> Virtuve-2; pēdējo (Virtuve-3) dzēšam
+    for (let i = idx + 1; i <= curCount; i++) {
+      const fromKey = `${baseType}-${i}`;
+      const toKey = `${baseType}-${i - 1}`;
+      if (next[fromKey]) next[toKey] = next[fromKey];
+    }
+    delete next[`${baseType}-${curCount}`];
+    return next;
+  });
+
+  // 2) Samazinam telpu skaitu šim tipam (vai atķeksējam, ja palika 0)
+  setRooms((prev) => {
+    const cur = prev[baseType];
+    if (!cur) return prev;
+    const nextCount = (Number(cur.count) || 1) - 1;
+    const copy = { ...prev };
+    if (nextCount <= 0) {
+      // pilnībā noņemam šo telpu tipu (un atstājam count=1 nākamajai reizei)
+      copy[baseType] = { ...cur, checked: false, count: 1 };
+    } else {
+      copy[baseType] = { ...cur, checked: true, count: nextCount };
+    }
+    return copy;
+  });
+
+  // ja dzēsām to, ko rediģējam — iziet no redaktora
+  setEditingRoomId((id) => (id === roomId ? null : id));
+}
+
 export default function DamageIntakeForm() {
   // Wizard step (1..12)
   const [step, setStep] = useState(1);
@@ -650,29 +690,66 @@ export default function DamageIntakeForm() {
                   const suggested = suggestedCategoriesFor(ri.id);
                   return (
                     <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
-                      <div style={{ fontWeight: 700, marginBottom: 6 }}>{ri.type} {ri.index}</div>
-                      <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
-                        Pozīcijas: {count}
-                      </div>
-                      {suggested.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                          {suggested.map((c) => (
-                            <span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <button type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>Atvērt</button>
-                      </div>
-                    </div>
+  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+    <div style={{ fontWeight: 700 }}>{ri.type} {ri.index}</div>
+    <button
+      type="button"
+      onClick={() => removeRoomInstance(ri.id)}
+      title="Dzēst telpu"
+      style={{ marginLeft: "auto", padding: "4px 8px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white" }}
+    >
+      Dzēst
+    </button>
+  </div>
+
+  <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
+    Pozīcijas: {(roomActions[ri.id]||[]).filter(a=>a.itemId && a.quantity).length}
+  </div>
+
+  {suggested.length > 0 && (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+      {suggested.map((c) => (
+        <span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>
+      ))}
+    </div>
+  )}
+
+  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+    <button
+      type="button"
+      onClick={() => { setEditingRoomId(ri.id); setStep(11); }}
+      style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
+    >
+      Atvērt
+    </button>
+  </div>
+</div>
+
                   );
                 })}
               </div>
             )}
             {roomInstances.length > 0 && roomInstances.every((ri)=> (roomActions[ri.id]||[]).some(a=>a.itemId && a.quantity)) && (
-              <div style={{ marginTop: 16, textAlign: "right" }}>
-                <button type="button" onClick={exportToExcel} style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}>Viss pabeigts — izveidot tāmi</button>
-              </div>
+              <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <button
+    type="button"
+    onClick={() => setStep(9)}
+    style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
+  >
+    + Pievienot vēl telpu
+  </button>
+
+  {roomInstances.length > 0 && roomInstances.every((ri)=> (roomActions[ri.id]||[]).some(a=>a.itemId&&a.quantity)) && (
+    <button
+      type="button"
+      onClick={exportToExcel}
+      style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}
+    >
+      Viss pabeigts — izveidot tāmi
+    </button>
+  )}
+</div>
+
             )}
           </StepShell>
         )}
@@ -732,6 +809,13 @@ export default function DamageIntakeForm() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <button type="button" onClick={() => addActionRow(editingRoomId, baseCategory)} style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}>+ Rinda</button>
                     <button type="button" onClick={() => removeActionRow(editingRoomId, idx)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}>Dzēst</button>
+                  <button
+  type="button"
+  onClick={() => { setEditingRoomId(null); setStep(9); }}
+  style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
+>
+  + Pievienot vēl telpu
+</button>
                   </div>
                 </div>
               );
