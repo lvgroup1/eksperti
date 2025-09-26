@@ -342,7 +342,7 @@ const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
 
 async function exportToExcel() {
-  // Savācam tikai pozīcijas ar daudzumu
+  // collect only entered rows
   const selections = [];
   roomInstances.forEach((ri) => {
     (roomActions[ri.id] || []).forEach((a) => {
@@ -364,99 +364,70 @@ async function exportToExcel() {
   }
   selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
+  // ExcelJS (browser)
   const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
 
-  // Template path (vietējais + GitHub Pages)
-  const prefix =
-    (typeof window !== "undefined" &&
-      (window.location.hostname.endsWith("github.io") || window.location.pathname.startsWith("/eksperti")))
-      ? "/eksperti"
-      : "";
-  const tplUrl = `${prefix}/templates/balta_template.xlsx`;
-
+  // new workbook with gridlines OFF
   const wb = new ExcelJS.Workbook();
-  let ws;
-  try {
-    const resp = await fetch(tplUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    await wb.xlsx.load(await resp.arrayBuffer());
-    ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
-  } catch {
-    ws = wb.addWorksheet("Tāme");
-    ws.getRow(13).values = [null, "Darbs", "Mērv.", "Daudz.", "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)", "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)"];
-    ws.getRow(13).font = { name: "Calibri", size: 11, bold: true };
-    ws.getRow(13).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  }
+  const ws = wb.addWorksheet("Tāme", {
+    views: [{ state: "normal", showGridLines: false }], // <- no gridlines anywhere
+  });
 
-  // 🔒 Izslēdzam ekrāna režģi, lai tukšā daļā nekas nav redzams
-  ws.views = [{ state: "normal", showGridLines: false }];
+  // fonts & formats
+  const FONT = { name: "Calibri", size: 11 };
+  const MONEY_FMT = "#,##0.00";
+  const QTY_FMT = "#,##0.00";
+  const THIN = { style: "thin" };
+  const SECTION_BG = "FFF3F6FD";
 
-  // Meta
+  // meta top
   const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
-  const meta = (addr, val) => { try { ws.getCell(addr).value = val; } catch {} };
-  meta("A1", `Pasūtītājs: ${insurer || "Balta"}`);
-  meta("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
-  meta("A3", `Objekta adrese: ${address || ""}`);
-  meta("A8", `Rīga, ${humanDate}`);
-  meta("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
+  ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
+  ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
+  ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
+  ws.getCell("A8").value = `Rīga, ${humanDate}`;
+  ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
+  ["A1","A2","A3","A8","A9"].forEach(a => ws.getCell(a).font = { ...FONT });
 
-  // Pilnībā notīrām datu zonu (vērtības + stili)
-  const START = 15, END = 3000, COLS = 12;
-  for (let r = START; r <= END; r++) {
-    const row = ws.getRow(r);
-    row.height = undefined;
-    for (let c = 1; c <= COLS; c++) {
-      const cell = row.getCell(c);
-      cell.value = null;
-      cell.border = undefined;
-      cell.fill = undefined;
-      cell.numFmt = undefined;
-      cell.font = undefined;
-      cell.alignment = undefined;
-    }
-  }
+  // optional table header row (row 14)
+  ws.getRow(14).values = [ null, "Darbs", "Mērv.", "Daudz.", "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)", "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)" ];
+  ws.getRow(14).font = { ...FONT, bold: true };
+  ws.getRow(14).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  ws.getRow(14).height = 22;
 
-  // Kolonnu platumi (kosmētika)
-  ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
+  // column widths
   ws.getColumn(2).width = 56; // Darbs
   ws.getColumn(3).width = 12; // Mērv.
   ws.getColumn(4).width = 10;
   [5,6,7,8,9,10,11,12].forEach((i) => (ws.getColumn(i).width = 14));
+  ws.getColumn(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
 
-  // Stili
-  const THIN = { style: "thin" };
-  const SECTION_BG = "FFF3F6FD";
-  const FONT = { name: "Calibri", size: 11 };
-  const MONEY_FMT = "#,##0.00";
-  const QTY_FMT = "#,##0.00";
-
-  // Grupējam pēc telpas
+  // group selections by room
   const groups = selections.reduce((acc, s) => {
     (acc[s.room] ||= []).push(s);
     return acc;
   }, {});
 
-  let r = START;
+  // write only what exists
+  let r = 15;
   let nr = 1;
   let first = null, last = null;
 
-  const sectionRow = (title) => {
+  const writeSection = (title) => {
     const row = ws.getRow(r);
-    row.getCell(2).value = title;
-    for (let c = 1; c <= COLS; c++) {
-      const cell = row.getCell(c);
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
-      cell.font = { ...FONT, bold: true };
-      cell.border = { bottom: THIN }; // tikai atdalītāja līnija zem virsrindas
-      if (c === 2) cell.alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
+    for (let c = 1; c <= 12; c++) {
+      row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
+      row.getCell(c).border = { bottom: THIN }; // ONLY section separator line
+      row.getCell(c).font = { ...FONT, bold: true };
     }
+    row.getCell(2).value = title;
+    row.getCell(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
     row.height = 20;
     r++;
   };
 
-  const dataRow = (s) => {
+  const writeData = (s) => {
     const row = ws.getRow(r);
-
     row.getCell(1).value = nr++;
     row.getCell(2).value = s.name;
     row.getCell(3).value = s.unit;
@@ -470,19 +441,17 @@ async function exportToExcel() {
     row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
     row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-    // Formāti + minimālā līnija
-    for (let c = 1; c <= COLS; c++) {
+    // format
+    for (let c = 1; c <= 12; c++) {
       const cell = row.getCell(c);
       cell.font = { ...FONT };
-      cell.border = { bottom: THIN }; // tikai apakšējā līnija šai datu rindai
+      cell.border = { bottom: THIN }; // ONLY a bottom line for the rows we wrote
+      cell.alignment = (c === 2 || c === 3)
+        ? { vertical: "middle", horizontal: "left", wrapText: c === 2 }
+        : { vertical: "middle", horizontal: "right" };
     }
     row.getCell(4).numFmt = QTY_FMT;
     [5,6,7,8,9,10,11,12].forEach((c) => (row.getCell(c).numFmt = MONEY_FMT));
-
-    row.getCell(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
-    row.getCell(3).alignment = { vertical: "middle", horizontal: "left" };
-    [1,4,5,6,7,8,9,10,11,12].forEach((c) => (row.getCell(c).alignment = { vertical: "middle", horizontal: "right" }));
-
     row.height = 18;
 
     if (first === null) first = r;
@@ -490,13 +459,12 @@ async function exportToExcel() {
     r++;
   };
 
-  // Rakstām tikai esošos datus
-  for (const roomName of Object.keys(groups)) {
-    sectionRow(roomName);
-    for (const s of groups[roomName]) dataRow(s);
-  }
+  Object.keys(groups).forEach((room) => {
+    writeSection(room);
+    groups[room].forEach(writeData);
+  });
 
-  // Kopsummas — arī minimāls dizains vienai rindai
+  // totals
   let tRow = r + 1;
   ws.getCell(`B${tRow}`).value = "Kopā ";
   ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
@@ -504,7 +472,7 @@ async function exportToExcel() {
   ws.getCell(`K${tRow}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
   ws.getCell(`L${tRow}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
   [9,10,11,12].forEach((c) => (ws.getCell(tRow, c).numFmt = MONEY_FMT));
-  for (let c = 1; c <= COLS; c++) ws.getCell(tRow, c).border = { top: THIN };
+  for (let c = 1; c <= 12; c++) ws.getCell(tRow, c).border = { top: THIN };
 
   tRow += 2;
   ws.getCell(`B${tRow}`).value = "Tiešās izmaksas kopā";
@@ -526,17 +494,16 @@ async function exportToExcel() {
   ws.getCell(`L${grandRow}`).numFmt = MONEY_FMT;
 
   ws.getCell("J9").value = "Tāmes summa euro :";
-  ws.getCell("L9").value = { formula: `L${tRow}` };    ws.getCell("L9").numFmt  = MONEY_FMT;
+  ws.getCell("L9").value = { formula: `L${tRow}` };  ws.getCell("L9").numFmt  = MONEY_FMT;
   ws.getCell("J10").value = "PVN 21%:";
   ws.getCell("L10").value = { formula: `L${pvnRow}` }; ws.getCell("L10").numFmt = MONEY_FMT;
   ws.getCell("J11").value = "Pavisam kopā euro:";
   ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = MONEY_FMT;
 
-  // Šaurāka “izmantojamā” lapa – ref tikai līdz pēdējam aprēķinam (nav obligāti, bet patīkami)
+  // print area just to the used range (optional)
   ws.pageSetup.printArea = `A1:L${grandRow}`;
-  ws.properties.outlineLevelRow = 0;
 
-  // Lejupielāde
+  // download
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
@@ -548,7 +515,6 @@ async function exportToExcel() {
   a.remove();
   URL.revokeObjectURL(url);
 }
-
 
 
   // ===== UI helpers =====
