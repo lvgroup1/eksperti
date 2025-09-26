@@ -342,7 +342,7 @@ const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
 
 async function exportToExcel() {
-  // 1) Savācam tikai reāli aizpildītās pozīcijas
+  // Savācam tikai pozīcijas ar daudzumu
   const selections = [];
   roomInstances.forEach((ri) => {
     (roomActions[ri.id] || []).forEach((a) => {
@@ -364,10 +364,9 @@ async function exportToExcel() {
   }
   selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-  // 2) ExcelJS (browser build)
   const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
 
-  // 3) Ielādējam šablonu, bet datu zonai stilu notīrīsim
+  // Template path (vietējais + GitHub Pages)
   const prefix =
     (typeof window !== "undefined" &&
       (window.location.hostname.endsWith("github.io") || window.location.pathname.startsWith("/eksperti")))
@@ -383,15 +382,16 @@ async function exportToExcel() {
     await wb.xlsx.load(await resp.arrayBuffer());
     ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
   } catch {
-    // Minimāls fallback, ja nav templates
     ws = wb.addWorksheet("Tāme");
     ws.getRow(13).values = [null, "Darbs", "Mērv.", "Daudz.", "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)", "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)"];
-    ws.getRow(13).font = { ...FONT, bold: true };
+    ws.getRow(13).font = { name: "Calibri", size: 11, bold: true };
     ws.getRow(13).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    ws.getRow(13).height = 24;
   }
 
-  // 4) Meta laukumi (saglabā šablona stilu)
+  // 🔒 Izslēdzam ekrāna režģi, lai tukšā daļā nekas nav redzams
+  ws.views = [{ state: "normal", showGridLines: false }];
+
+  // Meta
   const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
   const meta = (addr, val) => { try { ws.getCell(addr).value = val; } catch {} };
   meta("A1", `Pasūtītājs: ${insurer || "Balta"}`);
@@ -400,7 +400,7 @@ async function exportToExcel() {
   meta("A8", `Rīga, ${humanDate}`);
   meta("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
 
-  // 5) PILNĪGĀ notīrīšana datu zonai (vērtības + stili), lai nepaliek “tukšo rindu” rāmji
+  // Pilnībā notīrām datu zonu (vērtības + stili)
   const START = 15, END = 3000, COLS = 12;
   for (let r = START; r <= END; r++) {
     const row = ws.getRow(r);
@@ -416,14 +416,19 @@ async function exportToExcel() {
     }
   }
 
-  // 6) Rakstām tikai to, ko vajag — dizains: minimālas līnijas
-  const THIN = { style: "thin" };
-
+  // Kolonnu platumi (kosmētika)
   ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
-  ws.getColumn(2).width = 56; // "Darbs"
-  ws.getColumn(3).width = 12; // "Mērv."
+  ws.getColumn(2).width = 56; // Darbs
+  ws.getColumn(3).width = 12; // Mērv.
   ws.getColumn(4).width = 10;
   [5,6,7,8,9,10,11,12].forEach((i) => (ws.getColumn(i).width = 14));
+
+  // Stili
+  const THIN = { style: "thin" };
+  const SECTION_BG = "FFF3F6FD";
+  const FONT = { name: "Calibri", size: 11 };
+  const MONEY_FMT = "#,##0.00";
+  const QTY_FMT = "#,##0.00";
 
   // Grupējam pēc telpas
   const groups = selections.reduce((acc, s) => {
@@ -433,42 +438,24 @@ async function exportToExcel() {
 
   let r = START;
   let nr = 1;
-  let first = null;
-  let last = null;
-  let zebraIndex = 0;
+  let first = null, last = null;
 
-  const writeSectionRow = (roomName) => {
-    const sec = ws.getRow(r);
-    // tikai B kolonnā virsraksts; tikai apakšējā līnija kā atdalītājs
-    const b = sec.getCell(2);
-    b.value = roomName;
-    b.font = { ...FONT, bold: true };
-    b.alignment = { wrapText: true, vertical: "middle" };
-
+  const sectionRow = (title) => {
+    const row = ws.getRow(r);
+    row.getCell(2).value = title;
     for (let c = 1; c <= COLS; c++) {
-      const cell = sec.getCell(c);
-      // maigs fons vienai rindai
+      const cell = row.getCell(c);
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
-      // tikai apakšējā robeža
-      cell.border = { bottom: THIN };
-      // fonts visai rindai vienots
       cell.font = { ...FONT, bold: true };
-      // num kolonām izlīdzinājums iedosim rakstīšanas brīdī datu rindām
+      cell.border = { bottom: THIN }; // tikai atdalītāja līnija zem virsrindas
+      if (c === 2) cell.alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
     }
-    sec.height = 20;
+    row.height = 20;
     r++;
-    zebraIndex = 0; // zebra atsākas katrā telpā
   };
 
-  const writeDataRow = (s) => {
+  const dataRow = (s) => {
     const row = ws.getRow(r);
-
-    // Zebra – ļoti maigs fons ik otrajai datu rindai
-    if (ZEBRA && zebraIndex % 2 === 1) {
-      for (let c = 1; c <= COLS; c++) {
-        row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-      }
-    }
 
     row.getCell(1).value = nr++;
     row.getCell(2).value = s.name;
@@ -477,24 +464,21 @@ async function exportToExcel() {
     row.getCell(5).value = s.unitPrice;
     row.getCell(6).value = 0;
     row.getCell(7).value = 0;
-
     row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
     row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
     row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
     row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
     row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-    // Formāti un fonti
-    for (let c = 1; c <= COLS; c++) row.getCell(c).font = { ...FONT };
+    // Formāti + minimālā līnija
+    for (let c = 1; c <= COLS; c++) {
+      const cell = row.getCell(c);
+      cell.font = { ...FONT };
+      cell.border = { bottom: THIN }; // tikai apakšējā līnija šai datu rindai
+    }
     row.getCell(4).numFmt = QTY_FMT;
     [5,6,7,8,9,10,11,12].forEach((c) => (row.getCell(c).numFmt = MONEY_FMT));
 
-    // Minimālais “grid”: tikai apakšējā līnija katrai datu rindai
-    for (let c = 1; c <= COLS; c++) {
-      row.getCell(c).border = { bottom: THIN };
-    }
-
-    // Izlīdzinājumi – teksts pa kreisi, skaitļi pa labi
     row.getCell(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
     row.getCell(3).alignment = { vertical: "middle", horizontal: "left" };
     [1,4,5,6,7,8,9,10,11,12].forEach((c) => (row.getCell(c).alignment = { vertical: "middle", horizontal: "right" }));
@@ -504,16 +488,15 @@ async function exportToExcel() {
     if (first === null) first = r;
     last = r;
     r++;
-    zebraIndex++;
   };
 
-  // Rakstām
+  // Rakstām tikai esošos datus
   for (const roomName of Object.keys(groups)) {
-    writeSectionRow(roomName);
-    for (const s of groups[roomName]) writeDataRow(s);
+    sectionRow(roomName);
+    for (const s of groups[roomName]) dataRow(s);
   }
 
-  // 7) Kopsummas + kopsavilkums (ar numFmt)
+  // Kopsummas — arī minimāls dizains vienai rindai
   let tRow = r + 1;
   ws.getCell(`B${tRow}`).value = "Kopā ";
   ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
@@ -521,7 +504,6 @@ async function exportToExcel() {
   ws.getCell(`K${tRow}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
   ws.getCell(`L${tRow}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
   [9,10,11,12].forEach((c) => (ws.getCell(tRow, c).numFmt = MONEY_FMT));
-  // sīkā līnija zem “Kopā”
   for (let c = 1; c <= COLS; c++) ws.getCell(tRow, c).border = { top: THIN };
 
   tRow += 2;
@@ -550,13 +532,11 @@ async function exportToExcel() {
   ws.getCell("J11").value = "Pavisam kopā euro:";
   ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = MONEY_FMT;
 
-  // 8) Auto-platumi (vienkārši, lai būtu glīti)
-  const base = [6,56,12,10,14,14,14,14,16,16,16,18];
-  for (let c = 1; c <= COLS; c++) {
-    if (!ws.getColumn(c).width) ws.getColumn(c).width = base[c-1] || 12;
-  }
+  // Šaurāka “izmantojamā” lapa – ref tikai līdz pēdējam aprēķinam (nav obligāti, bet patīkami)
+  ws.pageSetup.printArea = `A1:L${grandRow}`;
+  ws.properties.outlineLevelRow = 0;
 
-  // 9) Lejupielāde
+  // Lejupielāde
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
@@ -568,6 +548,7 @@ async function exportToExcel() {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
 
 
   // ===== UI helpers =====
