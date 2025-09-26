@@ -308,56 +308,36 @@ export default function DamageIntakeForm() {
 
   // ===== Excel export (BALTA template; only filled rows) =====
 async function exportToExcel() {
-  // Load the styled template
-  const resp = await fetch("templates/balta_template.xlsx");
-  if (!resp || !resp.ok) {
+  // Use the browser build of ExcelJS (works in Next.js client)
+  const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
+
+  // Make the template URL work both locally and on GitHub Pages (/eksperti)
+  const base =
+    typeof window !== "undefined" &&
+    (window.__NEXT_DATA__?.assetPrefix || window.location.pathname.startsWith("/eksperti"))
+      ? "/eksperti"
+      : "";
+  const resp = await fetch(`${base}/templates/balta_template.xlsx`);
+  if (!resp.ok) {
     alert("Neizdevās ielādēt templates/balta_template.xlsx (ieliec to public/templates/)");
     return;
   }
-  const buf = await resp.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
-  const wsName = wb.SheetNames.includes("Tāme") ? "Tāme" : wb.SheetNames[0];
-  const ws = wb.Sheets[wsName];
 
-  // Helpers that PRESERVE styles
-  const put = (addr, t, v) => {
-    const cell = ws[addr] || {};
-    cell.t = t;
-    if (v === null || v === undefined) {
-      delete cell.v;
-      delete cell.f;
-    } else {
-      cell.v = v;
-      delete cell.f;
-    }
-    ws[addr] = cell; // keep existing .s (style) if any
-  };
-  const putF = (addr, f) => {
-    const cell = ws[addr] || {};
-    cell.t = "n";
-    cell.f = f;
-    delete cell.v;
-    ws[addr] = cell; // keep existing .s (style) if any
-  };
-  const clearKeepStyle = (addr) => {
-    const cell = ws[addr];
-    if (!cell) return;
-    // drop old values/formulas but keep style `s`
-    delete cell.v;
-    delete cell.f;
-    cell.t = "s";
-    cell.v = "";
-  };
+  const arrayBuf = await resp.arrayBuffer();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(arrayBuf);
 
-  // Header/meta (keeps template formatting)
+  const ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
+
+  // ==== Meta header (keeps any template styling) ====
   const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
-  put("A1", "s", `Pasūtītājs: ${insurer || "Balta"}`);
-  put("A2", "s", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
-  put("A3", "s", `Objekta adrese: ${address || ""}`);
-  put("A8", "s", `Rīga, ${humanDate}`);
-  put("A9", "s", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
+  ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
+  ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
+  ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
+  ws.getCell("A8").value = `Rīga, ${humanDate}`;
+  ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
 
-  // Gather ONLY entered rows (item chosen + qty > 0)
+  // ==== Gather ONLY entered rows ====
   const selections = [];
   roomInstances.forEach((ri) => {
     (roomActions[ri.id] || []).forEach((a) => {
@@ -366,80 +346,163 @@ async function exportToExcel() {
         selections.push({
           room: `${ri.type} ${ri.index}`,
           name: a.itemName || "",
-          unit: normalizeUnit(a.unit) || "",
+          unit: (a.unit || "").trim(),
           qty,
           unitPrice: Number(a.unit_price) || 0,
         });
       }
     });
   });
-  if (selections.length === 0) {
+  if (!selections.length) {
     alert("Nav ievadītu pozīciju ar daudzumu.");
     return;
   }
 
-  // OPTIONAL: sort by room then name for tidy tables
-  selections.sort((a, b) => (a.room.localeCompare(b.room) || a.name.localeCompare(b.name)));
+  // Optional: tidy sort
+  selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-  // Clear data region but KEEP styles (so wrap, borders, and CF remain)
-  const COLS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
-  const START = 15, END = 2000;
+  // ==== Styles we’ll apply ====
+  const thin = { style: "thin" };
+  const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
+  const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FD" } }; // light blue
+  const headerBold = { bold: true };
+  const qtyFmt = "#,##0.00";      // quantities
+  const moneyFmt = "#,##0.00";    // prices & totals
+
+  // Wrap text for B column globally (plus we set on cells too)
+  ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
+
+  // ==== Clear data zone values (keep any template styling) ====
+  const START = 15, END = 2000, COLS = 12;
   for (let r = START; r <= END; r++) {
-    for (const c of COLS) clearKeepStyle(`${c}${r}`);
+    const row = ws.getRow(r);
+    for (let c = 1; c <= COLS; c++) {
+      row.getCell(c).value = null; // don’t clear styles
+    }
   }
 
-  // Write section rows + data rows
-  // Section rows: A empty, B = room (template CF can color these)
+  // ==== Write section + data rows with styling ====
   let r = START;
   let nr = 1;
-  let firstRow = null;
-  let lastRow = null;
+  let first = null;
+  let last = null;
 
-  // group by room
-  const byRoom = selections.reduce((acc, s) => {
+  // Track content lengths for auto-fit
+  const seen = Array.from({ length: COLS }, () => []);
+  const pushSeen = (c, v) => seen[c - 1].push(String(v ?? ""));
+
+  // Group by room
+  const groups = selections.reduce((acc, s) => {
     (acc[s.room] ||= []).push(s);
     return acc;
   }, {});
 
-  // track values for auto-fit
-  const seen = { A:[], B:[], C:[], D:[], E:[], F:[], G:[], H:[], I:[], J:[], K:[], L:[] };
-
-  const pushSeen = (addr, val) => {
-    const col = addr.replace(/[0-9]/g, "");
-    // stringify values for width calc
-    const str = (typeof val === "number") ? String(val) : (val || "");
-    seen[col].push(str);
-  };
-
-  for (const roomName of Object.keys(byRoom)) {
-    // section line
-    put(`A${r}`, "s", "");              pushSeen(`A${r}`, "");
-    put(`B${r}`, "s", roomName);        pushSeen(`B${r}`, roomName);
+  for (const roomName of Object.keys(groups)) {
+    // Section row: colored + bold across row
+    const sectionRow = ws.getRow(r);
+    sectionRow.getCell(1).value = "";            pushSeen(1, "");
+    sectionRow.getCell(2).value = roomName;      pushSeen(2, roomName);
+    for (let c = 1; c <= COLS; c++) {
+      const cell = sectionRow.getCell(c);
+      cell.fill = sectionFill;
+      cell.font = { ...(cell.font ?? {}), ...headerBold };
+      cell.border = { ...cell.border, bottom: thin };
+      if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
+    }
     r++;
 
-    for (const s of byRoom[roomName]) {
-      put(`A${r}`, "n", nr++);          pushSeen(`A${r}`, nr-1);
-      put(`B${r}`, "s", s.name);        pushSeen(`B${r}`, s.name);
-      put(`C${r}`, "s", s.unit);        pushSeen(`C${r}`, s.unit);
-      put(`D${r}`, "n", s.qty);         pushSeen(`D${r}`, s.qty);
+    // Data rows
+    for (const s of groups[roomName]) {
+      const row = ws.getRow(r);
 
-      // Unit prices (we only have one -> E; F/G=0; H sums)
-      put(`E${r}`, "n", s.unitPrice);   pushSeen(`E${r}`, s.unitPrice);
-      put(`F${r}`, "n", 0);             pushSeen(`F${r}`, 0);
-      put(`G${r}`, "n", 0);             pushSeen(`G${r}`, 0);
-      putF(`H${r}`, `ROUND(SUM(E${r}:G${r}),2)`); pushSeen(`H${r}`, ""); // formula
+      row.getCell(1).value = nr++;                         pushSeen(1, row.getCell(1).value);
+      row.getCell(2).value = s.name;                       pushSeen(2, s.name);
+      row.getCell(3).value = s.unit;                       pushSeen(3, s.unit);
+      row.getCell(4).value = s.qty;                        pushSeen(4, s.qty);
+      row.getCell(5).value = s.unitPrice;                  pushSeen(5, s.unitPrice);
+      row.getCell(6).value = 0;                            pushSeen(6, 0);
+      row.getCell(7).value = 0;                            pushSeen(7, 0);
 
-      // Totals per qty
-      putF(`I${r}`, `ROUND(E${r}*D${r},2)`);  pushSeen(`I${r}`, "");
-      putF(`J${r}`, `ROUND(F${r}*D${r},2)`);  pushSeen(`J${r}`, "");
-      putF(`K${r}`, `ROUND(G${r}*D${r},2)`);  pushSeen(`K${r}`, "");
-      putF(`L${r}`, `ROUND(H${r}*D${r},2)`);  pushSeen(`L${r}`, "");
+      row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` }; pushSeen(8, "");
+      row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };      pushSeen(9, "");
+      row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };      pushSeen(10, "");
+      row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };      pushSeen(11, "");
+      row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };      pushSeen(12, "");
 
-      if (firstRow === null) firstRow = r;
-      lastRow = r;
+      // Formats
+      row.getCell(4).numFmt = qtyFmt;
+      for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = moneyFmt;
+
+      // Borders + alignment (B wraps; numbers right)
+      for (let c = 1; c <= COLS; c++) {
+        const cell = row.getCell(c);
+        cell.border = borderAll;
+        if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
+        else cell.alignment = { vertical: "middle", horizontal: "right" };
+      }
+
+      if (first === null) first = r;
+      last = r;
       r++;
     }
   }
+
+  // ==== Totals ====
+  let tRow = r + 1;
+  ws.getCell(`B${tRow}`).value = "Kopā ";
+  ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
+  ws.getCell(`J${tRow}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
+  ws.getCell(`K${tRow}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
+  ws.getCell(`L${tRow}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
+  for (const c of [9,10,11,12]) ws.getCell(tRow, c).numFmt = moneyFmt;
+
+  tRow += 2;
+  ws.getCell(`B${tRow}`).value = "Tiešās izmaksas kopā";
+  ws.getCell(`I${tRow}`).value = { formula: `I${tRow-2}` };
+  ws.getCell(`J${tRow}`).value = { formula: `J${tRow-2}` };
+  ws.getCell(`K${tRow}`).value = { formula: `K${tRow-2}` };
+  ws.getCell(`L${tRow}`).value = { formula: `L${tRow-2}` };
+  for (const c of [9,10,11,12]) ws.getCell(tRow, c).numFmt = moneyFmt;
+
+  const pvnRow = tRow + 5;
+  ws.getCell(`B${pvnRow}`).value = "PVN";
+  ws.getCell(`C${pvnRow}`).value = 0.21;
+  ws.getCell(`L${pvnRow}`).value = { formula: `ROUND(L${tRow}*C${pvnRow},2)` };
+  ws.getCell(`L${pvnRow}`).numFmt = moneyFmt;
+
+  const grandRow = pvnRow + 1;
+  ws.getCell(`B${grandRow}`).value = "Pavisam kopā";
+  ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
+  ws.getCell(`L${grandRow}`).numFmt = moneyFmt;
+
+  // Top-right summary
+  ws.getCell("J9").value = "Tāmes summa euro :";
+  ws.getCell("L9").value = { formula: `L${tRow}` };    ws.getCell("L9").numFmt = moneyFmt;
+  ws.getCell("J10").value = "PVN 21%:";
+  ws.getCell("L10").value = { formula: `L${pvnRow}` }; ws.getCell("L10").numFmt = moneyFmt;
+  ws.getCell("J11").value = "Pavisam kopā euro:";
+  ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = moneyFmt;
+
+  // ==== Auto-fit columns (A..L) ====
+  const base = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
+  const factor = 1.1, pad = 2, maxW = 80;
+  for (let c = 1; c <= COLS; c++) {
+    const maxLen = Math.max(0, ...seen[c-1].map((s) => String(s).length));
+    ws.getColumn(c).width = Math.min(maxW, Math.max(base[c-1], Math.ceil(maxLen * factor) + pad));
+  }
+
+  // ==== Save & download ====
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
   // Totals
   let tRow = r + 1;
