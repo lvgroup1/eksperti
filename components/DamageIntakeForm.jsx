@@ -332,196 +332,213 @@ export default function DamageIntakeForm() {
   }
 
   // ===== Excel export (BALTA template; only filled rows) =====
-  async function exportToExcel() {
-    console.log("[exportToExcel] ExcelJS exporter running…");
-    const ExcelMod = await import("exceljs/dist/exceljs.min.js");
-    const WorkbookCtor = ExcelMod.Workbook || (ExcelMod.default && ExcelMod.default.Workbook);
-    if (!WorkbookCtor) {
-      alert("ExcelJS import failed. Check exceljs installation.");
-      return;
-    }
-    const wb = new WorkbookCtor();
-
-    const resp = await fetch(`${assetBase}/templates/balta_template.xlsx`);
-    if (!resp.ok) {
-      alert("Neizdevās ielādēt templates/balta_template.xlsx (ieliec to public/templates/)");
-      return;
-    }
-
-    await wb.xlsx.load(await resp.arrayBuffer());
-    const ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
-
-    // Meta header (keeps template styling)
-    const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
-    ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
-    ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
-    ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
-    ws.getCell("A8").value = `Rīga, ${humanDate}`;
-    ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
-
-    // Collect ONLY entered rows
-    const selections = [];
-    roomInstances.forEach((ri) => {
-      (roomActions[ri.id] || []).forEach((a) => {
-        const qty = Number(a.quantity) || 0;
-        if (a.itemId && qty > 0) {
-          selections.push({
-            room: `${ri.type} ${ri.index}`,
-            name: a.itemName || "",
-            unit: (a.unit || "").trim(),
-            qty,
-            unitPrice: Number(a.unit_price) || 0,
-          });
-        }
-      });
-    });
-    if (!selections.length) {
-      alert("Nav ievadītu pozīciju ar daudzumu.");
-      return;
-    }
-    // Optional tidy sort
-    selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
-
-    // Styles
-    const thin = { style: "thin" };
-    const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
-    const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FD" } }; // light blue
-    const headerBold = { bold: true };
-    const qtyFmt = "#,##0.00";
-    const moneyFmt = "#,##0.00";
-
-    ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" }; // wrap B
-
-    // Clear data zone values (keep template styling)
-    const START = 15, END = 2000, COLS = 12;
-    for (let rr = START; rr <= END; rr++) {
-      const row = ws.getRow(rr);
-      for (let c = 1; c <= COLS; c++) row.getCell(c).value = null;
-    }
-
-    // Write rows grouped by room
-    let r = START;
-    let nr = 1;
-    let first = null;
-    let last = null;
-
-    const seen = Array.from({ length: COLS }, () => []);
-    const pushSeen = (c, v) => seen[c - 1].push(String(v ?? ""));
-
-    const groups = selections.reduce((acc, s) => {
-      (acc[s.room] ||= []).push(s);
-      return acc;
-    }, {});
-
-    for (const roomName of Object.keys(groups)) {
-      // Section row: colored + bold
-      const sec = ws.getRow(r);
-      sec.getCell(1).value = ""; // A
-      sec.getCell(2).value = roomName; // B
-      pushSeen(2, roomName);
-      for (let c = 1; c <= COLS; c++) {
-        const cell = sec.getCell(c);
-        cell.fill = sectionFill;
-        cell.font = { ...(cell.font ?? {}), ...headerBold };
-        cell.border = { ...cell.border, bottom: thin };
-        if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
+// --- REPLACE ONLY THIS FUNCTION IN YOUR COMPONENT ---
+async function exportToExcel() {
+  // 0) Collect ONLY entered rows
+  const selections = [];
+  roomInstances.forEach((ri) => {
+    (roomActions[ri.id] || []).forEach((a) => {
+      const qty = Number(a.quantity) || 0;
+      if (a.itemId && qty > 0) {
+        selections.push({
+          room: `${ri.type} ${ri.index}`,
+          name: a.itemName || "",
+          unit: (a.unit || "").trim(),
+          qty,
+          unitPrice: Number(a.unit_price) || 0,
+        });
       }
-      r++;
-
-      // Data rows
-      for (const s of groups[roomName]) {
-        const row = ws.getRow(r);
-        row.getCell(1).value = nr++; pushSeen(1, row.getCell(1).value);
-        row.getCell(2).value = s.name; pushSeen(2, s.name);
-        row.getCell(3).value = s.unit; pushSeen(3, s.unit);
-        row.getCell(4).value = s.qty; pushSeen(4, s.qty);
-        row.getCell(5).value = s.unitPrice; pushSeen(5, s.unitPrice);
-        row.getCell(6).value = 0; pushSeen(6, 0);
-        row.getCell(7).value = 0; pushSeen(7, 0);
-
-        row.getCell(8).value = { formula: `ROUND(SUM(E${r}:G${r}),2)` }; pushSeen(8, "");
-        row.getCell(9).value = { formula: `ROUND(E${r}*D${r},2)` }; pushSeen(9, "");
-        row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` }; pushSeen(10, "");
-        row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` }; pushSeen(11, "");
-        row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` }; pushSeen(12, "");
-
-        row.getCell(4).numFmt = qtyFmt;
-        for (const c of [5, 6, 7, 8, 9, 10, 11, 12]) row.getCell(c).numFmt = moneyFmt;
-
-        for (let c = 1; c <= COLS; c++) {
-          const cell = row.getCell(c);
-          cell.border = borderAll;
-          if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
-          else cell.alignment = { vertical: "middle", horizontal: "right" };
-        }
-
-        if (first === null) first = r;
-        last = r;
-        r++;
-      }
-    }
-
-    // Totals
-    let tRow = r + 1;
-    ws.getCell(`B${tRow}`).value = "Kopā ";
-    ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
-    ws.getCell(`J${tRow}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
-    ws.getCell(`K${tRow}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
-    ws.getCell(`L${tRow}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
-    for (const c of [9, 10, 11, 12]) ws.getCell(tRow, c).numFmt = moneyFmt;
-
-    tRow += 2;
-    ws.getCell(`B${tRow}`).value = "Tiešās izmaksas kopā";
-    ws.getCell(`I${tRow}`).value = { formula: `I${tRow - 2}` };
-    ws.getCell(`J${tRow}`).value = { formula: `J${tRow - 2}` };
-    ws.getCell(`K${tRow}`).value = { formula: `K${tRow - 2}` };
-    ws.getCell(`L${tRow}`).value = { formula: `L${tRow - 2}` };
-
-    const pvnRow = tRow + 5;
-    ws.getCell(`B${pvnRow}`).value = "PVN";
-    ws.getCell(`C${pvnRow}`).value = 0.21;
-    ws.getCell(`L${pvnRow}`).value = { formula: `ROUND(L${tRow}*C${pvnRow},2)` };
-
-    const grandRow = pvnRow + 1;
-    ws.getCell(`B${grandRow}`).value = "Pavisam kopā";
-    ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
-
-    // Top-right summary block
-    ws.getCell("J9").value = "Tāmes summa euro :";
-    ws.getCell("L9").value = { formula: `L${tRow}` };
-    ws.getCell("J10").value = "PVN 21%:";
-    ws.getCell("L10").value = { formula: `L${pvnRow}` };
-    ws.getCell("J11").value = "Pavisam kopā euro:";
-    ws.getCell("L11").value = { formula: `L${grandRow}` };
-    ["L9", "L10", "L11", `L${tRow}`, `L${pvnRow}`, `L${grandRow}`].forEach((addr) => {
-      ws.getCell(addr).numFmt = moneyFmt;
     });
-
-    // Auto-fit columns A..L
-    const baseWidths = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
-    const factor = 1.1,
-      pad = 2,
-      maxW = 80,
-      COLS = 12;
-    for (let c = 1; c <= COLS; c++) {
-      const maxLen = Math.max(0, ...seen[c - 1].map((s) => String(s).length));
-      ws.getColumn(c).width = Math.min(maxW, Math.max(baseWidths[c - 1], Math.ceil(maxLen * factor) + pad));
-    }
-
-    // Download
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Tame_Balta_${prettyDate()}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  });
+  if (!selections.length) {
+    alert("Nav ievadītu pozīciju ar daudzumu.");
+    return;
   }
+  selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
+
+  // 1) ExcelJS (browser build)
+  const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
+
+  // 2) Try loading your template; otherwise create from scratch
+  const tplUrl =
+    (typeof window !== "undefined" &&
+      (window.location.hostname.endsWith("github.io") || window.location.pathname.startsWith("/eksperti"))
+      ? "/eksperti"
+      : "") + "/templates/balta_template.xlsx";
+
+  const wb = new ExcelJS.Workbook();
+  let ws;
+  let usedTemplate = false;
+
+  try {
+    const resp = await fetch(tplUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await wb.xlsx.load(await resp.arrayBuffer());
+    ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
+    usedTemplate = true;
+    console.log("[exportToExcel] Using template:", tplUrl);
+  } catch (e) {
+    console.warn("[exportToExcel] Template not loaded, using fully-styled fallback. Reason:", e?.message);
+    ws = wb.addWorksheet("Tāme");
+    // Create header like in your sample (A..L) if no template
+    ws.getRow(13).values = [null, "Darbs", "Mērv.", "Daudz.", "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)", "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)"];
+    ws.getRow(13).font = { bold: true };
+    ws.getRow(13).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    ws.getRow(13).height = 24;
+    // Put a top border
+    for (let c = 1; c <= 12; c++) {
+      ws.getRow(13).getCell(c).border = { top: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" } };
+      ws.getRow(13).getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF2F7" } };
+    }
+  }
+
+  // 3) Meta header (keeps template styling if present)
+  const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+  const metaCell = (addr, val) => { try { ws.getCell(addr).value = val; } catch {} };
+  metaCell("A1", `Pasūtītājs: ${insurer || "Balta"}`);
+  metaCell("A2", `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`);
+  metaCell("A3", `Objekta adrese: ${address || ""}`);
+  metaCell("A8", `Rīga, ${humanDate}`);
+  metaCell("A9", `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`);
+
+  // 4) Styles and helpers
+  const THIN = { style: "thin" };
+  const BORDER_ALL = { top: THIN, left: THIN, bottom: THIN, right: THIN };
+  const SECTION_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FD" } }; // light blue
+  const HEADER_BOLD = { bold: true };
+  const QTY_FMT = "#,##0.00";
+  const MONEY_FMT = "#,##0.00";
+  const COLS = 12;
+
+  ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
+
+  // 5) Clear data zone values (keep template formatting if there)
+  const START = 15, END = 3000;
+  for (let r = START; r <= END; r++) {
+    for (let c = 1; c <= COLS; c++) {
+      if (ws.getRow(r).getCell(c)) ws.getRow(r).getCell(c).value = null;
+    }
+  }
+
+  // 6) Write rows grouped by room
+  const groups = selections.reduce((acc, s) => {
+    (acc[s.room] ||= []).push(s);
+    return acc;
+  }, {});
+  let r = START;
+  let nr = 1;
+  let first = null;
+  let last = null;
+
+  // track max content for column autofit
+  const seen = Array.from({ length: COLS }, () => []);
+  const pushSeen = (c, v) => seen[c - 1].push(String(v ?? ""));
+
+  for (const roomName of Object.keys(groups)) {
+    // Section row (colored + bold + borders)
+    const sec = ws.getRow(r);
+    sec.getCell(1).value = "";
+    sec.getCell(2).value = roomName;
+    pushSeen(2, roomName);
+    for (let c = 1; c <= COLS; c++) {
+      const cell = sec.getCell(c);
+      cell.fill = SECTION_FILL;
+      cell.font = { ...(cell.font ?? {}), ...HEADER_BOLD };
+      cell.border = BORDER_ALL;
+      if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
+    }
+    sec.height = 20;
+    r++;
+
+    // Data rows
+    for (const s of groups[roomName]) {
+      const row = ws.getRow(r);
+      row.getCell(1).value = nr++;                  pushSeen(1, row.getCell(1).value);
+      row.getCell(2).value = s.name;                pushSeen(2, s.name);
+      row.getCell(3).value = s.unit;                pushSeen(3, s.unit);
+      row.getCell(4).value = s.qty;                 pushSeen(4, s.qty);
+      row.getCell(5).value = s.unitPrice;           pushSeen(5, s.unitPrice);
+      row.getCell(6).value = 0;                     pushSeen(6, 0);
+      row.getCell(7).value = 0;                     pushSeen(7, 0);
+      row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` }; pushSeen(8, "");
+      row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };      pushSeen(9, "");
+      row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };      pushSeen(10, "");
+      row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };      pushSeen(11, "");
+      row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };      pushSeen(12, "");
+
+      row.getCell(4).numFmt = QTY_FMT;
+      for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY_FMT;
+
+      for (let c = 1; c <= COLS; c++) {
+        const cell = row.getCell(c);
+        cell.border = BORDER_ALL;
+        if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
+        else cell.alignment = { vertical: "middle", horizontal: "right" };
+      }
+      row.height = 18;
+
+      if (first === null) first = r;
+      last = r;
+      r++;
+    }
+  }
+
+  // 7) Totals & summary
+  let tRow = r + 1;
+  ws.getCell(`B${tRow}`).value = "Kopā ";
+  ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
+  ws.getCell(`J${tRow}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
+  ws.getCell(`K${tRow}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
+  ws.getCell(`L${tRow}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
+  for (const c of [9,10,11,12]) ws.getCell(tRow, c).numFmt = MONEY_FMT;
+
+  tRow += 2;
+  ws.getCell(`B${tRow}`).value = "Tiešās izmaksas kopā";
+  ws.getCell(`I${tRow}`).value = { formula: `I${tRow-2}` };
+  ws.getCell(`J${tRow}`).value = { formula: `J${tRow-2}` };
+  ws.getCell(`K${tRow}`).value = { formula: `K${tRow-2}` };
+  ws.getCell(`L${tRow}`).value = { formula: `L${tRow-2}` };
+
+  const pvnRow = tRow + 5;
+  ws.getCell(`B${pvnRow}`).value = "PVN";
+  ws.getCell(`C${pvnRow}`).value = 0.21;
+  ws.getCell(`L${pvnRow}`).value = { formula: `ROUND(L${tRow}*C${pvnRow},2)` };
+  ws.getCell(`L${pvnRow}`).numFmt = MONEY_FMT;
+
+  const grandRow = pvnRow + 1;
+  ws.getCell(`B${grandRow}`).value = "Pavisam kopā";
+  ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
+  ws.getCell(`L${grandRow}`).numFmt = MONEY_FMT;
+
+  ws.getCell("J9").value = "Tāmes summa euro :";
+  ws.getCell("L9").value = { formula: `L${tRow}` };
+  ws.getCell("J10").value = "PVN 21%:";
+  ws.getCell("L10").value = { formula: `L${pvnRow}` };
+  ws.getCell("J11").value = "Pavisam kopā euro:";
+  ws.getCell("L11").value = { formula: `L${grandRow}` };
+  ["L9","L10","L11"].forEach((addr) => (ws.getCell(addr).numFmt = MONEY_FMT));
+
+  // 8) Auto-fit columns (A..L)
+  const baseWidths = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
+  const factor = 1.1, pad = 2, maxW = 80;
+  for (let c = 1; c <= COLS; c++) {
+    const maxLen = Math.max(0, ...seen[c-1].map((s) => String(s).length));
+    ws.getColumn(c).width = Math.min(maxW, Math.max(baseWidths[c-1], Math.ceil(maxLen * factor) + pad));
+  }
+
+  // 9) Download
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 
   // ===== UI helpers =====
   function LabeledRow({ label, children }) {
