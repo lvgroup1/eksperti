@@ -365,6 +365,19 @@ async function exportToExcel() {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(arrayBuf);
     const ws = wb.getWorksheet("Tāme") || wb.worksheets[0];
+// Noņemam jebkādas "Excel Table" no lapas un no workbook modeļa (ja tādas ir)
+const wsm = ws && ws.model;
+if (wsm && Array.isArray(wsm.tables) && wsm.tables.length) {
+  wsm.tables = []; // iztukšo tabulu sarakstu uz šīs lapas
+}
+
+const wbm = wb && wb.model;
+if (wbm && Array.isArray(wbm.tables) && wbm.tables.length) {
+  // izmet tabulas, kas attiecas uz šo lapu
+  wbm.tables = wbm.tables.filter(
+    (t) => t && t.worksheet !== ws.id && t.worksheet !== ws.name
+  );
+}
 
     // 3) Galvene
     const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
@@ -434,12 +447,26 @@ async function exportToExcel() {
 
     ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
 
-    // 7) Notīrām tikai vērtības datu zonā
-    const START = 15, END = 2000, COLS = 12;
-    for (let r = START; r <= END; r++) {
-      const row = ws.getRow(r);
-      for (let c = 1; c <= COLS; c++) row.getCell(c).value = null;
-    }
+  // 7) Notīrām DATU ZONU pilnībā (gan vērtības, gan stilus),
+//    lai dizains (līnijas, foni, formāti) parādās tikai tur,
+//    kur mēs ierakstām rindas, nevis templata tukšajās rindās.
+const START = 15, END = 2000, COLS = 12;
+
+function clearCell(cell) {
+  cell.value = null;
+  cell.border = undefined;     // noņem tabulas līnijas
+  cell.fill = undefined;       // noņem fona krāsas
+  cell.numFmt = undefined;     // noņem skaitļu formātus
+  cell.font = undefined;       // (pēc vajadzības — pilns reset)
+  cell.alignment = undefined;  // (pēc vajadzības)
+}
+
+for (let rr = START; rr <= END; rr++) {
+  const row = ws.getRow(rr);
+  for (let c = 1; c <= COLS; c++) {
+    clearCell(row.getCell(c));
+  }
+}
 
     // 8) Rakstām datus (E/F/G atsevišķi)
     let r = START;
