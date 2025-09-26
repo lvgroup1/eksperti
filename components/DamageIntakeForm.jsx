@@ -342,7 +342,7 @@ const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
 
 async function exportToExcel() {
-  // savācam tikai aizpildītās pozīcijas
+  // savācam tikai aizpildītās pozīcijas (galvenās)
   const selections = [];
   roomInstances.forEach((ri) => {
     (roomActions[ri.id] || []).forEach((a) => {
@@ -350,10 +350,10 @@ async function exportToExcel() {
       if (a.itemId && qty > 0) {
         selections.push({
           room: `${ri.type} ${ri.index}`,
+          id: a.itemId,          // <- vajadzīgs BOM paplašināšanai
           name: a.itemName || "",
           unit: (a.unit || "").trim(),
-          qty,
-          unitPrice: Number(a.unit_price) || 0,
+          qty
         });
       }
     });
@@ -364,17 +364,14 @@ async function exportToExcel() {
   }
   selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-  // — ExcelJS (pārlūka build) ar noturīgu ielādi —
+  // ExcelJS (browser build)
   const ExcelJSmod = await import("exceljs/dist/exceljs.min.js");
-  const ExcelJS = ExcelJSmod?.Workbook ? ExcelJSmod : ExcelJSmod.default; // dažādos bundlos atšķiras eksporti
+  const ExcelJS = ExcelJSmod?.Workbook ? ExcelJSmod : ExcelJSmod.default;
 
-  // jauna grāmata ar izslēgtām režģlīnijām
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Tāme", {
-    views: [{ state: "normal", showGridLines: false }],
-  });
+  const ws = wb.addWorksheet("Tāme", { views: [{ state: "normal", showGridLines: false }] });
 
-  // stili/formatējumi
+  // stilistika
   const FONT = { name: "Calibri", size: 11 };
   const FONT_B = { name: "Calibri", size: 11, bold: true };
   const MONEY_FMT = "#,##0.00";
@@ -382,7 +379,7 @@ async function exportToExcel() {
   const THIN = { style: "thin" };
   const SECTION_BG = "FFF3F6FD";
 
-  // datumi un Tāmes Nr. ddMMyyyy
+  // Tāmes Nr. ddMMyyyy
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -390,7 +387,7 @@ async function exportToExcel() {
   const TAME_NR = `${dd}${mm}${yyyy}`;
   const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
 
-  // ==== kreisā puse (meta) ====
+  // meta kreisajā pusē
   ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
   ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
   ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
@@ -398,8 +395,7 @@ async function exportToExcel() {
   ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
   ["A1","A2","A3","A8","A9"].forEach(a => (ws.getCell(a).font = { ...FONT }));
 
-  // ==== labā puse: Tāmes Nr. + rekvizīti (SKAIDRI REDZAMI) ====
-  // paplašinām kolonnas J–L, lai teksts nepaslēptos
+  // labā puse: Tāmes Nr. + rekvizīti
   ws.getColumn(10).width = 18; // J
   ws.getColumn(11).width = 18; // K
   ws.getColumn(12).width = 22; // L
@@ -409,52 +405,27 @@ async function exportToExcel() {
   ws.getCell("J1").font = { ...FONT_B };
   ws.getCell("J1").alignment = { horizontal: "right", vertical: "middle" };
 
-  ws.mergeCells("J3:L3");
-  ws.getCell("J3").value = "Izpildītājs:";
-  ws.getCell("J3").font = { ...FONT_B };
-  ws.getCell("J3").alignment = { horizontal: "right" };
+  ws.mergeCells("J3:L3"); ws.getCell("J3").value = "Izpildītājs:"; ws.getCell("J3").font = { ...FONT_B }; ws.getCell("J3").alignment = { horizontal: "right" };
+  ws.mergeCells("J4:L4"); ws.getCell("J4").value = `SIA "LV  GROUP"`; ws.getCell("J4").font = { ...FONT }; ws.getCell("J4").alignment = { horizontal: "right" };
+  ws.mergeCells("J5:L5"); ws.getCell("J5").value = "Reģ.Nr.: 40103160668"; ws.getCell("J5").font = { ...FONT }; ws.getCell("J5").alignment = { horizontal: "right" };
 
-  ws.mergeCells("J4:L4");
-  ws.getCell("J4").value = `SIA "LV  GROUP"`;
-  ws.getCell("J4").font = { ...FONT };
-  ws.getCell("J4").alignment = { horizontal: "right" };
-
-  ws.mergeCells("J5:L5");
-  ws.getCell("J5").value = "Reģ.Nr.: 40103160668";
-  ws.getCell("J5").font = { ...FONT };
-  ws.getCell("J5").alignment = { horizontal: "right" };
-
-  // ==== tabulas galvene (14. rinda) ====
+  // galvene
   ws.getRow(14).values = [
-    null,
-    "Darbs",
-    "Mērv.",
-    "Daudz.",
-    "Darba alga (vien.)",
-    "Materiāli (vien.)",
-    "Mehānismi (vien.)",
-    "Kopā (vien.)",
-    "Darba alga (kopā)",
-    "Materiāli (kopā)",
-    "Mehānismi (kopā)",
-    "Summa (kopā)",
+    null, "Darbs", "Mērv.", "Daudz.",
+    "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)",
+    "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)"
   ];
   ws.getRow(14).font = { ...FONT_B };
   ws.getRow(14).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   ws.getRow(14).height = 22;
 
-  // platumi
-  ws.getColumn(2).width = 56;
-  ws.getColumn(3).width = 12;
-  ws.getColumn(4).width = 10;
-  [5,6,7,8,9,10,11,12].forEach((i) => (ws.getColumn(i).width = ws.getColumn(i).width || 14));
-  ws.getColumn(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
+  // kolonnas
+  ws.getColumn(2).width = 56; ws.getColumn(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
+  ws.getColumn(3).width = 12; ws.getColumn(4).width = 10;
+  [5,6,7,8,9,10,11,12].forEach((i) => (ws.getColumn(i).width = 14));
 
   // grupējam pēc telpas
-  const groups = selections.reduce((acc, s) => {
-    (acc[s.room] ||= []).push(s);
-    return acc;
-  }, {});
+  const groups = selections.reduce((acc, s) => { (acc[s.room] ||= []).push(s); return acc; }, {});
 
   let r = 15;
   let nr = 1;
@@ -474,24 +445,28 @@ async function exportToExcel() {
     r++;
   };
 
-  const writeData = (s) => {
+  // viena "normāla" rinda rakstītājs (vecāks vai bērns)
+  function writeLine({ name, unit, qty, labor = 0, materials = 0, mechanisms = 0, indent = false, numberA = true }) {
     const row = ws.getRow(r);
-    row.getCell(1).value = nr++;
-    row.getCell(2).value = s.name;
-    row.getCell(3).value = s.unit;
-    row.getCell(4).value = s.qty;
-    row.getCell(5).value = s.unitPrice;
-    row.getCell(6).value = 0;
-    row.getCell(7).value = 0;
+
+    row.getCell(1).value = numberA ? nr++ : ""; // bērniem atstājam tukšu
+    row.getCell(2).value = indent ? `— ${name}` : name;
+    row.getCell(3).value = unit || "";
+    row.getCell(4).value = qty;
+
+    row.getCell(5).value = labor;      // Darba alga (vien.)
+    row.getCell(6).value = materials;  // Materiāli (vien.)
+    row.getCell(7).value = mechanisms; // Mehānismi (vien.)
     row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+
     row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
     row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
     row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-    row.getCell(12).value = { formula: `ROUND(H${r}*D${r}),2` }; // ja gribat, var arī bez ROUND
+    row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
     for (let c = 1; c <= 12; c++) {
       const cell = row.getCell(c);
-      cell.font = { ...FONT };
+      cell.font = indent ? { ...FONT, italic: true } : { ...FONT };
       cell.border = { bottom: THIN };
       cell.alignment =
         (c === 2 || c === 3)
@@ -505,11 +480,46 @@ async function exportToExcel() {
     if (first === null) first = r;
     last = r;
     r++;
-  };
+  }
 
-  Object.keys(groups).forEach((room) => {
-    writeSection(room);
-    groups[room].forEach(writeData);
+  // izvadām grupas ar BOM
+  Object.keys(groups).forEach((roomName) => {
+    writeSection(roomName);
+
+    groups[roomName].forEach((sel) => {
+      const it = catalogById.get(sel.id);
+      const labor = (it?.labor ?? 0);
+      const materials = (it?.materials ?? 0);
+      const mechanisms = (it?.mechanisms ?? 0);
+
+      // vecāka rinda
+      writeLine({
+        name: sel.name,
+        unit: sel.unit || it?.unit || "",
+        qty: sel.qty,
+        labor, materials, mechanisms,
+        indent: false,
+        numberA: true
+      });
+
+      // BOM bērni, ja ir
+      const comps = Array.isArray(it?.components) ? it.components : [];
+      comps.forEach((c) => {
+        const ch = catalogById.get(c.id);
+        if (!ch) return;
+        const childQty = (sel.qty) * (Number(c.multiplier) || 0);
+        writeLine({
+          name: ch.name,
+          unit: ch.unit || "",
+          qty: childQty,
+          labor: (ch.labor ?? 0),
+          materials: (ch.materials ?? 0),
+          mechanisms: (ch.mechanisms ?? 0),
+          indent: true,
+          numberA: false
+        });
+      });
+    });
   });
 
   // kopsummas
@@ -528,28 +538,25 @@ async function exportToExcel() {
   ws.getCell(`J${tRow}`).value = { formula: `J${tRow-2}` };
   ws.getCell(`K${tRow}`).value = { formula: `K${tRow-2}` };
   ws.getCell(`L${tRow}`).value = { formula: `L${tRow-2}` };
-  [9,10,11,12].forEach((c) => (ws.getCell(tRow, c).numFmt = MONEY_FMT));
 
   const pvnRow = tRow + 5;
   ws.getCell(`B${pvnRow}`).value = "PVN";
   ws.getCell(`C${pvnRow}`).value = 0.21;
   ws.getCell(`L${pvnRow}`).value = { formula: `ROUND(L${tRow}*C${pvnRow},2)` };
-  ws.getCell(`L${pvnRow}`).numFmt = MONEY_FMT;
 
   const grandRow = pvnRow + 1;
   ws.getCell(`B${grandRow}`).value = "Pavisam kopā";
   ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
-  ws.getCell(`L${grandRow}`).numFmt = MONEY_FMT;
 
-  // augšējais kopsavilkums (ja vēlaties paturēt)
+  // augšējais kopsavilkums (ja vajag)
   ws.getCell("J9").value = "Tāmes summa euro :";
-  ws.getCell("L9").value = { formula: `L${tRow}` };  ws.getCell("L9").numFmt  = MONEY_FMT;
+  ws.getCell("L9").value = { formula: `L${tRow}` };
   ws.getCell("J10").value = "PVN 21%:";
-  ws.getCell("L10").value = { formula: `L${pvnRow}` }; ws.getCell("L10").numFmt = MONEY_FMT;
+  ws.getCell("L10").value = { formula: `L${pvnRow}` };
   ws.getCell("J11").value = "Pavisam kopā euro:";
-  ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = MONEY_FMT;
+  ws.getCell("L11").value = { formula: `L${grandRow}` };
+  ["L9","L10","L11"].forEach(a => ws.getCell(a).numFmt = MONEY_FMT);
 
-  // drukas apgabals līdz pēdējai rindai
   ws.pageSetup.printArea = `A1:L${grandRow}`;
 
   // lejupielāde
