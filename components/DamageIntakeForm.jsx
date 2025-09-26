@@ -342,7 +342,7 @@ const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
 
 async function exportToExcel() {
-  // collect only entered rows
+  // 1) savācam tikai aizpildītās pozīcijas
   const selections = [];
   roomInstances.forEach((ri) => {
     (roomActions[ri.id] || []).forEach((a) => {
@@ -364,51 +364,100 @@ async function exportToExcel() {
   }
   selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-  // ExcelJS (browser)
+  // 2) ExcelJS (browser build)
   const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
 
-  // new workbook with gridlines OFF
+  // 3) jauna grāmata ar izslēgtām režģlīnijām
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Tāme", {
-    views: [{ state: "normal", showGridLines: false }], // <- no gridlines anywhere
+    views: [{ state: "normal", showGridLines: false }],
   });
 
-  // fonts & formats
+  // Palīgstili
   const FONT = { name: "Calibri", size: 11 };
+  const FONT_B = { name: "Calibri", size: 11, bold: true };
   const MONEY_FMT = "#,##0.00";
   const QTY_FMT = "#,##0.00";
   const THIN = { style: "thin" };
   const SECTION_BG = "FFF3F6FD";
 
-  // meta top
-  const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+  // Datuma numurs Tāmei: ddMMyyyy (piem. 26092025)
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const TAME_NR = `${dd}${mm}${yyyy}`;
+
+  // 4) META pa kreisi
+  const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
   ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
   ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
   ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
   ws.getCell("A8").value = `Rīga, ${humanDate}`;
   ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
-  ["A1","A2","A3","A8","A9"].forEach(a => ws.getCell(a).font = { ...FONT });
+  ["A1","A2","A3","A8","A9"].forEach(a => (ws.getCell(a).font = { ...FONT }));
 
-  // optional table header row (row 14)
-  ws.getRow(14).values = [ null, "Darbs", "Mērv.", "Daudz.", "Darba alga (vien.)", "Materiāli (vien.)", "Mehānismi (vien.)", "Kopā (vien.)", "Darba alga (kopā)", "Materiāli (kopā)", "Mehānismi (kopā)", "Summa (kopā)" ];
-  ws.getRow(14).font = { ...FONT, bold: true };
+  // 5) REKVIZĪTI + TĀMES NR. pa labi (virs tabulas)
+  // Tāmes Nr. — J1:L1, trekns, pa labi
+  ws.mergeCells("J1:L1");
+  ws.getCell("J1").value = `Tāmes Nr.: ${TAME_NR}`;
+  ws.getCell("J1").font = { ...FONT_B };
+  ws.getCell("J1").alignment = { horizontal: "right", vertical: "middle" };
+
+  // LV GROUP rekvizītu bloks — J3..L6
+  ws.mergeCells("J3:L3");
+  ws.getCell("J3").value = "Izpildītājs:";
+  ws.getCell("J3").font = { ...FONT_B };
+  ws.getCell("J3").alignment = { horizontal: "right" };
+
+  ws.mergeCells("J4:L4");
+  ws.getCell("J4").value = `SIA "LV  GROUP"`;
+  ws.getCell("J4").font = { ...FONT };
+  ws.getCell("J4").alignment = { horizontal: "right" };
+
+  ws.mergeCells("J5:L5");
+  ws.getCell("J5").value = "Reģ.Nr.: 40103160668";
+  ws.getCell("J5").font = { ...FONT };
+  ws.getCell("J5").alignment = { horizontal: "right" };
+
+  // (ja gribat, varat pievienot vēl rindu ar tālr./epastu)
+  // ws.mergeCells("J6:L6");
+  // ws.getCell("J6").value = "E-pasts: info@lvgroup.lv • Tālrunis: +371 ........";
+  // ws.getCell("J6").font = { ...FONT };
+  // ws.getCell("J6").alignment = { horizontal: "right" };
+
+  // 6) Tabulas galvene (14. rinda)
+  ws.getRow(14).values = [
+    null,
+    "Darbs",
+    "Mērv.",
+    "Daudz.",
+    "Darba alga (vien.)",
+    "Materiāli (vien.)",
+    "Mehānismi (vien.)",
+    "Kopā (vien.)",
+    "Darba alga (kopā)",
+    "Materiāli (kopā)",
+    "Mehānismi (kopā)",
+    "Summa (kopā)",
+  ];
+  ws.getRow(14).font = { ...FONT_B };
   ws.getRow(14).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   ws.getRow(14).height = 22;
 
-  // column widths
+  // Kolonnu platumi
   ws.getColumn(2).width = 56; // Darbs
   ws.getColumn(3).width = 12; // Mērv.
   ws.getColumn(4).width = 10;
   [5,6,7,8,9,10,11,12].forEach((i) => (ws.getColumn(i).width = 14));
   ws.getColumn(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
 
-  // group selections by room
+  // 7) Rakstām tikai eksistējošos datus
   const groups = selections.reduce((acc, s) => {
     (acc[s.room] ||= []).push(s);
     return acc;
   }, {});
 
-  // write only what exists
   let r = 15;
   let nr = 1;
   let first = null, last = null;
@@ -416,9 +465,10 @@ async function exportToExcel() {
   const writeSection = (title) => {
     const row = ws.getRow(r);
     for (let c = 1; c <= 12; c++) {
-      row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
-      row.getCell(c).border = { bottom: THIN }; // ONLY section separator line
-      row.getCell(c).font = { ...FONT, bold: true };
+      const cell = row.getCell(c);
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
+      cell.border = { bottom: THIN }; // tikai atdalītāja līnija
+      cell.font = { ...FONT_B };
     }
     row.getCell(2).value = title;
     row.getCell(2).alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
@@ -441,14 +491,14 @@ async function exportToExcel() {
     row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
     row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-    // format
     for (let c = 1; c <= 12; c++) {
       const cell = row.getCell(c);
       cell.font = { ...FONT };
-      cell.border = { bottom: THIN }; // ONLY a bottom line for the rows we wrote
-      cell.alignment = (c === 2 || c === 3)
-        ? { vertical: "middle", horizontal: "left", wrapText: c === 2 }
-        : { vertical: "middle", horizontal: "right" };
+      cell.border = { bottom: THIN }; // tikai apakšējā līnija šai rindai
+      cell.alignment =
+        (c === 2 || c === 3)
+          ? { vertical: "middle", horizontal: "left", wrapText: c === 2 }
+          : { vertical: "middle", horizontal: "right" };
     }
     row.getCell(4).numFmt = QTY_FMT;
     [5,6,7,8,9,10,11,12].forEach((c) => (row.getCell(c).numFmt = MONEY_FMT));
@@ -464,7 +514,7 @@ async function exportToExcel() {
     groups[room].forEach(writeData);
   });
 
-  // totals
+  // 8) Kopsummas
   let tRow = r + 1;
   ws.getCell(`B${tRow}`).value = "Kopā ";
   ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
@@ -493,6 +543,7 @@ async function exportToExcel() {
   ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
   ws.getCell(`L${grandRow}`).numFmt = MONEY_FMT;
 
+  // (vēl joprojām varat paturēt šo kopsavilkumu, ja vajag)
   ws.getCell("J9").value = "Tāmes summa euro :";
   ws.getCell("L9").value = { formula: `L${tRow}` };  ws.getCell("L9").numFmt  = MONEY_FMT;
   ws.getCell("J10").value = "PVN 21%:";
@@ -500,16 +551,16 @@ async function exportToExcel() {
   ws.getCell("J11").value = "Pavisam kopā euro:";
   ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = MONEY_FMT;
 
-  // print area just to the used range (optional)
+  // 9) drukas apgabals līdz pēdējai rindai
   ws.pageSetup.printArea = `A1:L${grandRow}`;
 
-  // download
+  // 10) lejupielāde
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+  a.download = `Tame_Balta_${yyyy}-${mm}-${dd}.xlsx`;
   document.body.appendChild(a);
   a.click();
   a.remove();
