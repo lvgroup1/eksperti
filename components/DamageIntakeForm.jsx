@@ -567,7 +567,6 @@ async function exportToExcel() {
   URL.revokeObjectURL(url);
 }
 
-
   // ===== UI helpers =====
   function LabeledRow({ label, children }) {
     return (
