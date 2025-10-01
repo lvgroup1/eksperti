@@ -116,30 +116,36 @@ export default function DamageIntakeForm() {
       ? "/eksperti"
       : "";
 
-  useEffect(() => {
-    if (insurer !== "Balta") {
-      setPriceCatalog([]);
-      return;
-    }
+useEffect(() => {
+  if (insurer === "Balta") {
     setCatalogError("");
-    fetch(`${assetBase}/prices/balta.json`)
+    fetch("prices/balta.json")
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         return r.json();
       })
       .then((data) => {
-        const items = Array.isArray(data.items) ? data.items : [];
-        setPriceCatalog(
-          items.map((it) => ({
+        const raw = Array.isArray(data.items) ? data.items : [];
+        // unikāls uid katram ierakstam (ja id atkārtojas)
+        const seen = new Map(); // key -> count
+        const items = raw.map((it, idx) => {
+          const baseId = String(it.id || `${it.category}:${idx}`);
+          const n = (seen.get(baseId) || 0) + 1;
+          seen.set(baseId, n);
+          const uid = n > 1 ? `${baseId}#${n}` : baseId;
+          return {
             ...it,
             unit: normalizeUnit(it.unit),
-            category: String(it.category || "").trim(),
-            name: String(it.name || "").trim(),
-          }))
-        );
+            uid, // ← LIETOSIM ŠO
+          };
+        });
+        setPriceCatalog(items);
       })
       .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
-  }, [insurer, assetBase]);
+  } else {
+    setPriceCatalog([]);
+  }
+}, [insurer]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category));
@@ -211,38 +217,59 @@ export default function DamageIntakeForm() {
       return { ...ra, [roomId]: list };
     });
   }
-  function setRowCategory(roomId, idx, category) {
-    setRoomActions((ra) => {
-      const list = [...(ra[roomId] || [])];
+function setRowCategory(roomId, idx, category) {
+  setRoomActions((ra) => {
+    const list = [...(ra[roomId] || [])];
+    list[idx] = {
+      category,
+      itemId: "",
+      itemUid: "",            // ← pievienots
+      itemName: "",
+      quantity: list[idx]?.quantity || "",
+      unit: "",
+      unit_price: null,
+      labor: null,
+      materials: null,
+      mechanisms: null,
+    };
+    return { ...ra, [roomId]: list };
+  });
+}
+
+  function setRowItem(roomId, idx, itemKey) {
+  // itemKey tagad ir UID; saglabājam gan oriģinālo id, gan uid
+  const item = priceCatalog.find((i) => i.uid === itemKey || i.id === itemKey);
+  setRoomActions((ra) => {
+    const list = [...(ra[roomId] || [])];
+    if (item) {
       list[idx] = {
-        category,
+        ...list[idx],
+        itemId: item.id,        // oriģinālais (var dublēties)
+        itemUid: item.uid,      // unikālais (izmantojam <select>)
+        itemName: item.name,
+        unit: item.unit || "",
+        unit_price: item.unit_price ?? null,
+        labor: item.labor ?? null,
+        materials: item.materials ?? null,
+        mechanisms: item.mechanisms ?? null,
+      };
+    } else {
+      list[idx] = {
+        ...list[idx],
         itemId: "",
+        itemUid: "",
         itemName: "",
-        quantity: list[idx]?.quantity || "",
         unit: "",
         unit_price: null,
+        labor: null,
+        materials: null,
+        mechanisms: null,
       };
-      return { ...ra, [roomId]: list };
-    });
-  }
-  function setRowItem(roomId, idx, itemId) {
-    const item = priceCatalog.find((i) => i.id === itemId);
-    setRoomActions((ra) => {
-      const list = [...(ra[roomId] || [])];
-      if (item) {
-        list[idx] = {
-          ...list[idx],
-          itemId,
-          itemName: item.name,
-          unit: item.unit || "",
-          unit_price: item.unit_price,
-        };
-      } else {
-        list[idx] = { ...list[idx], itemId: "", itemName: "", unit: "", unit_price: null };
-      }
-      return { ...ra, [roomId]: list };
-    });
-  }
+    }
+    return { ...ra, [roomId]: list };
+  });
+}
+
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
   }
@@ -993,18 +1020,19 @@ async function exportToExcel() {
                 >
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-                    <select
-                      value={baseCategory}
-                      onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
-                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-                    >
-                      <option value="">— visas —</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+<select
+  value={row.itemUid || row.itemId || ""}
+  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+>
+  <option value="">— izvēlies pozīciju —</option>
+  {itemsFiltered.slice(0, 1200).map((it) => (
+    <option key={it.uid} value={it.uid}>
+      {it.name} · {it.unit || "—"}
+    </option>
+  ))}
+</select>
+
                   </div>
 
                   <div>
