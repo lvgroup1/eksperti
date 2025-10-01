@@ -129,24 +129,19 @@ useEffect(() => {
     })
 .then((data) => {
   const items = Array.isArray(data.items) ? data.items : [];
-
-  // piespiežam unikālu uid arī gadījumos, kad vienā kategorijā id atkārtojas
-  const seen = new Map(); // key = `${category}::${id||name}`, value = skaits
-  const mapped = items.map((it, i) => {
-    const keyBase = `${it.category || ""}::${it.id || it.name || `row${i}`}`;
-    const n = (seen.get(keyBase) || 0) + 1;
-    seen.set(keyBase, n);
-
-    return {
-      ...it,
-      unit: normalizeUnit(it.unit),
-      // uid ir unikāls pat ja id dublējas: pievienojam secības numuru
-      uid: `${keyBase}::${n}`,
-    };
-  });
-
+  const mapped = items.map((it, i) => ({
+    ...it,
+    // atbalstām gan en, gan lv nosaukumus
+    labor: Number(it.labor ?? it.Darbs ?? 0),
+    materials: Number(it.materials ?? it.Materiāli ?? it.Materāli ?? 0),
+    mechanisms: Number(it.mechanisms ?? it.Mehānismi ?? it.Mehanismi ?? 0),
+    unit_price: Number(it.unit_price ?? it.Cena ?? 0),
+    unit: normalizeUnit(it.unit),
+    uid: `${it.category}::${it.id || i}`,
+  }));
   setPriceCatalog(mapped);
 })
+
 
     .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
@@ -240,23 +235,21 @@ function setRowCategory(roomId, idx, category) {
   });
 }
 
-
-function setRowItem(roomId, idx, itemUid) {
-  const item = priceCatalog.find((i) => i.uid === itemUid); // tikai pēc UID!
-
+function setRowItem(roomId, idx, itemKey) {
+  const item = priceCatalog.find((i) => i.uid === itemKey || i.id === itemKey);
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
       list[idx] = {
         ...list[idx],
-        itemUid: item.uid,         // glabājam UID
-        itemId: item.id || "",     // ja vajag retro saderībai
+        itemUid: item.uid,
+        itemId: item.id,
         itemName: item.name,
         unit: item.unit || "",
         unit_price: item.unit_price ?? null,
-        labor: item.labor ?? 0,
-        materials: item.materials ?? 0,
-        mechanisms: item.mechanisms ?? 0,
+        labor: Number(item.labor ?? 0),
+        materials: Number(item.materials ?? 0),
+        mechanisms: Number(item.mechanisms ?? 0),
       };
     } else {
       list[idx] = {
@@ -274,6 +267,7 @@ function setRowItem(roomId, idx, itemUid) {
     return { ...ra, [roomId]: list };
   });
 }
+
 
 
   function setRoomNote(roomId, note) {
@@ -439,37 +433,48 @@ async function exportToExcel() {
     tCell.alignment = { horizontal: "center", vertical: "middle" };
 
     // ===== Savācam rindas no formas =====
-    const selections = [];
-    roomInstances.forEach((ri) => {
-      (roomActions[ri.id] || []).forEach((a) => {
-        const qty = Number(a.quantity) || 0;
-        if (qty <= 0) return;
+// ===== Savācam rindas no formas =====
+const selections = [];
+roomInstances.forEach((ri) => {
+  (roomActions[ri.id] || []).forEach((a) => {
+    const qty = Number(a.quantity) || 0;
+    if (qty <= 0) return;
 
-        const item =
-          priceCatalog.find((i) => i.uid === a.itemUid) ||
-          priceCatalog.find((i) => i.id === a.itemId);
-        if (!item) return;
+    const item = priceCatalog.find((i) => i.uid === a.itemUid) ||
+                 priceCatalog.find((i) => i.id === a.itemId);
+    if (!item) return;
 
-        const unit = normalizeUnit(a.unit || item.unit || "");
-        const labor = Number(item.labor ?? 0);
-        const materials = Number(item.materials ?? 0);
-        const mechanisms = Number(item.mechanisms ?? 0);
-        const unitPrice = (labor || materials || mechanisms)
-          ? (labor + materials + mechanisms)
-          : Number(item.unit_price ?? a.unit_price ?? 0);
+    const unit = normalizeUnit(a.unit || item.unit || "");
 
-        selections.push({
-          room: `${ri.type} ${ri.index}`,
-          name: a.itemName || item.name || "",
-          unit,
-          qty,
-          labor,
-          materials,
-          mechanisms,
-          unitPrice,
-        });
-      });
+    // ņemam no rindas, ja ir; citādi no kataloga
+    const labor = Number(a.labor ?? item.labor ?? 0);
+    const materials = Number(a.materials ?? item.materials ?? 0);
+    const mechanisms = Number(a.mechanisms ?? item.mechanisms ?? 0);
+
+    // ja ir sadalījums → E/F/G; ja nav → E = unit_price
+    const unitPrice = (labor || materials || mechanisms)
+      ? (labor + materials + mechanisms)
+      : Number(a.unit_price ?? item.unit_price ?? 0);
+
+    selections.push({
+      room: `${ri.type} ${ri.index}`,
+      name: a.itemName || item.name || "",
+      unit,
+      qty,
+      labor,
+      materials,
+      mechanisms,
+      unitPrice,
     });
+  });
+});
+
+if (!selections.length) {
+  alert("Nav nevienas pozīcijas ar daudzumu.");
+  return;
+}
+selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
+
 
     if (!selections.length) {
       alert("Nav nevienas pozīcijas ar daudzumu.");
