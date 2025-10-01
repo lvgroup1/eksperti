@@ -242,16 +242,16 @@ function setRowCategory(roomId, idx, category) {
 
 
 function setRowItem(roomId, idx, itemUid) {
-  const item = priceCatalog.find((i) => i.uid === itemUid) || null;
+  const item = priceCatalog.find((i) => i.uid === itemUid); // tikai pēc UID!
 
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
       list[idx] = {
         ...list[idx],
-        itemUid: item.uid,         // <- vienmēr glabājam uid
-        itemId: item.id || "",     // (var glabāt arī oriģinālo id, bet neizmantojam izvēlei)
-        itemName: item.name || "",
+        itemUid: item.uid,         // glabājam UID
+        itemId: item.id || "",     // ja vajag retro saderībai
+        itemName: item.name,
         unit: item.unit || "",
         unit_price: item.unit_price ?? null,
         labor: item.labor ?? 0,
@@ -274,7 +274,6 @@ function setRowItem(roomId, idx, itemUid) {
     return { ...ra, [roomId]: list };
   });
 }
-
 
 
   function setRoomNote(roomId, note) {
@@ -378,11 +377,9 @@ const QTY_FMT = "#,##0.00";
 
 async function exportToExcel() {
   try {
-    // 1) ExcelJS import
     const ExcelJSImport = await import("exceljs/dist/exceljs.min.js");
     const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
 
-    // 2) Ielādē sagatavi (vajag failu: public/templates/balta_template.xlsx)
     const assetBase =
       typeof window !== "undefined" &&
       (window.__NEXT_DATA__?.assetPrefix || window.location.pathname.startsWith("/eksperti"))
@@ -399,15 +396,15 @@ async function exportToExcel() {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(arrayBuf);
 
-    // Strādājam uz pilnīgi jaunas lapas, lai dizains neizplūstu tukšajās rindās
+    // paņemam sagataves lapu tikai kā avotu un taisām jaunu tīru izvadi
     const src = wb.getWorksheet("Tāme") || wb.worksheets[0];
-    const ws = wb.addWorksheet("Tāme (izvade)", { views: [{ showGridLines: false }] });
+    const ws = wb.addWorksheet("Tāme", { views: [{ showGridLines: false }] });
 
-    // 3) Galvene + rekvizīti + Tāmes Nr. (ddmmyyyy)
+    // ===== Header =====
     const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
     const pad2 = (n) => String(n).padStart(2, "0");
     const d = new Date();
-    const tamesNr = `${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${d.getFullYear()}`;
+    const tamesNr = `${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${d.getFullYear()}`; // 26092025
 
     ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
     ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
@@ -415,42 +412,51 @@ async function exportToExcel() {
     ws.getCell("A8").value = `Rīga, ${humanDate}`;
     ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
 
+    // LV GROUP labajā pusē
     ws.getCell("J1").value = "LV GROUP SIA";
     ws.getCell("J2").value = "Reģ. Nr.: LV40003216553";
     ws.getCell("J3").value = "Banka: Luminor";
     ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
-    ws.getCell("J6").value = `Tāmes Nr.: ${tamesNr}`;
 
-// 4) Savācam rindas (balstoties uz itemUid)
-const selections = [];
-roomInstances.forEach((ri) => {
-  (roomActions[ri.id] || []).forEach((a) => {
-    const qty = Number(a.quantity) || 0;
-    if (!a.itemUid || qty <= 0) return;             // <- pārbaudām itemUid
+    // Tāmes Nr. pa vidu, liels un bold (sapludinām D6:H6)
+    ws.mergeCells("D6:H6");
+    ws.getCell("D6").value = `TĀMES NR.: ${tamesNr}`;
+    ws.getCell("D6").font = { name: "Calibri", size: 16, bold: true };
+    ws.getCell("D6").alignment = { horizontal: "center", vertical: "middle" };
 
-    const item = priceCatalog.find((i) => i.uid === a.itemUid);
-    const unit = (a.unit || item?.unit || "").trim();
+    // ===== Savācam rindas no formas =====
+    const selections = [];
+    roomInstances.forEach((ri) => {
+      (roomActions[ri.id] || []).forEach((a) => {
+        const qty = Number(a.quantity) || 0;
+        if (qty <= 0) return;
 
-    const labor = Number(item?.labor ?? 0);
-    const materials = Number(item?.materials ?? 0);
-    const mechanisms = Number(item?.mechanisms ?? 0);
-    const unitPrice = (labor || materials || mechanisms)
-      ? labor + materials + mechanisms
-      : Number(item?.unit_price ?? a.unit_price ?? 0);
+        // meklējam pēc UID; ja vecs zapiss – krītam uz id tikai, ja vajag
+        const item = priceCatalog.find((i) => i.uid === a.itemUid) ||
+                     priceCatalog.find((i) => i.id === a.itemId);
 
-    selections.push({
-      room: `${ri.type} ${ri.index}`,
-      name: a.itemName || item?.name || "",
-      unit,
-      qty,
-      labor,
-      materials,
-      mechanisms,
-      unitPrice,
+        if (!item) return;
+
+        const unit = normalizeUnit(a.unit || item.unit || "");
+        const labor = Number(item.labor ?? 0);
+        const materials = Number(item.materials ?? 0);
+        const mechanisms = Number(item.mechanisms ?? 0);
+        const unitPrice = (labor || materials || mechanisms)
+          ? (labor + materials + mechanisms)
+          : Number(item.unit_price ?? a.unit_price ?? 0);
+
+        selections.push({
+          room: `${ri.type} ${ri.index}`,
+          name: a.itemName || item.name || "",
+          unit,
+          qty,
+          labor,
+          materials,
+          mechanisms,
+          unitPrice,
+        });
+      });
     });
-  });
-});
-
 
     if (!selections.length) {
       alert("Nav nevienas pozīcijas ar daudzumu.");
@@ -459,17 +465,56 @@ roomInstances.forEach((ri) => {
 
     selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-    // 5) Stili — pielietojam TIKAI uz rakstītajām rindām
-    const START = 15, COLS = 12;
+    // ===== Tabulas galvenes (divrindu) =====
+    const START = 15;      // pirmā datu rinda
+    const HEAD1 = START - 2;
+    const HEAD2 = START - 1;
+    const COLS = 12;
+
     const thin = { style: "thin" };
     const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
+    const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } };
     const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FD" } };
     const moneyFmt = "#,##0.00";
     const qtyFmt = "#,##0.00";
 
-    ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
+    // 1. rinda (augšējie virsraksti, sapludinām E..H un I..L)
+    ws.getCell(HEAD1, 1).value = "Nr.";
+    ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
+    ws.getCell(HEAD1, 3).value = "Mērv.";
+    ws.getCell(HEAD1, 4).value = "Daudz.";
 
-    // 6) Datu ieraksts
+    ws.mergeCells(HEAD1, 5, HEAD1, 8);
+    ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
+
+    ws.mergeCells(HEAD1, 9, HEAD1, 12);
+    ws.getCell(HEAD1, 9).value = "Summa, EUR";
+
+    // 2. rinda (apakšvirsraksti)
+    ws.getCell(HEAD2, 5).value  = "Darbs";
+    ws.getCell(HEAD2, 6).value  = "Materiāli";
+    ws.getCell(HEAD2, 7).value  = "Mehānismi";
+    ws.getCell(HEAD2, 8).value  = "Cena";
+
+    ws.getCell(HEAD2, 9).value  = "Darbs";
+    ws.getCell(HEAD2, 10).value = "Materiāli";
+    ws.getCell(HEAD2, 11).value = "Mehānismi";
+    ws.getCell(HEAD2, 12).value = "Kopā";
+
+    // Stils galvenēm
+    for (const rr of [HEAD1, HEAD2]) {
+      const row = ws.getRow(rr);
+      for (let c = 1; c <= COLS; c++) {
+        const cell = row.getCell(c);
+        cell.font = { name: "Calibri", size: 11, bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.fill = headerFill;
+        cell.border = borderAll;
+      }
+      row.height = 22;
+    }
+
+    // ===== Dati (tikai aizņemtajām rindām piešķiram robežas) =====
     let r = START;
     let nr = 1;
     let first = null;
@@ -485,15 +530,15 @@ roomInstances.forEach((ri) => {
 
     for (const roomName of Object.keys(groups)) {
       const sectionRow = ws.getRow(r);
-      sectionRow.getCell(2).value = roomName;
+      sectionRow.getCell(2).value = roomName; pushSeen(2, roomName);
+      // sekcijas vizuālā rinda
       for (let c = 1; c <= COLS; c++) {
         const cell = sectionRow.getCell(c);
         cell.fill = sectionFill;
-        cell.font = { ...(cell.font ?? {}), bold: true };
+        cell.font = { name: "Calibri", size: 11, bold: true };
         cell.border = { ...cell.border, bottom: thin };
         if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
       }
-      pushSeen(2, roomName);
       r++;
 
       for (const s of groups[roomName]) {
@@ -524,6 +569,7 @@ roomInstances.forEach((ri) => {
         for (let c = 1; c <= COLS; c++) {
           const cell = row.getCell(c);
           cell.border = borderAll;
+          cell.font = { name: "Calibri", size: 11 };
           if (c === 2) cell.alignment = { wrapText: true, vertical: "middle" };
           else cell.alignment = { vertical: "middle", horizontal: "right" };
         }
@@ -534,7 +580,7 @@ roomInstances.forEach((ri) => {
       }
     }
 
-    // 7) Kopsummas + PVN + pavisam kopā
+    // ===== Kopsummas + PVN =====
     let tRow = r + 1;
     ws.getCell(`B${tRow}`).value = "Kopā";
     ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
@@ -562,7 +608,7 @@ roomInstances.forEach((ri) => {
     ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
     ws.getCell(`L${grandRow}`).numFmt = moneyFmt;
 
-    // Kopsavilkums labajā pusē virs tabulas
+    // Īsais kopsavilkums augšā labajā pusē
     ws.getCell("J9").value = "Tāmes summa euro :";
     ws.getCell("L9").value = { formula: `L${tRow}` };    ws.getCell("L9").numFmt = moneyFmt;
     ws.getCell("J10").value = "PVN 21%:";
@@ -570,19 +616,18 @@ roomInstances.forEach((ri) => {
     ws.getCell("J11").value = "Pavisam kopā euro:";
     ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = moneyFmt;
 
-    // 8) Kolonnu platumi pēc reālā satura
+    // Kolonnu platumi pēc satura
     const base = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
     const factor = 1.1, padW = 2, maxW = 80;
+    const seen = Array.from({ length: COLS }, () => []); // ja nevēlies pārrēķināt, vari atstāt base
     for (let c = 1; c <= COLS; c++) {
-      const maxLen = Math.max(0, ...seen[c-1].map((s) => String(s).length));
-      ws.getColumn(c).width = Math.min(maxW, Math.max(base[c-1], Math.ceil(maxLen * factor) + padW));
+      ws.getColumn(c).width = base[c - 1];
     }
 
-    // 9) Izmetam oriģinālo sagataves lapu, pārdēvējam jauno uz “Tāme”
+    // Izmetam avota lapu no sagataves
     wb.removeWorksheet(src.id);
-    ws.name = "Tāme";
 
-    // 10) Lejupielāde
+    // Lejupielāde
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
@@ -1012,103 +1057,104 @@ roomInstances.forEach((ri) => {
     : [];
 
   return (
-    <div
-      key={idx}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1.2fr 2fr 1fr 0.8fr auto",
-        gap: 8,
-        alignItems: "end",
-        marginBottom: 8,
-      }}
+<div
+  key={idx}
+  style={{
+    display: "grid",
+    gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto",
+    gap: 8,
+    alignItems: "end",
+    marginBottom: 8,
+  }}
+>
+  {/* Kategorija */}
+  <div>
+    <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
+    <select
+      value={row.category || ""}
+      onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
+      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
     >
-      {/* 1) LIELĀ KATEGORIJA */}
-      <div>
-        <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-        <select
-          value={row.category || ""}
-          onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
-          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-        >
-          <option value="">— izvēlies kategoriju —</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
+      <option value="">— izvēlies —</option>
+      {categories.map((c) => (
+        <option key={c} value={c}>{c}</option>
+      ))}
+    </select>
+  </div>
 
-      {/* 2) POZĪCIJA (pēc kategorijas), VĒRTĪBA = uid */}
-      <div>
-        <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-        <select
-          value={row.itemUid || ""}                              // <- tikai uid
-          onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-          disabled={!row.category}
-          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-        >
-          <option value="">{row.category ? "— izvēlies pozīciju —" : "— vispirms izvēlies kategoriju —"}</option>
-          {itemsInCategory.slice(0, 2000).map((it) => (
-            <option key={it.uid} value={it.uid}>
-              {it.name} · {it.unit || "—"}
-            </option>
-          ))}
-        </select>
-      </div>
+  {/* Pozīcija (filtrēta pēc kategorijas) — tikai pēc UID */}
+  <div>
+    <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
+    <select
+      value={row.itemUid || ""}
+      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+    >
+      <option value="">— izvēlies pozīciju —</option>
+      {priceCatalog
+        .filter((it) => !row.category || it.category === row.category)
+        .map((it) => (
+          <option key={it.uid} value={it.uid}>
+            {it.name} · {it.unit || "—"}
+          </option>
+        ))}
+    </select>
+  </div>
 
-      {/* 3) Mērv. */}
-      <div>
-        <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
-        <select
-          value={normalizeUnit(row.unit) || ""}
-          onChange={(e) => setRowField(editingRoomId, idx, "unit", normalizeUnit(e.target.value))}
-          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-        >
-          <option value="">—</option>
-          {allUnits.map((u) => (
-            <option key={u} value={u}>{u}</option>
-          ))}
-        </select>
-      </div>
+  {/* Mērv. */}
+  <div>
+    <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
+    <select
+      value={normalizeUnit(row.unit) || ""}
+      onChange={(e) => setRowField(editingRoomId, idx, "unit", normalizeUnit(e.target.value))}
+      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+    >
+      <option value="">—</option>
+      {allUnits.map((u) => (
+        <option key={u} value={u}>{u}</option>
+      ))}
+    </select>
+  </div>
 
-      {/* 4) Daudz. */}
-      <div>
-        <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
-        <input
-          type="number"
-          min={0}
-          step="0.01"
-          value={row.quantity}
-          onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
-          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-          placeholder="Skaitlis"
-        />
-      </div>
+  {/* Daudz. */}
+  <div>
+    <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
+    <input
+      type="number"
+      min={0}
+      step="0.01"
+      value={row.quantity}
+      onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
+      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+      placeholder="Skaitlis"
+    />
+  </div>
 
-      {/* 5) Pogas */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          type="button"
-          onClick={() => addActionRow(editingRoomId, row.category || "")}
-          style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
-        >
-          + Rinda
-        </button>
-        <button
-          type="button"
-          onClick={() => removeActionRow(editingRoomId, idx)}
-          style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
-        >
-          Dzēst
-        </button>
-        <button
-          type="button"
-          onClick={() => { setEditingRoomId(null); setStep(9); }}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
-        >
-          + Pievienot vēl telpu
-        </button>
-      </div>
-    </div>
+  {/* Pogas */}
+  <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+    <button
+      type="button"
+      onClick={() => addActionRow(editingRoomId, row.category || "")}
+      style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
+    >
+      + Rinda
+    </button>
+    <button
+      type="button"
+      onClick={() => removeActionRow(editingRoomId, idx)}
+      style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
+    >
+      Dzēst
+    </button>
+    <button
+      type="button"
+      onClick={() => { setEditingRoomId(null); setStep(9); }}
+      style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
+    >
+      + Pievienot vēl telpu
+    </button>
+  </div>
+</div>
   );
 })}
 
