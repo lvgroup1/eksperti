@@ -368,7 +368,6 @@ const ZEBRA_BG = "FFF9FAFB";        // zebra rindas fons
 const FONT = { name: "Calibri", size: 11 };
 const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
-
 async function exportToExcel() {
   try {
     // ====== ExcelJS ======
