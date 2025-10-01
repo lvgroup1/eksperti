@@ -545,46 +545,35 @@ selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b
       r++;
 
       // Datu rindas
-      for (const s of groups[roomName]) {
-        const row = ws.getRow(r);
-        row.getCell(1).value = nr++;
-        row.getCell(2).value = s.name;
-        row.getCell(3).value = s.unit;
-        row.getCell(4).value = s.qty;
+ for (const s of groups[roomName]) {
+  const row = ws.getRow(r);
 
-        const e = s.labor || 0, f = s.materials || 0, g = s.mechanisms || 0;
-        const hasSplit = (e + f + g) > 0;
+  // 1–4 kolonnas
+  row.getCell(1).value = nr++;
+  row.getCell(2).value = s.name;
+  row.getCell(3).value = s.unit;
+  row.getCell(4).value = s.qty;
 
-        row.getCell(5).value = hasSplit ? e : s.unitPrice;
-        row.getCell(6).value = hasSplit ? f : 0;
-        row.getCell(7).value = hasSplit ? g : 0;
+  // === TE IEVIETO ŠO BLOKU (E..L) ===
+  const e = s.labor || 0;
+  const f = s.materials || 0;
+  const g = s.mechanisms || 0;
+  const hasSplit = (e + f + g) > 0;
 
-        row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-        row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-        row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
-        row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-        row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+  row.getCell(5).value = hasSplit ? e : s.unitPrice;
+  row.getCell(6).value = hasSplit ? f : 0;
+  row.getCell(7).value = hasSplit ? g : 0;
 
-        row.getCell(4).numFmt = QTY_FMT;
-        for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY_FMT;
+  row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+  row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+  row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
+  row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
+  row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-        const isZebra = ((r - START) % 2) === 1;
-        for (let c = 1; c <= COLS; c++) {
-          const cell = row.getCell(c);
-          if (ZEBRA && isZebra) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-          }
-          cell.border = borderAll;
-          cell.font = FONT;
-          cell.alignment = c === 2
-            ? { wrapText: true, vertical: "middle" }
-            : { vertical: "middle", horizontal: "right" };
-        }
+  // (pēc tam – numFmt, robežas, zebra u.c.)
+  r++;
+}
 
-        if (first === null) first = r;
-        last = r;
-        r++;
-      }
     }
 
     // ===== Kopsummas + PVN =====
