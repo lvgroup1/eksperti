@@ -117,34 +117,27 @@ export default function DamageIntakeForm() {
       : "";
 
 useEffect(() => {
-  if (insurer === "Balta") {
-    setCatalogError("");
-    fetch("prices/balta.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json();
-      })
-      .then((data) => {
-        const raw = Array.isArray(data.items) ? data.items : [];
-        // unikāls uid katram ierakstam (ja id atkārtojas)
-        const seen = new Map(); // key -> count
-        const items = raw.map((it, idx) => {
-          const baseId = String(it.id || `${it.category}:${idx}`);
-          const n = (seen.get(baseId) || 0) + 1;
-          seen.set(baseId, n);
-          const uid = n > 1 ? `${baseId}#${n}` : baseId;
-          return {
-            ...it,
-            unit: normalizeUnit(it.unit),
-            uid, // ← LIETOSIM ŠO
-          };
-        });
-        setPriceCatalog(items);
-      })
-      .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
-  } else {
+  if (insurer !== "Balta") {
     setPriceCatalog([]);
+    return;
   }
+  setCatalogError("");
+  fetch("prices/balta.json")
+    .then((r) => {
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return r.json();
+    })
+    .then((data) => {
+      const items = Array.isArray(data.items) ? data.items : [];
+      // ģenerējam stabilu uid (ar kategoriju)
+      const mapped = items.map((it, i) => ({
+        ...it,
+        unit: normalizeUnit(it.unit),
+        uid: `${it.category}::${it.id || i}`
+      }));
+      setPriceCatalog(mapped);
+    })
+    .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
 
   const categories = useMemo(() => {
@@ -221,54 +214,57 @@ function setRowCategory(roomId, idx, category) {
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     list[idx] = {
+      ...list[idx],
       category,
+      itemUid: "",
       itemId: "",
-      itemUid: "",            // ← pievienots
       itemName: "",
-      quantity: list[idx]?.quantity || "",
       unit: "",
       unit_price: null,
-      labor: null,
-      materials: null,
-      mechanisms: null,
+      labor: 0,
+      materials: 0,
+      mechanisms: 0,
     };
     return { ...ra, [roomId]: list };
   });
 }
 
-  function setRowItem(roomId, idx, itemKey) {
-  // itemKey tagad ir UID; saglabājam gan oriģinālo id, gan uid
-  const item = priceCatalog.find((i) => i.uid === itemKey || i.id === itemKey);
+ function setRowItem(roomId, idx, itemKey) {
+  // itemKey var būt gan uid, gan vecais id
+  const item = priceCatalog.find(
+    (i) => i.uid === itemKey || i.id === itemKey
+  );
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
       list[idx] = {
         ...list[idx],
-        itemId: item.id,        // oriģinālais (var dublēties)
-        itemUid: item.uid,      // unikālais (izmantojam <select>)
+        itemUid: item.uid,
+        itemId: item.id,            // saglabājam arī id, ja vajag
         itemName: item.name,
         unit: item.unit || "",
         unit_price: item.unit_price ?? null,
-        labor: item.labor ?? null,
-        materials: item.materials ?? null,
-        mechanisms: item.mechanisms ?? null,
+        labor: item.labor ?? 0,
+        materials: item.materials ?? 0,
+        mechanisms: item.mechanisms ?? 0,
       };
     } else {
       list[idx] = {
         ...list[idx],
-        itemId: "",
         itemUid: "",
+        itemId: "",
         itemName: "",
         unit: "",
         unit_price: null,
-        labor: null,
-        materials: null,
-        mechanisms: null,
+        labor: 0,
+        materials: 0,
+        mechanisms: 0,
       };
     }
     return { ...ra, [roomId]: list };
   });
 }
+
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
@@ -1019,21 +1015,22 @@ async function exportToExcel() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-<select
-  value={row.itemUid || row.itemId || ""}
-  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
->
-  <option value="">— izvēlies pozīciju —</option>
-  {itemsFiltered.slice(0, 1200).map((it) => (
-    <option key={it.uid} value={it.uid}>
-      {it.name} · {it.unit || "—"}
-    </option>
-  ))}
-</select>
-
-                  </div>
+  <select
+    value={row.itemUid || row.itemId || ""}
+    onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+    style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+  >
+    <option value="">— izvēlies pozīciju —</option>
+    {priceCatalog
+      .filter((it) => !baseCategory || it.category === baseCategory)
+      .slice(0, 1200)
+      .map((it) => (
+        <option key={it.uid || it.id} value={it.uid || it.id}>
+          {it.name} · {it.unit || "—"}
+        </option>
+      ))}
+  </select>
+</div>
 
                   <div>
                     <select
