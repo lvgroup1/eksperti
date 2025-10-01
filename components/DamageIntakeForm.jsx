@@ -127,16 +127,27 @@ useEffect(() => {
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       return r.json();
     })
-    .then((data) => {
-      const items = Array.isArray(data.items) ? data.items : [];
-      // ģenerējam stabilu uid (ar kategoriju)
-      const mapped = items.map((it, i) => ({
-        ...it,
-        unit: normalizeUnit(it.unit),
-        uid: `${it.category}::${it.id || i}`
-      }));
-      setPriceCatalog(mapped);
-    })
+.then((data) => {
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  // piespiežam unikālu uid arī gadījumos, kad vienā kategorijā id atkārtojas
+  const seen = new Map(); // key = `${category}::${id||name}`, value = skaits
+  const mapped = items.map((it, i) => {
+    const keyBase = `${it.category || ""}::${it.id || it.name || `row${i}`}`;
+    const n = (seen.get(keyBase) || 0) + 1;
+    seen.set(keyBase, n);
+
+    return {
+      ...it,
+      unit: normalizeUnit(it.unit),
+      // uid ir unikāls pat ja id dublējas: pievienojam secības numuru
+      uid: `${keyBase}::${n}`,
+    };
+  });
+
+  setPriceCatalog(mapped);
+})
+
     .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
 
@@ -216,7 +227,7 @@ function setRowCategory(roomId, idx, category) {
     list[idx] = {
       ...list[idx],
       category,
-      itemUid: "",
+      itemUid: "",      // <- svarīgi
       itemId: "",
       itemName: "",
       unit: "",
@@ -229,19 +240,18 @@ function setRowCategory(roomId, idx, category) {
   });
 }
 
- function setRowItem(roomId, idx, itemKey) {
-  // itemKey var būt gan uid, gan vecais id
-  const item = priceCatalog.find(
-    (i) => i.uid === itemKey || i.id === itemKey
-  );
+
+function setRowItem(roomId, idx, itemUid) {
+  const item = priceCatalog.find((i) => i.uid === itemUid) || null;
+
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
       list[idx] = {
         ...list[idx],
-        itemUid: item.uid,
-        itemId: item.id,            // saglabājam arī id, ja vajag
-        itemName: item.name,
+        itemUid: item.uid,         // <- vienmēr glabājam uid
+        itemId: item.id || "",     // (var glabāt arī oriģinālo id, bet neizmantojam izvēlei)
+        itemName: item.name || "",
         unit: item.unit || "",
         unit_price: item.unit_price ?? null,
         labor: item.labor ?? 0,
@@ -264,6 +274,7 @@ function setRowCategory(roomId, idx, category) {
     return { ...ra, [roomId]: list };
   });
 }
+
 
 
   function setRoomNote(roomId, note) {
@@ -410,34 +421,36 @@ async function exportToExcel() {
     ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
     ws.getCell("J6").value = `Tāmes Nr.: ${tamesNr}`;
 
-    // 4) Savācam ievadītās rindas (atbalsta labor/materials/mechanisms)
-    const selections = [];
-    roomInstances.forEach((ri) => {
-      (roomActions[ri.id] || []).forEach((a) => {
-        const qty = Number(a.quantity) || 0;
-        if (!a.itemId || qty <= 0) return;
-        const item = priceCatalog.find((i) => i.id === a.itemId || i.uid === a.itemUid);
-        const unit = (a.unit || item?.unit || "").trim();
+// 4) Savācam rindas (balstoties uz itemUid)
+const selections = [];
+roomInstances.forEach((ri) => {
+  (roomActions[ri.id] || []).forEach((a) => {
+    const qty = Number(a.quantity) || 0;
+    if (!a.itemUid || qty <= 0) return;             // <- pārbaudām itemUid
 
-        const labor = Number(item?.labor ?? 0);
-        const materials = Number(item?.materials ?? 0);
-        const mechanisms = Number(item?.mechanisms ?? 0);
-        const unitPrice = (labor || materials || mechanisms)
-          ? labor + materials + mechanisms
-          : Number(item?.unit_price ?? a.unit_price ?? 0);
+    const item = priceCatalog.find((i) => i.uid === a.itemUid);
+    const unit = (a.unit || item?.unit || "").trim();
 
-        selections.push({
-          room: `${ri.type} ${ri.index}`,
-          name: a.itemName || item?.name || "",
-          unit,
-          qty,
-          labor,
-          materials,
-          mechanisms,
-          unitPrice,
-        });
-      });
+    const labor = Number(item?.labor ?? 0);
+    const materials = Number(item?.materials ?? 0);
+    const mechanisms = Number(item?.mechanisms ?? 0);
+    const unitPrice = (labor || materials || mechanisms)
+      ? labor + materials + mechanisms
+      : Number(item?.unit_price ?? a.unit_price ?? 0);
+
+    selections.push({
+      room: `${ri.type} ${ri.index}`,
+      name: a.itemName || item?.name || "",
+      unit,
+      qty,
+      labor,
+      materials,
+      mechanisms,
+      unitPrice,
     });
+  });
+});
+
 
     if (!selections.length) {
       alert("Nav nevienas pozīcijas ar daudzumu.");
@@ -991,12 +1004,12 @@ async function exportToExcel() {
             </LabeledRow>
 
             <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
- {(roomActions[editingRoomId] || [
-  { category: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
+{(roomActions[editingRoomId] || [
+  { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
 ]).map((row, idx) => {
-  const itemsInCategory = priceCatalog.filter(
-    (it) => row.category ? it.category === row.category : false
-  );
+  const itemsInCategory = row.category
+    ? priceCatalog.filter((it) => it.category === row.category)
+    : [];
 
   return (
     <div
@@ -1009,7 +1022,7 @@ async function exportToExcel() {
         marginBottom: 8,
       }}
     >
-      {/* --- 1) LIELĀ KATEGORIJA --- */}
+      {/* 1) LIELĀ KATEGORIJA */}
       <div>
         <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
         <select
@@ -1024,25 +1037,25 @@ async function exportToExcel() {
         </select>
       </div>
 
-      {/* --- 2) POZĪCIJA no izvēlētās kategorijas --- */}
+      {/* 2) POZĪCIJA (pēc kategorijas), VĒRTĪBA = uid */}
       <div>
         <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
         <select
-          value={row.itemUid || row.itemId || ""}
+          value={row.itemUid || ""}                              // <- tikai uid
           onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
           disabled={!row.category}
           style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
         >
           <option value="">{row.category ? "— izvēlies pozīciju —" : "— vispirms izvēlies kategoriju —"}</option>
-          {itemsInCategory.slice(0, 1500).map((it) => (
-            <option key={it.uid || it.id} value={it.uid || it.id}>
+          {itemsInCategory.slice(0, 2000).map((it) => (
+            <option key={it.uid} value={it.uid}>
               {it.name} · {it.unit || "—"}
             </option>
           ))}
         </select>
       </div>
 
-      {/* --- 3) Mērvienība --- */}
+      {/* 3) Mērv. */}
       <div>
         <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
         <select
@@ -1057,7 +1070,7 @@ async function exportToExcel() {
         </select>
       </div>
 
-      {/* --- 4) Daudzums --- */}
+      {/* 4) Daudz. */}
       <div>
         <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
         <input
@@ -1071,7 +1084,7 @@ async function exportToExcel() {
         />
       </div>
 
-      {/* --- 5) Pogas --- */}
+      {/* 5) Pogas */}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button
           type="button"
