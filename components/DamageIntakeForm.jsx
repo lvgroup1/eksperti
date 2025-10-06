@@ -848,12 +848,15 @@ for (const rr of sumRows) {
         {/* Lietas Nr. (formas sākumā) */}
         <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
           <LabeledRow label="Lietas Nr.">
-            <input
-              value={claimNumber}
-              onChange={(e) => setClaimNumber(e.target.value)}
-              placeholder="piem., CLV1234567"
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-            />
+<input
+  value={claimNumber ?? ""}
+  onInput={(e) => setClaimNumber(e.currentTarget.value)}
+  onChange={(e) => setClaimNumber(e.currentTarget.value)}
+  placeholder="piem., CLV1234567"
+  autoComplete="off"
+  spellCheck={false}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+/>
           </LabeledRow>
         </div>
 
@@ -867,18 +870,23 @@ for (const rr of sumRows) {
 
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
-            <input
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
-              placeholder="Vārds, Uzvārds"
-              value={estimatorName}
-              onChange={(e) => setEstimatorName(e.target.value)}
-            />
-            <input
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-              placeholder="E-pasts"
-              value={estimatorEmail}
-              onChange={(e) => setEstimatorEmail(e.target.value)}
-            />
+<input
+  value={estimatorName ?? ""}
+  onInput={(e) => setEstimatorName(e.currentTarget.value)}
+  onChange={(e) => setEstimatorName(e.currentTarget.value)}
+  placeholder="Vārds, Uzvārds"
+  autoComplete="off"
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
+/>
+<input
+  value={estimatorEmail ?? ""}
+  onInput={(e) => setEstimatorEmail(e.currentTarget.value)}
+  onChange={(e) => setEstimatorEmail(e.currentTarget.value)}
+  placeholder="E-pasts"
+  autoComplete="off"
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+/>
+
           </div>
         </header>
 
@@ -891,12 +899,16 @@ for (const rr of sumRows) {
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
-              <input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Iela 1, Pilsēta"
-                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-              />
+<input
+  value={address ?? ""}
+  onInput={(e) => setAddress(e.currentTarget.value)}
+  onChange={(e) => setAddress(e.currentTarget.value)}
+  placeholder="Iela 1, Pilsēta"
+  autoComplete="off"
+  spellCheck={false}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+/>
+
             </LabeledRow>
           </StepShell>
         )}
@@ -962,12 +974,14 @@ for (const rr of sumRows) {
                 </LabeledRow>
                 {dwellingSubtype === "Cits" && (
                   <LabeledRow label="3.1.1. Norādi">
-                    <input
-                      value={dwellingOther}
-                      onChange={(e) => setDwellingOther(e.target.value)}
-                      placeholder="NI tips"
-                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-                    />
+<input
+  value={dwellingOther ?? ""}
+  onInput={(e) => setDwellingOther(e.currentTarget.value)}
+  onChange={(e) => setDwellingOther(e.currentTarget.value)}
+  placeholder="NI tips"
+  autoComplete="off"
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+/>
                   </LabeledRow>
                 )}
               </>
@@ -993,12 +1007,15 @@ for (const rr of sumRows) {
             </LabeledRow>
             {incidentType === "Cits" && (
               <LabeledRow label="4.1. Norādi">
-                <input
-                  value={incidentOther}
-                  onChange={(e) => setIncidentOther(e.target.value)}
-                  placeholder="Notikuma apraksts"
-                  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-                />
+<input
+  value={incidentOther ?? ""}
+  onInput={(e) => setIncidentOther(e.currentTarget.value)}
+  onChange={(e) => setIncidentOther(e.currentTarget.value)}
+  placeholder="Notikuma apraksts"
+  autoComplete="off"
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+/>
+
               </LabeledRow>
             )}
           </StepShell>
@@ -1087,12 +1104,15 @@ for (const rr of sumRows) {
                   {rooms[rt].checked && (
                     <div style={{ marginTop: 8 }}>
                       {rt === "Cits" && (
-                        <input
-                          placeholder="Telpas nosaukums"
-                          value={rooms[rt].custom}
-                          onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], custom: e.target.value } })}
-                          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 8 }}
-                        />
+<input
+  value={rooms[rt].custom ?? ""}
+  onInput={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], custom: e.currentTarget.value } })}
+  onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], custom: e.currentTarget.value } })}
+  placeholder="Telpas nosaukums"
+  autoComplete="off"
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 8 }}
+/>
+
                       )}
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span>Daudzums:</span>
@@ -1210,148 +1230,142 @@ for (const rr of sumRows) {
           </StepShell>
         )}
 
-        {step === 11 && editingRoomId && (
-          <StepShell
-            title={`11. Pozīcijas un apjomi – ${
-              roomInstances.find((r) => r.id === editingRoomId)?.type
-            } ${roomInstances.find((r) => r.id === editingRoomId)?.index}`}
-          >
-            <LabeledRow label="Piezīmes">
-              <input
-                value={roomInstances.find((r) => r.id === editingRoomId)?.note || ""}
-                onChange={(e) => setRoomNote(editingRoomId, e.target.value)}
-                placeholder="Papildus informācija"
-                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-              />
-            </LabeledRow>
-
-            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
-{(roomActions[editingRoomId] || [
-  { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
-]).map((row, idx) => {
-  const itemsInCategory = row.category
-    ? priceCatalog.filter((it) => it.category === row.category)
-    : [];
-
-  return (
-<div
-  key={idx}
-  style={{
-    display: "grid",
-    gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto",
-    gap: 8,
-    alignItems: "end",
-    marginBottom: 8,
-  }}
->
-
-{/* Kategorija */}
-<div>
-  <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-  <select
-    value={row.category || ""}
-    onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
-    style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+{step === 11 && editingRoomId && (
+  <StepShell
+    title={`11. Pozīcijas un apjomi – ${
+      roomInstances.find((r) => r.id === editingRoomId)?.type
+    } ${roomInstances.find((r) => r.id === editingRoomId)?.index}`}
   >
-    <option value="">— visas —</option>
-    {categories.map((c) => (
-      <option key={c} value={c}>{c}</option>
-    ))}
-  </select>
-</div>
+    <LabeledRow label="Piezīmes">
+      <input
+        value={(roomInstances.find((r) => r.id === editingRoomId)?.note) ?? ""}
+        onInput={(e) => setRoomNote(editingRoomId, e.currentTarget.value)}
+        onChange={(e) => setRoomNote(editingRoomId, e.currentTarget.value)}
+        placeholder="Papildus informācija"
+        autoComplete="off"
+        style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+      />
+    </LabeledRow>
 
-{/* Pozīcija – vērtība un meklēšana tikai pēc UID */}
-<div>
-  <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-  <select
-    value={row.itemUid || ""}
-    onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-    style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-  >
-    <option value="">— izvēlies pozīciju —</option>
-    {priceCatalog
-      .filter((it) => !row.category || it.category === row.category)
-      .map((it) => (
-        <option key={it.uid} value={it.uid}>
-          {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-        </option>
-      ))}
-  </select>
-</div>
+    <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
 
+    {(roomActions[editingRoomId] || [
+      { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
+    ]).map((row, idx) => {
+      return (
+        <div
+          key={idx}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto",
+            gap: 8,
+            alignItems: "end",
+            marginBottom: 8,
+          }}
+        >
+          {/* Kategorija */}
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
+            <select
+              value={row.category ?? ""}
+              onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+            >
+              <option value="">— visas —</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
 
-  {/* Mērv. */}
-  <div>
-    <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
-    <select
-      value={normalizeUnit(row.unit) || ""}
-      onChange={(e) => setRowField(editingRoomId, idx, "unit", normalizeUnit(e.target.value))}
-      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-    >
-      <option value="">—</option>
-      {allUnits.map((u) => (
-        <option key={u} value={u}>{u}</option>
-      ))}
-    </select>
-  </div>
+          {/* Pozīcija (meklē un saglabā pēc uid) */}
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
+            <select
+              value={row.itemUid ?? ""}
+              onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+            >
+              <option value="">— izvēlies pozīciju —</option>
+              {priceCatalog
+                .filter((it) => !row.category || it.category === row.category)
+                .map((it) => (
+                  <option key={it.uid} value={it.uid}>
+                    {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-  {/* Daudz. */}
-  <div>
-    <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
-    <input
-      type="number"
-      min={0}
-      step="0.01"
-      value={row.quantity}
-      onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
-      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-      placeholder="Skaitlis"
-    />
-  </div>
+          {/* Mērv. */}
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 4 }}>Mērv.</div>
+            <select
+              value={normalizeUnit(row.unit) || ""}
+              onChange={(e) => setRowField(editingRoomId, idx, "unit", normalizeUnit(e.target.value))}
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+            >
+              <option value="">—</option>
+              {allUnits.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
 
-  {/* Pogas */}
-  <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
-    <button
-      type="button"
-      onClick={() => addActionRow(editingRoomId, row.category || "")}
-      style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
-    >
-      + Rinda
-    </button>
-    <button
-      type="button"
-      onClick={() => removeActionRow(editingRoomId, idx)}
-      style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
-    >
-      Dzēst
-    </button>
-    <button
-      type="button"
-      onClick={() => { setEditingRoomId(null); setStep(9); }}
-      style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
-    >
-      + Pievienot vēl telpu
-    </button>
-  </div>
-</div>
-  );
-})}
+          {/* Daudz. */}
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={row.quantity ?? ""}
+              onInput={(e) => setRowField(editingRoomId, idx, "quantity", e.currentTarget.value)}
+              onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.currentTarget.value)}
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+              placeholder="Skaitlis"
+            />
+          </div>
 
+          {/* Pogas */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={() => addActionRow(editingRoomId, row.category || "")}
+              style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
+            >
+              + Rinda
+            </button>
+            <button
+              type="button"
+              onClick={() => removeActionRow(editingRoomId, idx)}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
+            >
+              Dzēst
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEditingRoomId(null); setStep(9); }}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
+            >
+              + Pievienot vēl telpu
+            </button>
+          </div>
+        </div>
+      );
+    })}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingRoomId(null);
-                  setStep(10);
-                }}
-                style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
-              >
-                Saglabāt un atgriezties
-              </button>
-            </div>
-          </StepShell>
-        )}
+    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+      <button
+        type="button"
+        onClick={() => { setEditingRoomId(null); setStep(10); }}
+        style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
+      >
+        Saglabāt un atgriezties
+      </button>
+    </div>
+  </StepShell>
+)}
 
         {/* Navigation bar (hide default on steps 10 & 11) */}
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 12].includes(step) && (
