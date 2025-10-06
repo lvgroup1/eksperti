@@ -117,9 +117,6 @@ export default function DamageIntakeForm() {
   const [priceCatalog, setPriceCatalog] = useState([]); // {id,category,subcategory,name,unit,unit_price,labor,materials,mechanisms,uid}[]
   const [catalogError, setCatalogError] = useState("");
 
-const onText = React.useCallback((setter) => (e) => setter(e.target.value), []);
-const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
-
 
   // Resolve asset base (root or /eksperti on GitHub Pages)
   const assetBase =
@@ -796,6 +793,10 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
     );
   }
 
+const onText = React.useCallback((setter) => (e) => setter(e.target.value), []);
+const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
+
+
   const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
 
   return (
@@ -809,7 +810,6 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
   onChange={onText(setClaimNumber)}
   placeholder="piem., CLV1234567"
   autoComplete="off"
-  spellCheck={false}
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
           </LabeledRow>
