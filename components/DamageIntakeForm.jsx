@@ -117,6 +117,10 @@ export default function DamageIntakeForm() {
   const [priceCatalog, setPriceCatalog] = useState([]); // {id,category,subcategory,name,unit,unit_price,labor,materials,mechanisms,uid}[]
   const [catalogError, setCatalogError] = useState("");
 
+const onText = React.useCallback((setter) => (e) => setter(e.target.value), []);
+const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
+
+
   // Resolve asset base (root or /eksperti on GitHub Pages)
   const assetBase =
     typeof window !== "undefined" &&
@@ -219,11 +223,7 @@ export default function DamageIntakeForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-  /* ==========================
-     Stable handlers: prevent remount/focus loss
-     ========================== */
-  const onText = useCallback((setter) => (e) => setter(e.currentTarget.value), []);
-  const onNum = useCallback((setter) => (e) => setter(e.currentTarget.value), []);
+
 
   // Actions helpers
   function addActionRow(roomId, presetCategory = "") {
@@ -804,14 +804,14 @@ export default function DamageIntakeForm() {
         {/* Lietas Nr. (formas sākumā) */}
         <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
           <LabeledRow label="Lietas Nr.">
-            <input
-              value={String(claimNumber ?? "")}
-              onChange={onText(setClaimNumber)}
-              placeholder="piem., CLV1234567"
-              autoComplete="off"
-              spellCheck={false}
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-            />
+<input
+  value={claimNumber}
+  onChange={onText(setClaimNumber)}
+  placeholder="piem., CLV1234567"
+  autoComplete="off"
+  spellCheck={false}
+/>
+
           </LabeledRow>
         </div>
 
@@ -827,14 +827,14 @@ export default function DamageIntakeForm() {
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
             <input
               value={String(estimatorName ?? "")}
-              onChange={onText(setEstimatorName)}
+              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setEstimatorName)}
               placeholder="Vārds, Uzvārds"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
             />
             <input
               value={String(estimatorEmail ?? "")}
-              onChange={onText(setEstimatorEmail)}
+              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setEstimatorEmail)}
               placeholder="E-pasts"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
@@ -851,14 +851,14 @@ export default function DamageIntakeForm() {
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
-              <input
-                value={String(address ?? "")}
-                onChange={onText(setAddress)}
-                placeholder="Iela 1, Pilsēta"
-                autoComplete="off"
-                spellCheck={false}
-                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-              />
+<input
+  value={address}
+  onChange={onText(setAddress)}
+  placeholder="Iela 1, Pilsēta"
+  autoComplete="off"
+  spellCheck={false}
+/>
+
             </LabeledRow>
           </StepShell>
         )}
@@ -926,7 +926,7 @@ export default function DamageIntakeForm() {
                   <LabeledRow label="3.1.1. Norādi">
                     <input
                       value={String(dwellingOther ?? "")}
-                      onChange={onText(setDwellingOther)}
+                      onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setDwellingOther)}
                       placeholder="NI tips"
                       autoComplete="off"
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
@@ -958,7 +958,7 @@ export default function DamageIntakeForm() {
               <LabeledRow label="4.1. Norādi">
                 <input
                   value={String(incidentOther ?? "")}
-                  onChange={onText(setIncidentOther)}
+                  onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setIncidentOther)}
                   placeholder="Notikuma apraksts"
                   autoComplete="off"
                   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
