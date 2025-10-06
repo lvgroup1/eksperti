@@ -795,22 +795,7 @@ export default function DamageIntakeForm() {
   }
 
   // ===== UI helpers =====
-  function LabeledRow({ label, children }) {
-    return (
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
-        <div>{children}</div>
-      </div>
-    );
-  }
-  function StepShell({ title, children }) {
-    return (
-      <div style={{ background: "white", padding: 16, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</div>
-        {children}
-      </div>
-    );
-  }
+
 
 const onText = React.useCallback((setter) => (e) => setter(e.target.value), []);
 const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
