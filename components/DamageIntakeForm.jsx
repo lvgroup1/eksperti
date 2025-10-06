@@ -72,7 +72,7 @@ function saveEntry(entry) {
 }
 
 
-export const LabeledRow = React.memo(function LabeledRow({ label, children }) {
+const LabeledRow = React.memo(function LabeledRow({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
@@ -81,7 +81,7 @@ export const LabeledRow = React.memo(function LabeledRow({ label, children }) {
   );
 });
 
-export const StepShell = React.memo(function StepShell({ title, children }) {
+const StepShell = React.memo(function StepShell({ title, children }) {
   return (
     <div style={{ background: "white", padding: 16, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</div>
@@ -89,7 +89,6 @@ export const StepShell = React.memo(function StepShell({ title, children }) {
     </div>
   );
 });
-
 
 export default function DamageIntakeForm() {
   // Wizard step (1..12)
@@ -830,6 +829,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
   onChange={onText(setClaimNumber)}
   placeholder="piem., CLV1234567"
   autoComplete="off"
+  spellCheck={false}
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
           </LabeledRow>
