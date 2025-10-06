@@ -31,6 +31,13 @@ function prettyDate(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
 }
 
+function parseDec(x) {
+  if (x === null || x === undefined) return 0;
+  const s = String(x).replace(/\s+/g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
 // Normalise units (Excel has variants like m² / m2, gb. / gab)
 function normalizeUnit(u) {
   if (!u) return "";
@@ -127,24 +134,25 @@ useEffect(() => {
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       return r.json();
     })
-.then((data) => {
-  const items = Array.isArray(data.items) ? data.items : [];
-  const mapped = items.map((it, i) => ({
-    ...it,
-    // atbalstām gan en, gan lv nosaukumus
-    labor: Number(it.labor ?? it.Darbs ?? 0),
-    materials: Number(it.materials ?? it.Materiāli ?? it.Materāli ?? 0),
-    mechanisms: Number(it.mechanisms ?? it.Mehānismi ?? it.Mehanismi ?? 0),
-    unit_price: Number(it.unit_price ?? it.Cena ?? 0),
-    unit: normalizeUnit(it.unit),
-    uid: `${it.category}::${it.id || i}`,
-  }));
-  setPriceCatalog(mapped);
-})
-
-
+    .then((data) => {
+      const items = Array.isArray(data.items) ? data.items : [];
+      const mapped = items.map((it, i) => ({
+        ...it,
+        id: String(it.id ?? i),                     // padarām par string
+        unit: normalizeUnit(it.unit),
+        // droši skaitļi – ja nāk "12,34", kļūst 12.34
+        unit_price: parseDec(it.unit_price),
+        labor:      parseDec(it.labor ?? it.darbs),
+        materials:  parseDec(it.materials ?? it.materiāli ?? it.materiali),
+        mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+        category: it.category || "",
+        uid: `${it.category || "—"}::${String(it.id ?? i)}`
+      }));
+      setPriceCatalog(mapped);
+    })
     .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
+
 
  const categories = useMemo(() => {
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -222,7 +230,7 @@ function setRowCategory(roomId, idx, category) {
     list[idx] = {
       ...list[idx],
       category,
-      itemUid: "",      // <- svarīgi
+      itemUid: "",
       itemId: "",
       itemName: "",
       unit: "",
@@ -235,40 +243,34 @@ function setRowCategory(roomId, idx, category) {
   });
 }
 
-function setRowItem(roomId, idx, itemKey) {
-  const item = priceCatalog.find((i) => i.uid === itemKey || i.id === itemKey);
+function setRowItem(roomId, idx, key) {
+  const item = priceCatalog.find((i) => i.uid === key || i.id === key);
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
       list[idx] = {
         ...list[idx],
+        category: item.category || list[idx].category || "",
         itemUid: item.uid,
         itemId: item.id,
         itemName: item.name,
         unit: item.unit || "",
-        unit_price: item.unit_price ?? null,
-        labor: Number(item.labor ?? 0),
-        materials: Number(item.materials ?? 0),
-        mechanisms: Number(item.mechanisms ?? 0),
+        // droši skaitļi
+        unit_price: parseDec(item.unit_price),
+        labor:      parseDec(item.labor),
+        materials:  parseDec(item.materials),
+        mechanisms: parseDec(item.mechanisms),
       };
     } else {
       list[idx] = {
         ...list[idx],
-        itemUid: "",
-        itemId: "",
-        itemName: "",
-        unit: "",
-        unit_price: null,
-        labor: 0,
-        materials: 0,
-        mechanisms: 0,
+        itemUid: "", itemId: "", itemName: "",
+        unit: "", unit_price: null, labor: 0, materials: 0, mechanisms: 0
       };
     }
     return { ...ra, [roomId]: list };
   });
 }
-
-
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
@@ -368,13 +370,12 @@ const ZEBRA_BG = "FFF9FAFB";        // zebra rindas fons
 const FONT = { name: "Calibri", size: 11 };
 const MONEY_FMT = "#,##0.00";
 const QTY_FMT = "#,##0.00";
+
 async function exportToExcel() {
   try {
-    // ====== ExcelJS ======
     const ExcelJSImport = await import("exceljs/dist/exceljs.min.js");
     const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
 
-    // ====== ielādē sagatavi ======
     const assetBase =
       typeof window !== "undefined" &&
       (window.location.hostname.endsWith("github.io") || window.location.pathname.startsWith("/eksperti"))
@@ -391,31 +392,25 @@ async function exportToExcel() {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(arrayBuf);
 
-    // ņemam sagataves lapu tikai kā avotu un taisām jaunu tīru izvadi
     const src = wb.getWorksheet("Tāme") || wb.worksheets[0];
-    const ws = wb.addWorksheet("Tāme (izvade)", { views: [{ showGridLines: false }] });
+    const ws  = wb.addWorksheet("Tāme (izvade)", { views: [{ showGridLines: false }] });
 
-    // ====== konstantes / stili ======
-    const ZEBRA = true;
-    const ZEBRA_BG = "FFF9FAFB";
-    const SECTION_BG = "FFF3F6FD";
-    const HEADER_BG = "FFEFEFEF";
-    const MONEY_FMT = "#,##0.00";
-    const QTY_FMT = "#,##0.00";
+    // ===== stili =====
+    const ZEBRA = true, ZEBRA_BG = "FFF9FAFB";
+    const SECTION_BG = "FFF3F6FD", HEADER_BG = "FFEFEFEF";
     const FONT = { name: "Calibri", size: 11 };
+    const MONEY_FMT = "#,##0.00", QTY_FMT = "#,##0.00";
     const thin = { style: "thin" };
     const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
-    const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
-    const headerFill  = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+    const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+    const sectionFill= { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
 
-    // lai apraksti aplauztos tikai tur, kur vajag
     ws.getColumn(2).alignment = { wrapText: true, vertical: "middle" };
 
-    // ====== Header ======
+    // ===== Header =====
     const humanDate = new Date().toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
     const pad2 = (n) => String(n).padStart(2, "0");
-    const d = new Date();
-    const tamesNr = `${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${d.getFullYear()}`; // 26092025
+    const d = new Date(); const tamesNr = `${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${d.getFullYear()}`;
 
     ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
     ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
@@ -423,54 +418,41 @@ async function exportToExcel() {
     ws.getCell("A8").value = `Rīga, ${humanDate}`;
     ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
 
-    // LV GROUP (labajā pusē)
     ws.getCell("J1").value = "LV GROUP SIA";
     ws.getCell("J2").value = "Reģ. Nr.: LV40003216553";
     ws.getCell("J3").value = "Banka: Luminor";
     ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
-    ws.getCell("J6").value = `Tāmes Nr.: ${tamesNr}`;
 
-    // Lielais virsraksts pa vidu (B6..L6)
     ws.mergeCells(6, 2, 6, 12);
     const tCell = ws.getCell(6, 2);
     tCell.value = `TĀME Nr. ${tamesNr}`;
     tCell.font = { ...FONT, size: 16, bold: true };
     tCell.alignment = { horizontal: "center", vertical: "middle" };
 
-    // ====== Savācam rindas no formas (ar BALTA sadalījumu) ======
+    // ===== Datu savākšana =====
     const selections = [];
     roomInstances.forEach((ri) => {
       (roomActions[ri.id] || []).forEach((a) => {
-        const qty = Number(a.quantity) || 0;
+        const qty = parseDec(a.quantity);
         if (qty <= 0) return;
 
-        // meklējam pēc uid vai id
-        const item =
-          priceCatalog.find((i) => i.uid === a.itemUid) ||
-          priceCatalog.find((i) => i.id === a.itemId);
+        const item = priceCatalog.find((i) => i.uid === a.itemUid) ||
+                     priceCatalog.find((i) => i.id  === a.itemId);
         if (!item) return;
 
         const unit = normalizeUnit(a.unit || item.unit || "");
 
-        // ja rindā ir overrides – izmanto tos, citādi no kataloga
-        const labor      = Number(a.labor      ?? item.labor      ?? 0);
-        const materials  = Number(a.materials  ?? item.materials  ?? 0);
-        const mechanisms = Number(a.mechanisms ?? item.mechanisms ?? 0);
-
-        // ja nav sadalījuma -> krītam uz vienības cenu
-        const unitPrice = (labor || materials || mechanisms)
+        const labor      = parseDec(a.labor      ?? item.labor);
+        const materials  = parseDec(a.materials  ?? item.materials);
+        const mechanisms = parseDec(a.mechanisms ?? item.mechanisms);
+        const unitPrice  = (labor || materials || mechanisms)
           ? (labor + materials + mechanisms)
-          : Number(a.unit_price ?? item.unit_price ?? 0);
+          : parseDec(a.unit_price ?? item.unit_price);
 
         selections.push({
           room: `${ri.type} ${ri.index}`,
           name: a.itemName || item.name || "",
-          unit,
-          qty,
-          labor,
-          materials,
-          mechanisms,
-          unitPrice,
+          unit, qty, labor, materials, mechanisms, unitPrice
         });
       });
     });
@@ -481,35 +463,25 @@ async function exportToExcel() {
     }
     selections.sort((a, b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
 
-    // ====== Tabulas galvenes (divrindu) ======
-    const START = 15;        // pirmā datu rinda
-    const HEAD1 = START - 2; // augšējais virsraksts
-    const HEAD2 = START - 1; // apakšvirsraksti
-    const COLS  = 12;
+    // ===== Galvenes (2 rindas) =====
+    const START = 15, HEAD1 = START - 2, HEAD2 = START - 1, COLS = 12;
 
-    // 1. rinda
-    ws.getCell(HEAD1, 1).value = "Nr.";
-    ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
-    ws.getCell(HEAD1, 3).value = "Mērv.";
-    ws.getCell(HEAD1, 4).value = "Daudz.";
+    ws.getCell(HEAD1,1).value = "Nr.";
+    ws.getCell(HEAD1,2).value = "Darbu nosaukums";
+    ws.getCell(HEAD1,3).value = "Mērv.";
+    ws.getCell(HEAD1,4).value = "Daudz.";
+    ws.mergeCells(HEAD1,5,HEAD1,8); ws.getCell(HEAD1,5).value = "Vienības cena, EUR";
+    ws.mergeCells(HEAD1,9,HEAD1,12);ws.getCell(HEAD1,9).value = "Summa, EUR";
 
-    ws.mergeCells(HEAD1, 5, HEAD1, 8);
-    ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
+    ws.getCell(HEAD2,5).value="Darbs";
+    ws.getCell(HEAD2,6).value="Materiāli";
+    ws.getCell(HEAD2,7).value="Mehānismi";
+    ws.getCell(HEAD2,8).value="Cena";
+    ws.getCell(HEAD2,9).value="Darbs";
+    ws.getCell(HEAD2,10).value="Materiāli";
+    ws.getCell(HEAD2,11).value="Mehānismi";
+    ws.getCell(HEAD2,12).value="Kopā";
 
-    ws.mergeCells(HEAD1, 9, HEAD1, 12);
-    ws.getCell(HEAD1, 9).value = "Summa, EUR";
-
-    // 2. rinda
-    ws.getCell(HEAD2, 5).value  = "Darbs";
-    ws.getCell(HEAD2, 6).value  = "Materiāli";
-    ws.getCell(HEAD2, 7).value  = "Mehānismi";
-    ws.getCell(HEAD2, 8).value  = "Cena";
-    ws.getCell(HEAD2, 9).value  = "Darbs";
-    ws.getCell(HEAD2, 10).value = "Materiāli";
-    ws.getCell(HEAD2, 11).value = "Mehānismi";
-    ws.getCell(HEAD2, 12).value = "Kopā";
-
-    // galveņu stils
     for (const rr of [HEAD1, HEAD2]) {
       const row = ws.getRow(rr);
       for (let c = 1; c <= COLS; c++) {
@@ -522,68 +494,48 @@ async function exportToExcel() {
       row.height = 22;
     }
 
-    // ====== Datu rakstīšana (tikai aizņemtās šūnas tiek stilētas) ======
-    let r = START;
-    let nr = 1;
-    let first = null;
-    let last = null;
-
-    // lai varētu pielāgot kolonu platumus pēc satura
+    // ===== Dati =====
+    let r = START, nr = 1, first = null, last = null;
     const seen = Array.from({ length: COLS }, () => []);
-    const pushSeen = (c, v) => seen[c - 1].push(String(v ?? ""));
+    const pushSeen = (c, v) => seen[c-1].push(String(v ?? ""));
 
-    // grupējam pēc telpas
     const groups = selections.reduce((acc, s) => {
-      (acc[s.room] ||= []).push(s);
-      return acc;
+      (acc[s.room] ||= []).push(s); return acc;
     }, {});
 
     for (const roomName of Object.keys(groups)) {
-      // Sekcijas virsrinda (sapludinām B..L) un tikai apakšējā līnija
       ws.mergeCells(r, 2, r, 12);
       const sec = ws.getCell(r, 2);
-      sec.value = roomName;
-      sec.fill = sectionFill;
+      sec.value = roomName; sec.fill = sectionFill;
       sec.font = { ...FONT, bold: true };
       sec.alignment = { wrapText: true, vertical: "middle" };
       sec.border = { bottom: thin };
-      ws.getRow(r).height = 18;
-      pushSeen(2, roomName);
-      r++;
+      ws.getRow(r).height = 18; pushSeen(2, roomName); r++;
 
       for (const s of groups[roomName]) {
         const row = ws.getRow(r);
 
-        // 1..4 kolonnas
-        row.getCell(1).value = nr++;                    pushSeen(1, row.getCell(1).value);
-        row.getCell(2).value = s.name;                  pushSeen(2, s.name);
-        row.getCell(3).value = s.unit;                  pushSeen(3, s.unit);
-        row.getCell(4).value = s.qty;                   pushSeen(4, s.qty);
+        row.getCell(1).value = nr++;               pushSeen(1, row.getCell(1).value);
+        row.getCell(2).value = s.name;             pushSeen(2, s.name);
+        row.getCell(3).value = s.unit;             pushSeen(3, s.unit);
+        row.getCell(4).value = s.qty;              pushSeen(4, s.qty);
 
-        // E/F/G no BALTA sadalījuma vai vienības cenas
-        const e = Number(s.labor) || 0;
-        const f = Number(s.materials) || 0;
-        const g = Number(s.mechanisms) || 0;
+        const e = parseDec(s.labor), f = parseDec(s.materials), g = parseDec(s.mechanisms);
         const hasSplit = (e + f + g) > 0;
 
-        row.getCell(5).value = hasSplit ? e : (Number(s.unitPrice) || 0); pushSeen(5, row.getCell(5).value);
-        row.getCell(6).value = hasSplit ? f : 0;                           pushSeen(6, row.getCell(6).value);
-        row.getCell(7).value = hasSplit ? g : 0;                           pushSeen(7, row.getCell(7).value);
+        row.getCell(5).value = hasSplit ? e : parseDec(s.unitPrice); pushSeen(5, row.getCell(5).value);
+        row.getCell(6).value = hasSplit ? f : 0;                      pushSeen(6, row.getCell(6).value);
+        row.getCell(7).value = hasSplit ? g : 0;                      pushSeen(7, row.getCell(7).value);
 
-        // H = E+F+G
-        row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };  pushSeen(8, "");
-        // I/J/K = E/F/G * D
-        row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };       pushSeen(9, "");
-        row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };       pushSeen(10, "");
-        row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };       pushSeen(11, "");
-        // L = H * D
-        row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };       pushSeen(12, "");
+        row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` }; pushSeen(8, "");
+        row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };      pushSeen(9, "");
+        row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };      pushSeen(10, "");
+        row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };      pushSeen(11, "");
+        row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };      pushSeen(12, "");
 
-        // formāti
         row.getCell(4).numFmt = QTY_FMT;
         for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY_FMT;
 
-        // robežas + izlīdzinājums + zebra fons tikai aizņemtajām šūnām
         const isZebra = ((r - START) % 2) === 1;
         for (let c = 1; c <= COLS; c++) {
           const cell = row.getCell(c);
@@ -597,13 +549,11 @@ async function exportToExcel() {
           }
         }
 
-        if (first === null) first = r;
-        last = r;
-        r++;
+        if (first === null) first = r; last = r; r++;
       }
     }
 
-    // ====== Kopsummas + PVN ======
+    // ===== Kopsummas + PVN =====
     let tRow = r + 1;
     ws.getCell(`B${tRow}`).value = "Kopā";
     ws.getCell(`I${tRow}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
@@ -631,7 +581,6 @@ async function exportToExcel() {
     ws.getCell(`L${grandRow}`).value = { formula: `ROUND(L${tRow}+L${pvnRow},2)` };
     ws.getCell(`L${grandRow}`).numFmt = MONEY_FMT;
 
-    // īsais kopsavilkums augšā labajā pusē
     ws.getCell("J9").value = "Tāmes summa euro :";
     ws.getCell("L9").value = { formula: `L${tRow}` };    ws.getCell("L9").numFmt = MONEY_FMT;
     ws.getCell("J10").value = "PVN 21%:";
@@ -639,28 +588,23 @@ async function exportToExcel() {
     ws.getCell("J11").value = "Pavisam kopā euro:";
     ws.getCell("L11").value = { formula: `L${grandRow}` }; ws.getCell("L11").numFmt = MONEY_FMT;
 
-    // ====== Kolonnu platumi pēc satura ======
-    const base = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
+    // kolonu platumi pēc satura
+    const base = [6,56,12,10,14,14,14,14,16,16,16,18];
     const factor = 1.1, padW = 2, maxW = 80;
     for (let c = 1; c <= COLS; c++) {
       const maxLen = Math.max(0, ...seen[c-1].map((s) => String(s).length));
-      ws.getColumn(c).width = Math.min(maxW, Math.max(base[c-1], Math.ceil(maxLen * factor) + padW));
+      ws.getColumn(c).width = Math.min(maxW, Math.max(base[c-1], Math.ceil(maxLen*factor)+padW));
     }
 
-    // ====== sakopjam workbook ======
     wb.removeWorksheet(src.id);
     ws.name = "Tāme";
 
-    // ====== lejupielāde ======
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `Tame_Balta_${prettyDate()}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    a.href = url; a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   } catch (err) {
     console.error("Excel export error:", err);
@@ -1090,39 +1034,40 @@ async function exportToExcel() {
     marginBottom: 8,
   }}
 >
-  {/* Kategorija */}
-  <div>
-    <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
-    <select
-      value={row.category || ""}
-      onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
-      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-    >
-      <option value="">— izvēlies —</option>
-      {categories.map((c) => (
-        <option key={c} value={c}>{c}</option>
-      ))}
-    </select>
-  </div>
+// 1) Kategorija
+<div>
+  <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
+  <select
+    value={row.category || ""}
+    onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
+    style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+  >
+    <option value="">— visas —</option>
+    {categories.map((c) => (
+      <option key={c} value={c}>{c}</option>
+    ))}
+  </select>
+</div>
 
-  {/* Pozīcija (filtrēta pēc kategorijas) — tikai pēc UID */}
-  <div>
-    <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-    <select
-      value={row.itemUid || ""}
-      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-    >
-      <option value="">— izvēlies pozīciju —</option>
-      {priceCatalog
-        .filter((it) => !row.category || it.category === row.category)
-        .map((it) => (
-          <option key={it.uid} value={it.uid}>
-            {it.name} · {it.unit || "—"}
-          </option>
-        ))}
-    </select>
-  </div>
+// 2) Pozīcija (filtrēta pēc kategorijas)
+<div>
+  <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
+  <select
+    value={row.itemUid || row.itemId || ""}
+    onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+    style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+  >
+    <option value="">— izvēlies pozīciju —</option>
+    {priceCatalog
+      .filter((it) => !row.category || it.category === row.category)
+      .map((it) => (
+        <option key={it.uid} value={it.uid}>
+          {it.name} · {it.unit || "—"}
+        </option>
+      ))}
+  </select>
+</div>
+
 
   {/* Mērv. */}
   <div>
