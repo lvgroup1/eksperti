@@ -620,31 +620,6 @@ async function exportToExcel() {
         r++;
       }
     }
-// === Rāmji (border) visām kopsavilkuma rindām ===
-const sumRows = [
-  rowKopa,       // Kopā
-  rowTrans,      // Materiālu, grunts apmaiņas...
-  rowDirect,     // Tiešās izmaksas kopā
-  rowOver,       // Virsizdevumi
-  rowProfit,     // Peļņa
-  rowDDSN,       // Darba devēja sociālais nodoklis
-  rowTotal,      // Kopējās izmaksas
-  rowPVN,        // PVN
-  rowGrand       // Pavisam kopā
-];
-
-for (const rr of sumRows) {
-  for (let c = 1; c <= COLS; c++) {
-    const cell = ws.getCell(rr, c);
-    cell.border = borderAll;                     // rāmis visai rindai
-    // neliels izlīdzinājums, lai izskatās kā datu zonā:
-    cell.font = { ...FONT, bold: cell.font?.bold || false };
-    cell.alignment = (c === 2)
-      ? { wrapText: true, vertical: "middle" }
-      : { vertical: "middle", horizontal: "right" };
-  }
-}
-// (piezīmju blokam joprojām neatstājam borderus)
 
     // ========= kopsavilkums (precīzi kā piemērā) =========
     // rindas: Kopā → Materiālu transports 7% → Tiešās izmaksas kopā →
@@ -719,6 +694,7 @@ for (const rr of sumRows) {
     ws.getCell(`L${rowGrand}`).numFmt = MONEY;
     boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
 
+
     // īsais kopsavilkums augšā (labajā pusē)
     ws.getCell("J9").value = "Tāmes summa euro :";
     ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
@@ -732,6 +708,33 @@ for (const rr of sumRows) {
     ws.getCell(`B${notesStart}`).value = "Piezīmes:";
     ws.getCell(`B${notesStart}`).font = { ...FONT, bold: true };
     ws.mergeCells(notesStart, 2, notesStart, 12);
+
+// === Rāmji (border) visām kopsavilkuma rindām ===
+const sumRows = [
+  rowKopa,       // Kopā
+  rowTrans,      // Materiālu, grunts apmaiņas...
+  rowDirect,     // Tiešās izmaksas kopā
+  rowOver,       // Virsizdevumi
+  rowProfit,     // Peļņa
+  rowDDSN,       // Darba devēja sociālais nodoklis
+  rowTotal,      // Kopējās izmaksas
+  rowPVN,        // PVN
+  rowGrand       // Pavisam kopā
+];
+
+for (const rr of sumRows) {
+  for (let c = 1; c <= COLS; c++) {
+    const cell = ws.getCell(rr, c);
+    cell.border = borderAll;                     // rāmis visai rindai
+    // neliels izlīdzinājums, lai izskatās kā datu zonā:
+    cell.font = { ...FONT, bold: cell.font?.bold || false };
+    cell.alignment = (c === 2)
+      ? { wrapText: true, vertical: "middle" }
+      : { vertical: "middle", horizontal: "right" };
+  }
+}
+// (piezīmju blokam joprojām neatstājam borderus)
+
 
     const notes = [
       "1. Tāmes derīguma termiņš – 1 mēnesis.",
