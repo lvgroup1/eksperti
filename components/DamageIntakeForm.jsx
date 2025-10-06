@@ -804,14 +804,14 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
         {/* Lietas Nr. (formas sākumā) */}
         <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
           <LabeledRow label="Lietas Nr.">
-<input
-  value={claimNumber}
-  onChange={onText(setClaimNumber)}
-  placeholder="piem., CLV1234567"
-  autoComplete="off"
-  spellCheck={false}
-/>
-
+            <input
+              value={String(claimNumber ?? "")}
+              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setClaimNumber)}
+              placeholder="piem., CLV1234567"
+              autoComplete="off"
+              spellCheck={false}
+              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+            />
           </LabeledRow>
         </div>
 
@@ -851,14 +851,14 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
-<input
-  value={address}
-  onChange={onText(setAddress)}
-  placeholder="Iela 1, Pilsēta"
-  autoComplete="off"
-  spellCheck={false}
-/>
-
+              <input
+                value={String(address ?? "")}
+                onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setAddress)}
+                placeholder="Iela 1, Pilsēta"
+                autoComplete="off"
+                spellCheck={false}
+                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+              />
             </LabeledRow>
           </StepShell>
         )}
