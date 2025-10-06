@@ -173,6 +173,7 @@ useEffect(() => {
     .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
 
+
  const categories = useMemo(() => {
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
   return Array.from(set);
@@ -218,6 +219,8 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
+
+  
   // Actions helpers
   function addActionRow(roomId, presetCategory = "") {
     setRoomActions((ra) => ({
@@ -1075,14 +1078,16 @@ for (const rr of sumRows) {
             </LabeledRow>
             {lossKnown === "Jā" && (
               <LabeledRow label="Summa EUR">
-                <input
-                  type="number"
-                  min={0}
-                  value={lossAmount}
-                  onChange={(e) => setLossAmount(e.target.value)}
-                  placeholder="€ summa"
-                  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-                />
+ <input
+  type="number"
+  inputMode="decimal"
+  step="0.01"
+  value={lossAmount ?? ""}
+  onInput={onNum(setLossAmount)}
+  onChange={onNum(setLossAmount)}
+  autoComplete="off"
+/>
+
               </LabeledRow>
             )}
           </StepShell>
@@ -1323,6 +1328,7 @@ for (const rr of sumRows) {
               onInput={(e) => setRowField(editingRoomId, idx, "quantity", e.currentTarget.value)}
               onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.currentTarget.value)}
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+              autoComplete="off"
               placeholder="Skaitlis"
             />
           </div>
