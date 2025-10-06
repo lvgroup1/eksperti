@@ -805,11 +805,11 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
         <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
           <LabeledRow label="Lietas Nr.">
             <input
-              value={String(claimNumber ?? "")}
-              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setClaimNumber)}
-              placeholder="piem., CLV1234567"
-              autoComplete="off"
-              spellCheck={false}
+  value={claimNumber ?? ""}
+  onChange={onText(setClaimNumber)}
+  placeholder="piem., CLV1234567"
+  autoComplete="off"
+  spellCheck={false}
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
           </LabeledRow>
@@ -826,16 +826,16 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
             <input
-              value={String(estimatorName ?? "")}
-              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setEstimatorName)}
-              placeholder="Vārds, Uzvārds"
+  value={estimatorName ?? ""}
+  onChange={onText(setEstimatorName)}
+  placeholder="Vārds, Uzvārds"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
             />
             <input
-              value={String(estimatorEmail ?? "")}
-              onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setEstimatorEmail)}
-              placeholder="E-pasts"
+   value={estimatorEmail ?? ""}
+  onChange={onText(setEstimatorEmail)}
+  placeholder="E-pasts"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
@@ -852,9 +852,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
               <input
-                value={String(address ?? "")}
-                onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setAddress)}
-                placeholder="Iela 1, Pilsēta"
+   value={address ?? ""}
+  onChange={onText(setAddress)}
+  placeholder="Iela 1, Pilsēta"
                 autoComplete="off"
                 spellCheck={false}
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
@@ -925,9 +925,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                 {dwellingSubtype === "Cits" && (
                   <LabeledRow label="3.1.1. Norādi">
                     <input
-                      value={String(dwellingOther ?? "")}
-                      onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setDwellingOther)}
-                      placeholder="NI tips"
+   value={dwellingOther ?? ""}
+  onChange={onText(setDwellingOther)}
+  placeholder="NI tips"
                       autoComplete="off"
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                     />
@@ -957,9 +957,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
             {incidentType === "Cits" && (
               <LabeledRow label="4.1. Norādi">
                 <input
-                  value={String(incidentOther ?? "")}
-                  onChange={React.useCallback((setter) => (e) => setter(e.target.value), [])(setIncidentOther)}
-                  placeholder="Notikuma apraksts"
+   value={incidentOther ?? ""}
+  onChange={onText(setIncidentOther)}
+   placeholder="Notikuma apraksts"
                   autoComplete="off"
                   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                 />
@@ -1023,13 +1023,13 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
             {lossKnown === "Jā" && (
               <LabeledRow label="Summa EUR">
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={String(lossAmount ?? "")}
-                  onChange={onNum(setLossAmount)}
-                  autoComplete="off"
-                  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+  type="number"
+  inputMode="decimal"
+  step="0.01"
+  value={lossAmount ?? ""}
+  onChange={onNum(setLossAmount)}
+  autoComplete="off"
+  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                   placeholder="€ summa"
                 />
               </LabeledRow>
@@ -1189,9 +1189,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           >
             <LabeledRow label="Piezīmes">
               <input
-                value={String(roomInstances.find((r) => r.id === editingRoomId)?.note ?? "")}
-                onChange={(e) => setRoomNote(editingRoomId, e.currentTarget.value)}
-                placeholder="Papildus informācija"
+   value={(roomInstances.find((r) => r.id === editingRoomId)?.note) ?? ""}
+  onChange={(e) => setRoomNote(editingRoomId, e.target.value)}
+  placeholder="Papildus informācija"
                 autoComplete="off"
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
               />
@@ -1288,12 +1288,12 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
                     <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={String(row.quantity ?? "")}
-                      onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.currentTarget.value)}
-                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+  type="number"
+  min={0}
+  step="0.01"
+  value={row.quantity ?? ""}
+  onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                       autoComplete="off"
                       placeholder="Skaitlis"
                     />
