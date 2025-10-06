@@ -620,6 +620,31 @@ async function exportToExcel() {
         r++;
       }
     }
+// === Rāmji (border) visām kopsavilkuma rindām ===
+const sumRows = [
+  rowKopa,       // Kopā
+  rowTrans,      // Materiālu, grunts apmaiņas...
+  rowDirect,     // Tiešās izmaksas kopā
+  rowOver,       // Virsizdevumi
+  rowProfit,     // Peļņa
+  rowDDSN,       // Darba devēja sociālais nodoklis
+  rowTotal,      // Kopējās izmaksas
+  rowPVN,        // PVN
+  rowGrand       // Pavisam kopā
+];
+
+for (const rr of sumRows) {
+  for (let c = 1; c <= COLS; c++) {
+    const cell = ws.getCell(rr, c);
+    cell.border = borderAll;                     // rāmis visai rindai
+    // neliels izlīdzinājums, lai izskatās kā datu zonā:
+    cell.font = { ...FONT, bold: cell.font?.bold || false };
+    cell.alignment = (c === 2)
+      ? { wrapText: true, vertical: "middle" }
+      : { vertical: "middle", horizontal: "right" };
+  }
+}
+// (piezīmju blokam joprojām neatstājam borderus)
 
     // ========= kopsavilkums (precīzi kā piemērā) =========
     // rindas: Kopā → Materiālu transports 7% → Tiešās izmaksas kopā →
