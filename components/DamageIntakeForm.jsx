@@ -219,8 +219,10 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
+const onText = (setter) => (e) => setter(e.currentTarget.value);
+const onNum  = (setter) => (e) => setter(e.currentTarget.value); // keep as string
 
-  
+
   // Actions helpers
   function addActionRow(roomId, presetCategory = "") {
     setRoomActions((ra) => ({
