@@ -1034,7 +1034,7 @@ async function exportToExcel() {
     marginBottom: 8,
   }}
 >
-// 1) Kategorija
+
 <div>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
   <select
@@ -1049,7 +1049,7 @@ async function exportToExcel() {
   </select>
 </div>
 
-// 2) Pozīcija (filtrēta pēc kategorijas)
+
 <div>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
   <select
