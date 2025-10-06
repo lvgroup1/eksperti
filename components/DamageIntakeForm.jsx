@@ -31,12 +31,6 @@ function prettyDate(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
 }
 
-function parseDec(x) {
-  if (x === null || x === undefined) return 0;
-  const s = String(x).replace(/\s+/g, "").replace(",", ".");
-  const n = parseFloat(s);
-  return Number.isFinite(n) ? n : 0;
-}
 
 // Normalise units (Excel has variants like m² / m2, gb. / gab)
 function normalizeUnit(u) {
@@ -136,23 +130,41 @@ useEffect(() => {
     })
     .then((data) => {
       const items = Array.isArray(data.items) ? data.items : [];
-      const mapped = items.map((it, i) => ({
-        ...it,
-        id: String(it.id ?? i),                     // padarām par string
-        unit: normalizeUnit(it.unit),
-        // droši skaitļi – ja nāk "12,34", kļūst 12.34
-        unit_price: parseDec(it.unit_price),
-        labor:      parseDec(it.labor ?? it.darbs),
-        materials:  parseDec(it.materials ?? it.materiāli ?? it.materiali),
-        mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-        category: it.category || "",
-        uid: `${it.category || "—"}::${String(it.id ?? i)}`
-      }));
+
+      function parseDec(x) {
+        if (x === null || x === undefined) return 0;
+        const s = String(x).replace(/\s+/g, "").replace(",", ".");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      const mapped = items.map((it, i) => {
+        const category = (it.category || "").trim();
+        const subcat =
+          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+        const idStr = String(it.id ?? i);
+        const name = (it.name || "").trim();
+
+        return {
+          ...it,
+          id: idStr,
+          name,
+          category,
+          subcategory: subcat,
+          unit: normalizeUnit(it.unit),
+          unit_price: parseDec(it.unit_price),
+          labor:      parseDec(it.labor ?? it.darbs),
+          materials:  parseDec(it.materials ?? it.materiāli ?? it.materiali),
+          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+          // UID, kas nekad nesakritīs starp apakškategorijām
+          uid: [category, subcat, idStr, name].join("::"),
+        };
+      });
+
       setPriceCatalog(mapped);
     })
     .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
 }, [insurer]);
-
 
  const categories = useMemo(() => {
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -230,6 +242,7 @@ function setRowCategory(roomId, idx, category) {
     list[idx] = {
       ...list[idx],
       category,
+      // notīrām izvēlēto pozīciju
       itemUid: "",
       itemId: "",
       itemName: "",
@@ -243,8 +256,8 @@ function setRowCategory(roomId, idx, category) {
   });
 }
 
-function setRowItem(roomId, idx, key) {
-  const item = priceCatalog.find((i) => i.uid === key || i.id === key);
+function setRowItem(roomId, idx, uid) {
+  const item = priceCatalog.find((i) => i.uid === uid); // ← tikai pēc uid!
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     if (item) {
@@ -252,14 +265,13 @@ function setRowItem(roomId, idx, key) {
         ...list[idx],
         category: item.category || list[idx].category || "",
         itemUid: item.uid,
-        itemId: item.id,
+        itemId: item.id,         // var paturēt informācijai, bet netiks lietots lookup
         itemName: item.name,
         unit: item.unit || "",
-        // droši skaitļi
-        unit_price: parseDec(item.unit_price),
-        labor:      parseDec(item.labor),
-        materials:  parseDec(item.materials),
-        mechanisms: parseDec(item.mechanisms),
+        unit_price: item.unit_price ?? null,
+        labor: item.labor ?? 0,
+        materials: item.materials ?? 0,
+        mechanisms: item.mechanisms ?? 0,
       };
     } else {
       list[idx] = {
@@ -271,6 +283,7 @@ function setRowItem(roomId, idx, key) {
     return { ...ra, [roomId]: list };
   });
 }
+
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
@@ -436,18 +449,17 @@ async function exportToExcel() {
         const qty = parseDec(a.quantity);
         if (qty <= 0) return;
 
-        const item = priceCatalog.find((i) => i.uid === a.itemUid) ||
-                     priceCatalog.find((i) => i.id  === a.itemId);
-        if (!item) return;
+const item = priceCatalog.find((i) => i.uid === a.itemUid);
+if (!item) return;
 
-        const unit = normalizeUnit(a.unit || item.unit || "");
+const unit = normalizeUnit(a.unit || item.unit || "");
+const labor      = Number.isFinite(+a.labor)      ? +a.labor      : item.labor || 0;
+const materials  = Number.isFinite(+a.materials)  ? +a.materials  : item.materials || 0;
+const mechanisms = Number.isFinite(+a.mechanisms) ? +a.mechanisms : item.mechanisms || 0;
+const unitPrice  = (labor || materials || mechanisms)
+  ? (labor + materials + mechanisms)
+  : Number.isFinite(+a.unit_price) ? +a.unit_price : (item.unit_price || 0);
 
-        const labor      = parseDec(a.labor      ?? item.labor);
-        const materials  = parseDec(a.materials  ?? item.materials);
-        const mechanisms = parseDec(a.mechanisms ?? item.mechanisms);
-        const unitPrice  = (labor || materials || mechanisms)
-          ? (labor + materials + mechanisms)
-          : parseDec(a.unit_price ?? item.unit_price);
 
         selections.push({
           room: `${ri.type} ${ri.index}`,
@@ -1035,6 +1047,7 @@ async function exportToExcel() {
   }}
 >
 
+{/* Kategorija */}
 <div>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
   <select
@@ -1049,11 +1062,11 @@ async function exportToExcel() {
   </select>
 </div>
 
-
+{/* Pozīcija – vērtība un meklēšana tikai pēc UID */}
 <div>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
   <select
-    value={row.itemUid || row.itemId || ""}
+    value={row.itemUid || ""}
     onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
     style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
   >
@@ -1062,7 +1075,7 @@ async function exportToExcel() {
       .filter((it) => !row.category || it.category === row.category)
       .map((it) => (
         <option key={it.uid} value={it.uid}>
-          {it.name} · {it.unit || "—"}
+          {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
         </option>
       ))}
   </select>
