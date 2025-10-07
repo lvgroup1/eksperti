@@ -55,47 +55,90 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
-// --- CHILD/PARENT helpers ---
-const isChildItem = (it) =>
-  !!(it.parent_uid || it.parentId || it.childOf); // when catalog encodes children as separate rows
+// ---------- CHILD/PARENT DETECTION (robust) ----------
+const truthy = (v) => v === true || v === 1 || v === "1" ||
+  (typeof v === "string" && v.trim().toLowerCase() === "true") ||
+  (typeof v === "string" && v.trim().toLowerCase() === "yes");
 
-const getChildrenFor = (item, priceCatalog) => {
-  // Case A: nested children in the parent item
-  if (Array.isArray(item.children) && item.children.length) {
-    return item.children.map((ch, i) => ({
-      // normalize fields
-      name: ch.name || ch.title || "",
-      unit: normalizeUnit(ch.unit || item.unit || ""),
-      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1),
-      // split or fallback to unit_price as materials
-      labor:      parseDec(ch.labor ?? 0),
-      materials:  parseDec(
-        ch.materials ??
-        (ch.labor || ch.mechanisms ? 0 : ch.unit_price ?? 0)
-      ),
-      mechanisms: parseDec(ch.mechanisms ?? 0),
-    }));
+// is this item a child row?
+const isChildItem = (it) => {
+  // explicit boolean-ish flags that might exist in your JSON
+  const boolKeys = ["is_child", "child", "apakspozicija", "apakšpozīcija", "isSub", "is_sub"];
+  for (const k of boolKeys) {
+    if (k in it && truthy(it[k])) return true;
   }
 
-  // Case B: children present as separate catalog rows that point to the parent
-  const byLink = priceCatalog.filter(
+  // explicit links imply child
+  if (it.childOf || it.parent_uid || it.parentId || it.parent || it.parent_name || it.parentName) return true;
+
+  // level-based structures
+  const lvl = Number(it.level ?? it.lvl ?? it.depth);
+  if (Number.isFinite(lvl) && lvl > 1) return true;
+
+  return false;
+};
+
+// link child row to a parent row
+const linkMatchesParent = (child, parent) => {
+  const parentCandidates = [parent.uid, parent.id, parent.name].filter(Boolean);
+  const childLinks = [
+    child.childOf,
+    child.parent_uid,
+    child.parentId,
+    child.parent,
+    child.parent_name,
+    child.parentName,
+  ].filter(Boolean);
+  return childLinks.some((l) => parentCandidates.includes(l));
+};
+
+// map a flat child row into the structure used by export
+const mapChildFromFlat = (x, fallbackUnit) => ({
+  name: x.name || "",
+  unit: normalizeUnit(x.unit || fallbackUnit || ""),
+  coeff: parseDec(x.coeff ?? 1),
+  labor: parseDec(x.labor ?? 0),
+  // If child has only a unit price, treat it as materials (like in BALTA sheets)
+  materials: parseDec(
+    x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)
+  ),
+  mechanisms: parseDec(x.mechanisms ?? 0),
+});
+
+// get children for a given parent (supports nested or linked)
+const getChildrenFor = (parent, catalog) => {
+  // A) nested
+  if (Array.isArray(parent.children) && parent.children.length) {
+    return parent.children.map((ch) =>
+      mapChildFromFlat(
+        {
+          name: ch.name ?? ch.title ?? "",
+          unit: ch.unit,
+          coeff: ch.coeff ?? ch.multiplier,
+          labor: ch.labor,
+          materials: ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price),
+          mechanisms: ch.mechanisms,
+        },
+        parent.unit
+      )
+    );
+  }
+
+  // B) separate rows with links to parent
+  const linked = catalog.filter((x) => linkMatchesParent(x, parent));
+  if (linked.length) {
+    return linked.map((x) => mapChildFromFlat(x, parent.unit));
+  }
+
+  // C) fallback: if your data marks children only with flags and shares the same category/subcategory
+  const flaggedSameGroup = catalog.filter(
     (x) =>
-      x.parent_uid === item.uid ||
-      x.parentId === item.id ||
-      x.childOf === item.id ||
-      x.childOf === item.uid
+      isChildItem(x) &&
+      x.category === parent.category &&
+      x.subcategory === parent.subcategory
   );
-  if (byLink.length) {
-    return byLink.map((x) => ({
-      name: x.name || "",
-      unit: normalizeUnit(x.unit || item.unit || ""),
-      coeff: parseDec(x.coeff ?? 1),
-      labor: parseDec(x.labor ?? 0),
-      materials: parseDec(
-        x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)
-      ),
-      mechanisms: parseDec(x.mechanisms ?? 0),
-    }));
+  if (flaggedSameGroup.length) {
+    return flaggedSameGroup.map((x) => mapChildFromFlat(x, parent.unit));
   }
 
   return [];
@@ -527,7 +570,7 @@ roomInstances.forEach((ri) => {
     const qty = parseDec(a.quantity);
     if (!qty) return;
 
-    // find parent item (parents only in the dropdown)
+    // only parents are selectable in the form
     const parent =
       priceCatalog.find((i) => i.uid === a.itemUid) ||
       priceCatalog.find((i) => i.id === a.itemId);
@@ -542,7 +585,7 @@ roomInstances.forEach((ri) => {
     const pSplit = pLabor + pMat + pMech;
     const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-    // push parent row (numbered)
+    // push parent (numbered)
     selections.push({
       isChild: false,
       room: `${ri.type} ${ri.index}`,
@@ -555,31 +598,25 @@ roomInstances.forEach((ri) => {
       unitPrice: pUnitPrice,
     });
 
-    // expand children (if present)
+    // auto-append children
     const kids = getChildrenFor(parent, priceCatalog);
     for (const ch of kids) {
       const cQty = parseDec(ch.coeff ?? 1) * qty;
 
-      const cLabor = parseDec(ch.labor ?? 0);
-      const cMech  = parseDec(ch.mechanisms ?? 0);
-      // if no split given for child but has a price, treat it as materials (like your BALTA sheet)
-      const cMat   = parseDec(ch.materials ?? 0);
-
       selections.push({
-        isChild: true,                    // <— flag for Excel formatting (indent, no number)
+        isChild: true, // ← Excel will indent and remove numbering
         room: `${ri.type} ${ri.index}`,
         name: ch.name || "",
         unit: normalizeUnit(ch.unit || unit),
         qty: cQty,
-        labor: cLabor,
-        materials: cMat,
-        mechanisms: cMech,
-        unitPrice: cLabor + cMat + cMech, // H = E+F+G anyway
+        labor: parseDec(ch.labor ?? 0),
+        materials: parseDec(ch.materials ?? 0),
+        mechanisms: parseDec(ch.mechanisms ?? 0),
+        unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
       });
     }
   });
 });
-
 
       if (!selections.length) {
         alert("Nav nevienas pozīcijas ar daudzumu.");
@@ -1343,6 +1380,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
       </option>
     ))}
 </select>
+
 
                   </div>
 
