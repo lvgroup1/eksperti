@@ -55,6 +55,53 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
+// --- CHILD/PARENT helpers ---
+const isChildItem = (it) =>
+  !!(it.parent_uid || it.parentId || it.childOf); // when catalog encodes children as separate rows
+
+const getChildrenFor = (item, priceCatalog) => {
+  // Case A: nested children in the parent item
+  if (Array.isArray(item.children) && item.children.length) {
+    return item.children.map((ch, i) => ({
+      // normalize fields
+      name: ch.name || ch.title || "",
+      unit: normalizeUnit(ch.unit || item.unit || ""),
+      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1),
+      // split or fallback to unit_price as materials
+      labor:      parseDec(ch.labor ?? 0),
+      materials:  parseDec(
+        ch.materials ??
+        (ch.labor || ch.mechanisms ? 0 : ch.unit_price ?? 0)
+      ),
+      mechanisms: parseDec(ch.mechanisms ?? 0),
+    }));
+  }
+
+  // Case B: children present as separate catalog rows that point to the parent
+  const byLink = priceCatalog.filter(
+    (x) =>
+      x.parent_uid === item.uid ||
+      x.parentId === item.id ||
+      x.childOf === item.id ||
+      x.childOf === item.uid
+  );
+  if (byLink.length) {
+    return byLink.map((x) => ({
+      name: x.name || "",
+      unit: normalizeUnit(x.unit || item.unit || ""),
+      coeff: parseDec(x.coeff ?? 1),
+      labor: parseDec(x.labor ?? 0),
+      materials: parseDec(
+        x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)
+      ),
+      mechanisms: parseDec(x.mechanisms ?? 0),
+    }));
+  }
+
+  return [];
+};
+
+
 // LocalStorage helpers
 const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
 function loadSaved() {
@@ -472,34 +519,67 @@ export default function DamageIntakeForm() {
       tCell.alignment = { horizontal: "center", vertical: "middle" };
 
       // Gather rows (exactly in the form order)
-      const selections = [];
-      roomInstances.forEach((ri) => {
-        const list = roomActions[ri.id] || [];
-        list.forEach((a) => {
-          const qty = parseDec(a.quantity);
-          if (!qty) return;
-          const item = priceCatalog.find((i) => i.uid === a.itemUid) || priceCatalog.find((i) => i.id === a.itemId);
-          if (!item) return;
+// ========= collect rows IN FORM ORDER, and expand children =========
+const selections = [];
+roomInstances.forEach((ri) => {
+  const list = roomActions[ri.id] || [];
+  list.forEach((a) => {
+    const qty = parseDec(a.quantity);
+    if (!qty) return;
 
-          const unit = normalizeUnit(a.unit || item.unit || "");
-          const labor = parseDec(a.labor ?? item.labor ?? 0);
-          const materials = parseDec(a.materials ?? item.materials ?? 0);
-          const mechanisms = parseDec(a.mechanisms ?? item.mechanisms ?? 0);
-          const split = labor + materials + mechanisms;
-          const unitPrice = split ? split : parseDec(a.unit_price ?? item.unit_price ?? 0);
+    // find parent item (parents only in the dropdown)
+    const parent =
+      priceCatalog.find((i) => i.uid === a.itemUid) ||
+      priceCatalog.find((i) => i.id === a.itemId);
+    if (!parent) return;
 
-          selections.push({
-            room: `${ri.type} ${ri.index}`,
-            name: a.itemName || item.name || "",
-            unit,
-            qty,
-            labor,
-            materials,
-            mechanisms,
-            unitPrice,
-          });
-        });
+    const unit = normalizeUnit(a.unit || parent.unit || "");
+
+    // parent split (or fallback to unit_price)
+    const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
+    const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
+    const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
+    const pSplit = pLabor + pMat + pMech;
+    const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
+
+    // push parent row (numbered)
+    selections.push({
+      isChild: false,
+      room: `${ri.type} ${ri.index}`,
+      name: a.itemName || parent.name || "",
+      unit,
+      qty,
+      labor: pLabor,
+      materials: pMat,
+      mechanisms: pMech,
+      unitPrice: pUnitPrice,
+    });
+
+    // expand children (if present)
+    const kids = getChildrenFor(parent, priceCatalog);
+    for (const ch of kids) {
+      const cQty = parseDec(ch.coeff ?? 1) * qty;
+
+      const cLabor = parseDec(ch.labor ?? 0);
+      const cMech  = parseDec(ch.mechanisms ?? 0);
+      // if no split given for child but has a price, treat it as materials (like your BALTA sheet)
+      const cMat   = parseDec(ch.materials ?? 0);
+
+      selections.push({
+        isChild: true,                    // <— flag for Excel formatting (indent, no number)
+        room: `${ri.type} ${ri.index}`,
+        name: ch.name || "",
+        unit: normalizeUnit(ch.unit || unit),
+        qty: cQty,
+        labor: cLabor,
+        materials: cMat,
+        mechanisms: cMech,
+        unitPrice: cLabor + cMat + cMech, // H = E+F+G anyway
       });
+    }
+  });
+});
+
 
       if (!selections.length) {
         alert("Nav nevienas pozīcijas ar daudzumu.");
@@ -567,49 +647,55 @@ export default function DamageIntakeForm() {
         ws.getRow(r).height = 18;
         r++;
 
-        for (const s of rows) {
-          const row = ws.getRow(r);
+for (const s of rows) {
+    const row = ws.getRow(r);
 
-          row.getCell(1).value = nr++;
-          row.getCell(2).value = s.name;
-          row.getCell(3).value = s.unit;
-          row.getCell(4).value = s.qty;
+    // Nr. column: only for parents
+    row.getCell(1).value = s.isChild ? "" : nr++;
 
-          const e = s.labor || 0;
-          const f = s.materials || 0;
-          const g = s.mechanisms || 0;
-          const hasSplit = e + f + g > 0;
+    // indent children name
+    row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+    row.getCell(3).value = s.unit;
+    row.getCell(4).value = s.qty;
 
-          row.getCell(5).value = hasSplit ? e : s.unitPrice;
-          row.getCell(6).value = hasSplit ? f : 0;
-          row.getCell(7).value = hasSplit ? g : 0;
+    // split
+    const e = s.labor || 0;
+    const f = s.materials || 0;
+    const g = s.mechanisms || 0;
+    const hasSplit = (e + f + g) > 0;
 
-          row.getCell(8).value = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-          row.getCell(9).value = { formula: `ROUND(E${r}*D${r},2)` };
-          row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
-          row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-          row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+    row.getCell(5).value = hasSplit ? e : s.unitPrice;
+    row.getCell(6).value = hasSplit ? f : 0;
+    row.getCell(7).value = hasSplit ? g : 0;
 
-          row.getCell(4).numFmt = QTY;
-          for (const c of [5, 6, 7, 8, 9, 10, 11, 12]) row.getCell(c).numFmt = MONEY;
+    row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+    row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+    row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
+    row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
+    row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-          const isZebra = ((r - START) % 2) === 1;
-          for (let c = 1; c <= COLS; c++) {
-            const cell = row.getCell(c);
-            if (ZEBRA && isZebra) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-            }
-            cell.border = borderAll;
-            cell.font = FONT;
-            cell.alignment =
-              c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
-          }
+    // formatting you already have:
+    row.getCell(4).numFmt = QTY;
+    for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
 
-          if (first === null) first = r;
-          last = r;
-          r++;
-        }
+    const isZebra = ((r - START) % 2) === 1;
+    for (let c = 1; c <= COLS; c++) {
+      const cell = row.getCell(c);
+      if (ZEBRA && isZebra) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
       }
+      cell.border = borderAll;
+      cell.font = { ...FONT, italic: !!s.isChild }; // child rows italic (optional)
+      cell.alignment = c === 2
+        ? { wrapText: true, vertical: "middle" }
+        : { vertical: "middle", horizontal: "right" };
+    }
+
+    if (first === null) first = r;
+    last = r;
+    r++;
+  }
+}
 
       // Summary block (with borders for these rows)
       const boldCell = (addr) => {
@@ -1243,27 +1329,21 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                   {/* Pozīcija (UID-based) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-                    <select
-                      value={row.itemUid ?? ""}
-                      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-                      style={{
-                        width: "100%",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 10,
-                        padding: 8,
-                        background: "white",
-                      }}
-                    >
-                      <option value="">— izvēlies pozīciju —</option>
-                      {priceCatalog
-                        .filter((it) => !row.category || it.category === row.category)
-                        .map((it) => (
-                          <option key={it.uid} value={it.uid}>
-                            {it.subcategory ? `[${it.subcategory}] ` : ""}
-                            {it.name} · {it.unit || "—"}
-                          </option>
-                        ))}
-                    </select>
+<select
+  value={row.itemUid ?? ""}
+  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+>
+  <option value="">— izvēlies pozīciju —</option>
+  {priceCatalog
+    .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+    .map((it) => (
+      <option key={it.uid} value={it.uid}>
+        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+      </option>
+    ))}
+</select>
+
                   </div>
 
                   {/* Mērv. */}
