@@ -48,7 +48,15 @@ const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
-const norm = (x) => String(x ?? "").trim().toLowerCase();
+// fold diacritics, trim, lowercase, collapse spaces
+const norm = (x) =>
+  String(x ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")  // remove accents (ā→a, ē→e, etc.)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
 
 const isChildItem = (it) =>
   parseBool(it.is_child) || parseBool(it.child) ||
@@ -389,6 +397,77 @@ export default function DamageIntakeForm() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
+const childrenByUID = React.useMemo(() => {
+  const map = new Map(); // key: parent.uid, value: [{name, unit, coeff, labor, materials, mechanisms}]
+
+  const parents = (priceCatalog || []).filter(it => !isChildItem(it));
+  const kids    = (priceCatalog || []).filter(it =>  isChildItem(it));
+
+  // compare child ↔ parent by many possible link fields
+  function linkMatchesParent(child, parent) {
+    const P = new Set([
+      norm(parent.uid),
+      norm(parent.id),
+      norm(parent.name),
+      norm(parent.category + "::" + parent.name),
+    ]);
+    const C = [
+      child.parent_uid, child.parentUid, child.parent_id, child.parentId,
+      child.parent, child.parent_name, child.parentName, child.childOf,
+      child.parent_key, child.parentKey,
+    ].map(norm).filter(Boolean);
+    return C.some((c) => P.has(c));
+  }
+
+  // compact child shape for export
+ function toChild(x, fallbackUnit) {
+  const labor = Number(x?.labor ?? 0) || 0;
+  const mech  = Number(x?.mechanisms ?? 0) || 0;
+  const materials = Number(x?.materials ?? ((labor || mech) ? 0 : (x?.unit_price ?? 0))) || 0;
+
+  return {
+    name: x?.name || "",
+    unit: normalizeUnit(x?.unit || fallbackUnit || ""),
+    coeff: Number(x?.coeff ?? x?.multiplier ?? 1) || 1,
+    labor,
+    materials,
+    mechanisms: mech,
+  };
+}
+
+
+  // 1) link flat child rows to parents
+  for (const child of kids) {
+    const parent = parents.find(p => linkMatchesParent(child, p));
+    if (!parent) continue;
+    const key = parent.uid;
+    const arr = map.get(key) || [];
+    const ch  = toChild(child, parent.unit);
+    if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+      arr.push(ch);
+    }
+    map.set(key, arr);
+  }
+
+  // 2) fold in any embedded parent.children arrays
+  for (const p of parents) {
+    const embedded = Array.isArray(p.children) ? p.children : [];
+    if (!embedded.length) continue;
+    const key = p.uid;
+    const arr = map.get(key) || [];
+    for (const raw of embedded) {
+      const ch = toChild(raw, p.unit);
+      if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+        arr.push(ch);
+      }
+    }
+    map.set(key, arr);
+  }
+
+  return map;
+}, [priceCatalog]);
+
+
 
   /* ---------- Action row helpers ---------- */
   function addActionRow(roomId, presetCategory = "") {
@@ -586,21 +665,30 @@ export default function DamageIntakeForm() {
             unitPrice: pUnitPrice,
           });
 
-          const kids = getChildrenFor(parent);
-          for (const ch of kids) {
-            const cQty = parseDec(ch.coeff ?? 1) * qty;
-            selections.push({
-              isChild: true,
-              room: `${ri.type} ${ri.index}`,
-              name: ch.name || "",
-              unit: normalizeUnit(ch.unit || unit),
-              qty: cQty,
-              labor: parseDec(ch.labor ?? 0),
-              materials: parseDec(ch.materials ?? 0),
-              mechanisms: parseDec(ch.mechanisms ?? 0),
-              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
-            });
-          }
+          // auto-append children (use precomputed map; fallback to getChildrenFor)
+let kids = childrenByUID.get(parent.uid) || [];
+if (!kids.length) {
+  kids = getChildrenFor(parent); // your getChildrenFor already consults childIndex + hints
+}
+for (const ch of kids) {
+  const cQty = parseDec(ch.coeff ?? 1) * qty;
+  selections.push({
+    isChild: true,
+    room: `${ri.type} ${ri.index}`,
+    name: ch.name || "",
+    unit: normalizeUnit(ch.unit || unit),
+    qty: cQty,
+    labor: parseDec(ch.labor ?? 0),
+    materials: parseDec(ch.materials ?? 0),
+    mechanisms: parseDec(ch.mechanisms ?? 0),
+    unitPrice:
+      parseDec(ch.labor ?? 0) +
+      parseDec(ch.materials ?? 0) +
+      parseDec(ch.mechanisms ?? 0),
+  });
+}
+
+ 
         });
       });
 
