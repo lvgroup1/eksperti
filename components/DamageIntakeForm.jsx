@@ -14,8 +14,8 @@ const INCIDENT_TYPES = ["CTA", "Plūdi", "Uguns", "Koks", "Cits"];
 const YES_NO = ["Jā", "Nē"];
 
 const ROOM_TYPES = [
-  "Virtuve", "Guļamistaba", "Koridors", "Katla telpa",
-  "Dzīvojamā istaba", "Vannas istaba", "Tualete", "Garderobe", "Cits",
+  "Virtuve","Guļamistaba","Koridors","Katla telpa","Dzīvojamā istaba",
+  "Vannas istaba","Tualete","Garderobe","Cits",
 ];
 
 function prettyDate(d = new Date()) {
@@ -23,14 +23,12 @@ function prettyDate(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
 }
 
-// Safe decimal parsing ("1 234,56" → 1234.56)
 function parseDec(x) {
   if (x === null || x === undefined || x === "") return 0;
   const n = parseFloat(String(x).replace(/\s+/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : 0;
 }
 
-// Normalise units (Excel has variants like m² / m2, gb. / gab)
 function normalizeUnit(u) {
   if (!u) return "";
   const x = String(u).trim().toLowerCase().replace("²", "2").replace("\u00A0", " ").replace("  ", " ");
@@ -44,12 +42,11 @@ function normalizeUnit(u) {
   if (x === "obj." || x === "obj") return "obj";
   return x;
 }
-const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
+const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
-// helpers for child/parent detection & indexing
 const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
-  (typeof v === "string" && ["true", "yes", "y", "jā"].includes(v.trim().toLowerCase()));
+  (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
 const norm = (x) => String(x ?? "").trim().toLowerCase();
 
@@ -58,10 +55,20 @@ const isChildItem = (it) =>
   !!it.parent_uid || !!it.parentUid || !!it.parent_id || !!it.parentId ||
   !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf;
 
+// ====== FALLBACK NAME HINTS (only used if no explicit links found) ======
+const CHILD_NAME_HINTS = {
+  // key must be lowercase
+  "jumta nesošās konstrukciju montāža (mūrlata, kopnes,spares, sijas, balstbrusas)": [
+    "impregnēta koka brusa",
+    "montāžas elementi",
+  ],
+  // Add more here if needed: "parent name in lowercase": ["child 1","child 2", ...]
+};
+
+// map any child-like row to export compact structure
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x.labor ?? 0) || 0;
   const mech  = Number(x.mechanisms ?? 0) || 0;
-  // if only unit_price exists, treat it as materials (common in BALTA lists)
   const materials = Number(x.materials ?? ((labor || mech) ? 0 : (x.unit_price ?? 0))) || 0;
   return {
     name: x.name || "",
@@ -73,11 +80,9 @@ function mapChildFromFlat(x, fallbackUnit) {
   };
 }
 
-/** Build fast index childKey -> [childRows] once after loading the catalog */
 function buildChildIndex(items) {
-  const idx = new Map(); // key -> child[]
+  const idx = new Map(); // parentKey -> child rows[]
   const add = (keyRaw, ch) => {
-    if (!keyRaw) return;
     const key = norm(keyRaw);
     if (!key) return;
     const arr = idx.get(key) || [];
@@ -86,11 +91,9 @@ function buildChildIndex(items) {
   };
   for (const it of items) {
     if (!isChildItem(it)) continue;
-    // possible parent “link” fields in child rows
     const linkFields = [
       it.parent_uid, it.parentUid, it.parent_id, it.parentId,
       it.parent, it.parent_name, it.parentName, it.childOf,
-      // sometimes datasets include a direct "parent key" like category::name
       it.parent_key, it.parentKey,
     ];
     linkFields.forEach((k) => add(k, it));
@@ -99,22 +102,11 @@ function buildChildIndex(items) {
 }
 
 /* ---------- LocalStorage helpers ---------- */
-const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
-function loadSaved() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-function saveEntry(entry) {
-  const all = loadSaved();
-  all.unshift(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-}
+const STORAGE_KEY = "tames_profils_saglabatie";
+function loadSaved() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+function saveEntry(entry) { const all = loadSaved(); all.unshift(entry); localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); }
 
-/* ---------- Small presentational components ---------- */
+/* ---------- UI bits ---------- */
 const LabeledRow = React.memo(function LabeledRow({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
@@ -134,7 +126,6 @@ const StepShell = React.memo(function StepShell({ title, children }) {
 });
 
 export default function DamageIntakeForm() {
-  /* ---------- Wizard state ---------- */
   const [step, setStep] = useState(1);
 
   // Profile
@@ -143,42 +134,39 @@ export default function DamageIntakeForm() {
   const [claimNumber, setClaimNumber] = useState("");
 
   // Core fields
-  const [address, setAddress] = useState(""); // 1
-  const [insurer, setInsurer] = useState("Balta"); // 2
-  const [locationType, setLocationType] = useState(""); // 3
-  const [dwellingSubtype, setDwellingSubtype] = useState(""); // 3.1
-  const [dwellingOther, setDwellingOther] = useState(""); // 3.1.1
-  const [incidentType, setIncidentType] = useState(""); // 4
-  const [incidentOther, setIncidentOther] = useState(""); // 4.1
-  const [electricity, setElectricity] = useState("Nē"); // 5
-  const [needsDrying, setNeedsDrying] = useState("Nē"); // 6
-  const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē"); // 7
-  const [lossKnown, setLossKnown] = useState("Nē"); // 8
-  const [lossAmount, setLossAmount] = useState(""); // 8.1
+  const [address, setAddress] = useState("");
+  const [insurer, setInsurer] = useState("Balta");
+  const [locationType, setLocationType] = useState("");
+  const [dwellingSubtype, setDwellingSubtype] = useState("");
+  const [dwellingOther, setDwellingOther] = useState("");
+  const [incidentType, setIncidentType] = useState("");
+  const [incidentOther, setIncidentOther] = useState("");
+  const [electricity, setElectricity] = useState("Nē");
+  const [needsDrying, setNeedsDrying] = useState("Nē");
+  const [commonPropertyDamaged, setCommonPropertyDamaged] = useState("Nē");
+  const [lossKnown, setLossKnown] = useState("Nē");
+  const [lossAmount, setLossAmount] = useState("");
 
-  // Rooms (9-11)
+  // Rooms
   const [rooms, setRooms] = useState(
-    ROOM_TYPES.reduce((acc, r) => {
-      acc[r] = { checked: false, count: 1, custom: "" };
-      return acc;
-    }, /** @type {Record<string,{checked:boolean,count:number,custom:string}>} */ ({}))
+    ROOM_TYPES.reduce((acc, r) => { acc[r] = { checked: false, count: 1, custom: "" }; return acc; }, {})
   );
-
-  // room instances & actions
   const [roomInstances, setRoomInstances] = useState([]); // {id,type,index,note?}[]
-  const [roomActions, setRoomActions] = useState({});     // { [roomId]: Array<{category,itemUid,itemId,itemName,quantity,unit,unit_price|null, labor, materials, mechanisms}> }
+  const [roomActions, setRoomActions] = useState({});     // per-room rows
   const [editingRoomId, setEditingRoomId] = useState(null);
 
-  // Pricing catalog (Balta)
-  const [priceCatalog, setPriceCatalog] = useState([]); // parents + child rows (child rows are hidden in form)
+  // Catalog
+  const [priceCatalog, setPriceCatalog] = useState([]);  // parents + children (children hidden in UI)
   const [catalogError, setCatalogError] = useState("");
-  const [childIndex, setChildIndex] = useState(new Map()); // parentKey -> [childRows]
+  const [childIndex, setChildIndex] = useState(new Map());      // link-based lookup
+  const [hintChildUids, setHintChildUids] = useState(new Set()); // children hidden by hints
 
-  /* ---------- Load BALTA prices (prefer v2, fallback to v1) ---------- */
+  /* ---------- Load pricing ---------- */
   useEffect(() => {
     if (insurer !== "Balta") {
       setPriceCatalog([]);
       setChildIndex(new Map());
+      setHintChildUids(new Set());
       return;
     }
     setCatalogError("");
@@ -193,11 +181,7 @@ export default function DamageIntakeForm() {
         };
 
         let raw;
-        try {
-          raw = await load("prices/balta.v2.json");
-        } catch {
-          raw = await load("prices/balta.json");
-        }
+        try { raw = await load("prices/balta.v2.json"); } catch { raw = await load("prices/balta.json"); }
 
         const parents = [];
         const childrenFlat = [];
@@ -210,7 +194,6 @@ export default function DamageIntakeForm() {
           const name = (it.name || "").trim();
           const uid = [category, subcat, idStr, name].join("::");
 
-          // tolerant child detection + parent link
           const parent_uid =
             it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
             it.parent || it.parent_name || it.parentName || it.childOf || null;
@@ -232,22 +215,16 @@ export default function DamageIntakeForm() {
           };
 
           if (is_child) {
-            childrenFlat.push({
-              ...base,
-              coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
-              parent_key: it.parent_key || it.parentKey || null, // optional
-            });
+            childrenFlat.push({ ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1, parent_key: it.parent_key || it.parentKey || null });
           } else {
             const parent = { ...base };
             parents.push(parent);
 
-            // Support nested children arrays (if present in v2)
+            // nested children
             const kidsArr =
               (Array.isArray(it.children) && it.children) ||
               (Array.isArray(it.komponentes) && it.komponentes) ||
-              (Array.isArray(it.apaks) && it.apaks) ||
-              [];
-
+              (Array.isArray(it.apaks) && it.apaks) || [];
             if (kidsArr.length) {
               const normalizedKids = [];
               kidsArr.forEach((ch, idxCh) => {
@@ -268,14 +245,10 @@ export default function DamageIntakeForm() {
                   parent_uid: uid,
                   coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
                 };
-                childrenFlat.push(chEntry); // add as flat so the index can find it
+                childrenFlat.push(chEntry);
                 normalizedKids.push({
-                  name: chEntry.name,
-                  unit: chEntry.unit,
-                  coeff: chEntry.coeff || 1,
-                  labor: chEntry.labor || 0,
-                  materials: chEntry.materials || 0,
-                  mechanisms: chEntry.mechanisms || 0,
+                  name: chEntry.name, unit: chEntry.unit, coeff: chEntry.coeff || 1,
+                  labor: chEntry.labor || 0, materials: chEntry.materials || 0, mechanisms: chEntry.mechanisms || 0,
                 });
               });
               parent.children = normalizedKids;
@@ -283,30 +256,54 @@ export default function DamageIntakeForm() {
           }
         });
 
+        // Build catalog & index
         const catalog = [...parents, ...childrenFlat];
         setPriceCatalog(catalog);
-        setChildIndex(buildChildIndex(catalog));
+        const idx = buildChildIndex(catalog);
+        setChildIndex(idx);
+
+        // ----- Build HINT hidden set (so hinted children are not selectable) -----
+        const hinted = new Set();
+        const parentsByName = parents.reduce((m, p) => {
+          const k = norm(p.name);
+          (m.get(k) || m.set(k, []).get(k)).push(p);
+          return m;
+        }, new Map());
+
+        for (const [pNameLower, childNames] of Object.entries(CHILD_NAME_HINTS)) {
+          const parentList = parentsByName.get(pNameLower);
+          if (!parentList) continue;
+          for (const p of parentList) {
+            for (const childName of childNames) {
+              const cLower = norm(childName);
+              // match by same category as the parent (to avoid false positives)
+              const matches = catalog.filter(it => norm(it.name) === cLower && it.category === p.category);
+              matches.forEach(m => hinted.add(m.uid));
+            }
+          }
+        }
+        setHintChildUids(hinted);
       } catch (e) {
         setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
       }
     })();
   }, [insurer]);
 
-  // children lookup using the prebuilt index; also respects embedded parent.children
+  // Resolve children for a given parent
   const getChildrenFor = useCallback((parent) => {
     const out = [];
-    const seen = new Set();
+    const seenKeys = new Set();
 
-    // A) embedded children[] on the parent (fast path)
+    // A) embedded children (fast path)
     if (Array.isArray(parent.children) && parent.children.length) {
       for (const ch of parent.children) {
         const mapped = mapChildFromFlat(ch, parent.unit);
-        const u = `${mapped.name}::${mapped.unit}`;
-        if (!seen.has(u)) { seen.add(u); out.push(mapped); }
+        const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
+        if (!seenKeys.has(key)) { seenKeys.add(key); out.push(mapped); }
       }
     }
 
-    // B) indexed flat children (robust to many field names)
+    // B) linked via index
     const keys = [
       parent.uid,
       parent.id,
@@ -318,14 +315,35 @@ export default function DamageIntakeForm() {
       const arr = childIndex.get(k);
       if (!arr) continue;
       for (const raw of arr) {
-        const ch = mapChildFromFlat(raw, parent.unit);
-        const u = raw.uid || `${ch.name}::${ch.unit}`;
-        if (!seen.has(u)) { seen.add(u); out.push(ch); }
+        const mapped = mapChildFromFlat(raw, parent.unit);
+        const key = raw.uid || `${norm(mapped.name)}::${norm(mapped.unit)}`;
+        if (!seenKeys.has(key)) { seenKeys.add(key); out.push(mapped); }
+      }
+    }
+
+    // C) fallback by HINTS (name-based, within same category)
+    if (out.length === 0) {
+      const hintList = CHILD_NAME_HINTS[norm(parent.name)];
+      if (hintList && hintList.length) {
+        for (const childName of hintList) {
+          const cLower = norm(childName);
+          // find matching row in same category
+          const match = priceCatalog.find(
+            it => norm(it.name) === cLower && it.category === parent.category
+          );
+          if (match) {
+            out.push(mapChildFromFlat(match, parent.unit));
+          }
+        }
+        if (out.length) {
+          // eslint-disable-next-line no-console
+          console.warn(`[HINT] Using name-based children for parent: ${parent.name}`);
+        }
       }
     }
 
     return out;
-  }, [childIndex]);
+  }, [childIndex, priceCatalog]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -342,7 +360,7 @@ export default function DamageIntakeForm() {
   const [saved, setSaved] = useState([]);
   useEffect(() => setSaved(loadSaved()), []);
 
-  /* ---------- Build room instances on rooms change ---------- */
+  /* ---------- Build room instances when rooms change ---------- */
   useEffect(() => {
     const instances = [];
     Object.entries(rooms).forEach(([type, meta]) => {
@@ -385,7 +403,7 @@ export default function DamageIntakeForm() {
   function removeActionRow(roomId, idx) {
     setRoomActions((ra) => {
       const list = ra[roomId] || [];
-      if (list.length <= 1) return ra; // keep at least one
+      if (list.length <= 1) return ra;
       return { ...ra, [roomId]: list.filter((_, i) => i !== idx) };
     });
   }
@@ -400,23 +418,12 @@ export default function DamageIntakeForm() {
   function setRowCategory(roomId, idx, category) {
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
-      list[idx] = {
-        ...list[idx],
-        category,
-        itemUid: "",
-        itemId: "",
-        itemName: "",
-        unit: "",
-        unit_price: null,
-        labor: 0,
-        materials: 0,
-        mechanisms: 0,
-      };
+      list[idx] = { ...list[idx], category, itemUid: "", itemId: "", itemName: "", unit: "", unit_price: null, labor: 0, materials: 0, mechanisms: 0 };
       return { ...ra, [roomId]: list };
     });
   }
   function setRowItem(roomId, idx, uid) {
-    const item = priceCatalog.find((i) => i.uid === uid); // look up by UID only
+    const item = priceCatalog.find((i) => i.uid === uid);
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
       if (item) {
@@ -433,17 +440,7 @@ export default function DamageIntakeForm() {
           mechanisms: item.mechanisms ?? 0,
         };
       } else {
-        list[idx] = {
-          ...list[idx],
-          itemUid: "",
-          itemId: "",
-          itemName: "",
-          unit: "",
-          unit_price: null,
-          labor: 0,
-          materials: 0,
-          mechanisms: 0,
-        };
+        list[idx] = { ...list[idx], itemUid: "", itemId: "", itemName: "", unit: "", unit_price: null, labor: 0, materials: 0, mechanisms: 0 };
       }
       return { ...ra, [roomId]: list };
     });
@@ -475,11 +472,8 @@ export default function DamageIntakeForm() {
       if (!cur) return prev;
       const nextCount = (Number(cur.count) || 1) - 1;
       const copy = { ...prev };
-      if (nextCount <= 0) {
-        copy[baseType] = { ...cur, checked: false, count: 1 };
-      } else {
-        copy[baseType] = { ...cur, checked: true, count: nextCount };
-      }
+      if (nextCount <= 0) copy[baseType] = { ...cur, checked: false, count: 1 };
+      else copy[baseType] = { ...cur, checked: true, count: nextCount };
       return copy;
     });
 
@@ -494,44 +488,33 @@ export default function DamageIntakeForm() {
       case 2: return !!insurer;
       case 3: return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
       case 4: return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
-      case 5: return ["Jā", "Nē"].includes(electricity);
-      case 6: return ["Jā", "Nē"].includes(needsDrying);
-      case 7: return ["Jā", "Nē"].includes(commonPropertyDamaged);
+      case 5: return ["Jā","Nē"].includes(electricity);
+      case 6: return ["Jā","Nē"].includes(needsDrying);
+      case 7: return ["Jā","Nē"].includes(commonPropertyDamaged);
       case 8: return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
       case 9: return Object.values(rooms).some((r) => r.checked);
       default: return true;
     }
-  }, [
-    step, address, insurer, locationType, dwellingSubtype, incidentType,
-    incidentOther, electricity, needsDrying, commonPropertyDamaged,
-    lossKnown, lossAmount, rooms,
-  ]);
+  }, [step,address,insurer,locationType,dwellingSubtype,incidentType,incidentOther,electricity,needsDrying,commonPropertyDamaged,lossKnown,lossAmount,rooms]);
 
   const suggestedCategoriesFor = () => [];
 
   /* ==========================
-     Excel export (BALTA template; in form order; expands children)
+     Excel export (BALTA template; expands children)
      ========================== */
   async function exportToExcel() {
     try {
       const pad2 = (n) => String(n).padStart(2, "0");
-
-      // ExcelJS
       const ExcelJSImport = await import("exceljs/dist/exceljs.min.js");
       const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
 
-      // Load template
       const assetBase =
         typeof window !== "undefined" &&
         (window.__NEXT_DATA__?.assetPrefix || window.location.pathname.startsWith("/eksperti"))
-          ? "/eksperti"
-          : "";
+          ? "/eksperti" : "";
       const tplUrl = `${assetBase}/templates/balta_template.xlsx`;
       const resp = await fetch(tplUrl);
-      if (!resp.ok) {
-        alert(`Neizdevās ielādēt ${tplUrl}. Pārliecinies, ka fails ir public/templates/balta_template.xlsx`);
-        return;
-      }
+      if (!resp.ok) { alert(`Neizdevās ielādēt ${tplUrl}. Pārliecinies, ka fails ir public/templates/balta_template.xlsx`); return; }
       const arrayBuf = await resp.arrayBuffer();
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.load(arrayBuf);
@@ -570,13 +553,13 @@ export default function DamageIntakeForm() {
       ws.getCell("J3").value = "Banka: Luminor";
       ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
 
-      ws.mergeCells(6, 2, 6, 12); // B6..L6
+      ws.mergeCells(6, 2, 6, 12);
       const tCell = ws.getCell(6, 2);
       tCell.value = tameTitle;
       tCell.font = { ...FONT, size: 16, bold: true };
       tCell.alignment = { horizontal: "center", vertical: "middle" };
 
-      // Gather rows (exactly in the form order) + expand children
+      // Gather rows in form order + expand children
       const selections = [];
       roomInstances.forEach((ri) => {
         const list = roomActions[ri.id] || [];
@@ -584,40 +567,30 @@ export default function DamageIntakeForm() {
           const qty = parseDec(a.quantity);
           if (!qty) return;
 
-          const parent =
-            priceCatalog.find((i) => i.uid === a.itemUid) ||
-            priceCatalog.find((i) => i.id === a.itemId);
+          const parent = priceCatalog.find((i) => i.uid === a.itemUid) || priceCatalog.find((i) => i.id === a.itemId);
           if (!parent) return;
 
           const unit = normalizeUnit(a.unit || parent.unit || "");
-
-          // parent split (or fallback to unit_price)
           const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
           const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
           const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
           const pSplit = pLabor + pMat + pMech;
           const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-          // push parent (numbered)
           selections.push({
             isChild: false,
             room: `${ri.type} ${ri.index}`,
             name: a.itemName || parent.name || "",
-            unit,
-            qty,
-            labor: pLabor,
-            materials: pMat,
-            mechanisms: pMech,
+            unit, qty,
+            labor: pLabor, materials: pMat, mechanisms: pMech,
             unitPrice: pUnitPrice,
           });
 
-          // auto-append children
           const kids = getChildrenFor(parent);
           for (const ch of kids) {
             const cQty = parseDec(ch.coeff ?? 1) * qty;
-
             selections.push({
-              isChild: true, // Excel will indent and remove numbering
+              isChild: true,
               room: `${ri.type} ${ri.index}`,
               name: ch.name || "",
               unit: normalizeUnit(ch.unit || unit),
@@ -625,21 +598,15 @@ export default function DamageIntakeForm() {
               labor: parseDec(ch.labor ?? 0),
               materials: parseDec(ch.materials ?? 0),
               mechanisms: parseDec(ch.mechanisms ?? 0),
-              unitPrice:
-                parseDec(ch.labor ?? 0) +
-                parseDec(ch.materials ?? 0) +
-                parseDec(ch.mechanisms ?? 0),
+              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
             });
           }
         });
       });
 
-      if (!selections.length) {
-        alert("Nav nevienas pozīcijas ar daudzumu.");
-        return;
-      }
+      if (!selections.length) { alert("Nav nevienas pozīcijas ar daudzumu."); return; }
 
-      // Table headers (two rows)
+      // Headers
       const START = 15;
       const HEAD1 = START - 2;
       const HEAD2 = START - 1;
@@ -649,10 +616,8 @@ export default function DamageIntakeForm() {
       ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
       ws.getCell(HEAD1, 3).value = "Mērv.";
       ws.getCell(HEAD1, 4).value = "Daudz.";
-      ws.mergeCells(HEAD1, 5, HEAD1, 8);
-      ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
-      ws.mergeCells(HEAD1, 9, HEAD1, 12);
-      ws.getCell(HEAD1, 9).value = "Summa, EUR";
+      ws.mergeCells(HEAD1, 5, HEAD1, 8);  ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
+      ws.mergeCells(HEAD1, 9, HEAD1, 12); ws.getCell(HEAD1, 9).value = "Summa, EUR";
 
       ws.getCell(HEAD2, 5).value = "Darbs";
       ws.getCell(HEAD2, 6).value = "Materiāli";
@@ -676,20 +641,14 @@ export default function DamageIntakeForm() {
       }
 
       // Data rows
-      let r = START;
-      let nr = 1;
-      let first = null;
-      let last = null;
+      let r = START, nr = 1;
+      let first = null, last = null;
 
-      // group by room, preserving input order
+      // group by room
       const groups = new Map();
-      selections.forEach((s) => {
-        if (!groups.has(s.room)) groups.set(s.room, []);
-        groups.get(s.room).push(s);
-      });
+      selections.forEach((s) => { if (!groups.has(s.room)) groups.set(s.room, []); groups.get(s.room).push(s); });
 
       for (const [roomName, rows] of groups.entries()) {
-        // section header (merged B..L)
         ws.mergeCells(r, 2, r, 12);
         const sec = ws.getCell(r, 2);
         sec.value = roomName;
@@ -702,19 +661,12 @@ export default function DamageIntakeForm() {
 
         for (const s of rows) {
           const row = ws.getRow(r);
-
-          // Nr. column: only for parents
           row.getCell(1).value = s.isChild ? "" : nr++;
-
-          // indent children name
           row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
           row.getCell(3).value = s.unit;
           row.getCell(4).value = s.qty;
 
-          // split
-          const e = s.labor || 0;
-          const f = s.materials || 0;
-          const g = s.mechanisms || 0;
+          const e = s.labor || 0, f = s.materials || 0, g = s.mechanisms || 0;
           const hasSplit = e + f + g > 0;
 
           row.getCell(5).value = hasSplit ? e : s.unitPrice;
@@ -733,14 +685,10 @@ export default function DamageIntakeForm() {
           const isZebra = ((r - START) % 2) === 1;
           for (let c = 1; c <= COLS; c++) {
             const cell = row.getCell(c);
-            if (ZEBRA && isZebra) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-            }
+            if (ZEBRA && isZebra) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
             cell.border = borderAll;
-            cell.font = { ...FONT, italic: !!s.isChild }; // visual hint for children
-            cell.alignment = c === 2
-              ? { wrapText: true, vertical: "middle" }
-              : { vertical: "middle", horizontal: "right" };
+            cell.font = { ...FONT, italic: !!s.isChild };
+            cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
           }
 
           if (first === null) first = r;
@@ -749,7 +697,6 @@ export default function DamageIntakeForm() {
         }
       }
 
-      // Summary block
       const boldCell = (addr) => { ws.getCell(addr).font = { ...FONT, bold: true }; };
 
       const rowKopa = r + 1;
@@ -816,15 +763,12 @@ export default function DamageIntakeForm() {
       ws.getCell(`L${rowGrand}`).numFmt = MONEY;
       boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
 
-      // Top-right summary
       ws.getCell("J9").value = "Tāmes summa euro :";
       ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
       ws.getCell("J10").value = "PVN 21%:";            ws.getCell("L10").value = { formula: `L${rowPVN}` };  ws.getCell("L10").numFmt = MONEY;
       ws.getCell("J11").value = "Pavisam kopā euro:";  ws.getCell("L11").value = { formula: `L${rowGrand}` }; ws.getCell("L11").numFmt = MONEY;
 
-      // Borders for summary rows
-      const COLS = 12; // re-declare for this scope
-      const sumRows = [rowKopa, rowTrans, rowDirect, rowOver, rowProfit, rowDDSN, rowTotal, rowPVN, rowGrand];
+      const sumRows = [rowKopa,rowTrans,rowDirect,rowOver,rowProfit,rowDDSN,rowTotal,rowPVN,rowGrand];
       for (const rr of sumRows) {
         for (let c = 1; c <= COLS; c++) {
           const cell = ws.getCell(rr, c);
@@ -834,7 +778,7 @@ export default function DamageIntakeForm() {
         }
       }
 
-      // Notes (no borders)
+      // Notes
       const notesTitleRow = rowGrand + 3;
       ws.getCell(`B${notesTitleRow}`).value = "Piezīmes:";
       ws.getCell(`B${notesTitleRow}`).font = { ...FONT, bold: true };
@@ -857,7 +801,7 @@ export default function DamageIntakeForm() {
         rowN++;
       }
 
-      // Room-specific notes from form
+      // Room-specific notes
       const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
       for (const n of extraNotes) {
         ws.mergeCells(rowN, 2, rowN, 12);
@@ -868,19 +812,16 @@ export default function DamageIntakeForm() {
         rowN++;
       }
 
-      // SASTĀDĪJA / SASKAŅOTS (no borders)
+      // SASTĀDĪJA / SASKAŅOTS
       const blockStart = rowN + 2;
-
       ws.mergeCells(blockStart, 2, blockStart, 6);
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
       ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
 
       ws.getCell(blockStart + 1, 2).value = "Būvkomersanta Nr.:";
       ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
-
       ws.getCell(blockStart + 2, 2).value = "Vārds, uzvārds:";
       ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
-
       ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
       ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
 
@@ -891,7 +832,6 @@ export default function DamageIntakeForm() {
 
       ws.mergeCells(blockStart + 1, 9, blockStart + 1, 12);
       ws.getCell(blockStart + 1, 9).value = rightOrg;
-
       ws.mergeCells(blockStart + 2, 9, blockStart + 2, 12);
       ws.getCell(blockStart + 2, 9).value = "";
 
@@ -918,11 +858,13 @@ export default function DamageIntakeForm() {
     }
   }
 
-  /* ---------- Input helpers (stable, no focus glitches) ---------- */
+  /* ---------- Input helpers (stable) ---------- */
   const onText = useCallback((setter) => (e) => setter(e.target.value), []);
   const onNum  = useCallback((setter) => (e) => setter(e.target.value), []);
 
   const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
+
+ 
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
@@ -998,17 +940,13 @@ export default function DamageIntakeForm() {
                 onChange={(e) => setInsurer(e.target.value)}
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
               >
-                {INSURERS.map((i) => (
-                  <option key={i} value={i}>{i}</option>
-                ))}
+                {INSURERS.map((i) => (<option key={i} value={i}>{i}</option>))}
               </select>
             </LabeledRow>
             {insurer === "Balta" && (
               <div style={{ fontSize: 12, color: catalogError ? "#b91c1c" : "#065f46" }}>
-                {catalogError
-                  ? catalogError
-                  : priceCatalog.length
-                  ? `Ielādēts BALTA cenrādis (${priceCatalog.length} pozīcijas)`
+                {catalogError ? catalogError
+                  : priceCatalog.length ? `Ielādēts BALTA cenrādis (${priceCatalog.length} pozīcijas)`
                   : "Notiek BALTA cenrāža ielāde..."}
               </div>
             )}
@@ -1025,9 +963,7 @@ export default function DamageIntakeForm() {
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
               >
                 <option value="">— Izvēlies —</option>
-                {LOCATION_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                {LOCATION_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
               </select>
             </LabeledRow>
             {locationType === "Dzīvojamā ēka" && (
@@ -1039,9 +975,7 @@ export default function DamageIntakeForm() {
                     style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                   >
                     <option value="">— Izvēlies —</option>
-                    {DWELLING_SUBTYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
+                    {DWELLING_SUBTYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
                   </select>
                 </LabeledRow>
                 {dwellingSubtype === "Cits" && (
@@ -1070,9 +1004,7 @@ export default function DamageIntakeForm() {
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
               >
                 <option value="">— Izvēlies —</option>
-                {INCIDENT_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                {INCIDENT_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
               </select>
             </LabeledRow>
             {incidentType === "Cits" && (
@@ -1142,11 +1074,8 @@ export default function DamageIntakeForm() {
             {lossKnown === "Jā" && (
               <LabeledRow label="Summa EUR">
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={lossAmount ?? ""}
-                  onChange={onNum(setLossAmount)}
+                  type="number" inputMode="decimal" step="0.01"
+                  value={lossAmount ?? ""} onChange={onNum(setLossAmount)}
                   autoComplete="off"
                   style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                   placeholder="€ summa"
@@ -1184,15 +1113,8 @@ export default function DamageIntakeForm() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span>Daudzums:</span>
                         <input
-                          type="number"
-                          min={1}
-                          value={rooms[rt].count}
-                          onChange={(e) =>
-                            setRooms({
-                              ...rooms,
-                              [rt]: { ...rooms[rt], count: Math.max(1, Number(e.target.value || 1)) },
-                            })
-                          }
+                          type="number" min={1} value={rooms[rt].count}
+                          onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], count: Math.max(1, Number(e.target.value || 1)) } })}
                           style={{ width: 90, border: "1px solid #e5e7eb", borderRadius: 10, padding: 6 }}
                         />
                       </div>
@@ -1219,29 +1141,22 @@ export default function DamageIntakeForm() {
                       <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
                         <div style={{ fontWeight: 700 }}>{ri.type} {ri.index}</div>
                         <button
-                          type="button"
-                          onClick={() => removeRoomInstance(ri.id)}
-                          title="Dzēst telpu"
+                          type="button" onClick={() => removeRoomInstance(ri.id)} title="Dzēst telpu"
                           style={{ marginLeft: "auto", padding: "4px 8px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white" }}
-                        >
-                          Dzēst
-                        </button>
+                        >Dzēst</button>
                       </div>
 
                       <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>Pozīcijas: {count}</div>
 
                       {suggested.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                          {suggested.map((c) => (
-                            <span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>
-                          ))}
+                          {suggested.map((c) => (<span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>))}
                         </div>
                       )}
 
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button
-                          type="button"
-                          onClick={() => { setEditingRoomId(ri.id); setStep(11); }}
+                          type="button" onClick={() => { setEditingRoomId(ri.id); setStep(11); }}
                           style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
                         >
                           Atvērt
@@ -1256,8 +1171,7 @@ export default function DamageIntakeForm() {
             {roomInstances.length > 0 && (
               <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button
-                  type="button"
-                  onClick={() => setStep(9)}
+                  type="button" onClick={() => setStep(9)}
                   style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
                 >
                   + Pievienot vēl telpu
@@ -1265,8 +1179,7 @@ export default function DamageIntakeForm() {
 
                 {roomInstances.every((ri) => (roomActions[ri.id] || []).some((a) => a.itemUid && a.quantity)) && (
                   <button
-                    type="button"
-                    onClick={exportToExcel}
+                    type="button" onClick={exportToExcel}
                     style={{ padding: "12px 16px", borderRadius: 12, background: "#059669", color: "white", border: 0 }}
                   >
                     Viss pabeigts — izveidot tāmi
@@ -1280,9 +1193,7 @@ export default function DamageIntakeForm() {
         {/* Step 11 */}
         {step === 11 && editingRoomId && (
           <StepShell
-            title={`11. Pozīcijas un apjomi – ${
-              roomInstances.find((r) => r.id === editingRoomId)?.type
-            } ${roomInstances.find((r) => r.id === editingRoomId)?.index}`}
+            title={`11. Pozīcijas un apjomi – ${roomInstances.find((r) => r.id === editingRoomId)?.type} ${roomInstances.find((r) => r.id === editingRoomId)?.index}`}
           >
             <LabeledRow label="Piezīmes">
               <input
@@ -1299,7 +1210,10 @@ export default function DamageIntakeForm() {
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
               return (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
+                <div
+                  key={idx}
+                  style={{ display: "grid", gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}
+                >
                   {/* Kategorija */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
@@ -1323,7 +1237,11 @@ export default function DamageIntakeForm() {
                     >
                       <option value="">— izvēlies pozīciju —</option>
                       {priceCatalog
-                        .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+                        .filter((it) =>
+                          (!row.category || it.category === row.category) &&
+                          !isChildItem(it) &&
+                          !hintChildUids.has(it.uid) // ← also hide hint-children
+                        )
                         .map((it) => (
                           <option key={it.uid} value={it.uid}>
                             {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
@@ -1349,36 +1267,30 @@ export default function DamageIntakeForm() {
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
                     <input
-                      type="number"
-                      min={0}
-                      step="0.01"
+                      type="number" min={0} step="0.01"
                       value={row.quantity ?? ""}
                       onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-                      autoComplete="off"
-                      placeholder="Skaitlis"
+                      autoComplete="off" placeholder="Skaitlis"
                     />
                   </div>
 
                   {/* Pogas */}
                   <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
                     <button
-                      type="button"
-                      onClick={() => addActionRow(editingRoomId, row.category || "")}
+                      type="button" onClick={() => addActionRow(editingRoomId, row.category || "")}
                       style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
                     >
                       + Rinda
                     </button>
                     <button
-                      type="button"
-                      onClick={() => removeActionRow(editingRoomId, idx)}
+                      type="button" onClick={() => removeActionRow(editingRoomId, idx)}
                       style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
                     >
                       Dzēst
                     </button>
                     <button
-                      type="button"
-                      onClick={() => { setEditingRoomId(null); setStep(9); }}
+                      type="button" onClick={() => { setEditingRoomId(null); setStep(9); }}
                       style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
                     >
                       + Pievienot vēl telpu
@@ -1401,19 +1313,17 @@ export default function DamageIntakeForm() {
         )}
 
         {/* Navigation bar (hide default on steps 10 & 11) */}
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 12].includes(step) && (
+        {[1,2,3,4,5,6,7,8,9,12].includes(step) && (
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <button
-              type="button"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              type="button" onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
               style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}
             >
               ← Atpakaļ
             </button>
             <button
-              type="button"
-              onClick={() => setStep((s) => Math.min(totalSteps, s + 1))}
+              type="button" onClick={() => setStep((s) => Math.min(totalSteps, s + 1))}
               disabled={!stepValid || step === totalSteps}
               style={{ padding: "10px 14px", borderRadius: 10, background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827", color: "white", border: 0 }}
             >
@@ -1454,8 +1364,8 @@ export default function DamageIntakeForm() {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: cenrādis ielādējas no <code>public/prices/balta.v2.json</code> (ja nav – <code>balta.json</code>).
-          Apakšpozīcijas forma nerāda, taču Excel tās pievieno automātiski zem izvēlētās vecākās pozīcijas.
+          Piezīme: forma nerāda apakšpozīcijas; Excel tās pievieno automātiski. Ja kādai vecākai pozīcijai
+          nav saites uz apakšpozīcijām JSON datnē, tiek izmantoti nosaukumu HINTI (skat. kodu).
         </footer>
       </div>
     </div>
