@@ -302,12 +302,12 @@ export default function DamageIntakeForm() {
   })();
 }, [insurer]);
 
-  // Resolve children for a given parent
+// ✅ 1) put this BEFORE exportToExcel
 const getChildrenFor = useCallback((parent) => {
   const out = [];
   const seen = new Set();
 
-  // A) embedded children
+  // embedded children
   if (Array.isArray(parent.children)) {
     for (const ch of parent.children) {
       const mapped = mapChildFromFlat(ch, parent.unit);
@@ -316,7 +316,7 @@ const getChildrenFor = useCallback((parent) => {
     }
   }
 
-  // B) flat rows with explicit links
+  // explicit links in flat rows
   for (const ch of priceCatalog) {
     if (!isChildItem(ch)) continue;
     if (!linkMatchesParent(ch, parent)) continue;
@@ -325,15 +325,12 @@ const getChildrenFor = useCallback((parent) => {
     if (!seen.has(key)) { seen.add(key); out.push(mapped); }
   }
 
-  // C) adjacency fallback (rows that followed the parent in source order)
+  // adjacency fallback
   const adj = adjChildrenByParent.get(parent.uid) || [];
   for (const mapped of adj) {
     const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
     if (!seen.has(key)) { seen.add(key); out.push(mapped); }
   }
-
-  // Optional: dev hint
-  // if (out.length === 0) console.warn('No children found for parent:', parent.name, parent);
 
   return out;
 }, [priceCatalog, adjChildrenByParent]);
