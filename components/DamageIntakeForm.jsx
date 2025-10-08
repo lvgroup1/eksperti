@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 
 /* ==========================
    Damage Intake – STEP WIZARD (1..12)
-   BALTA pricing via public/prices/balta.json (+ optional prices/balta-links.json)
+   BALTA pricing via public/prices/balta.v2.json (falls back to balta.json)
    UI hides ALL prices; expert enters ONLY quantities/units.
    Excel export uses a BALTA-style template with styles & VAT.
    ========================== */
@@ -14,22 +14,13 @@ const INCIDENT_TYPES = ["CTA", "Plūdi", "Uguns", "Koks", "Cits"];
 const YES_NO = ["Jā", "Nē"];
 
 const ROOM_TYPES = [
-  "Virtuve",
-  "Guļamistaba",
-  "Koridors",
-  "Katla telpa",
-  "Dzīvojamā istaba",
-  "Vannas istaba",
-  "Tualete",
-  "Garderobe",
-  "Cits",
+  "Virtuve", "Guļamistaba", "Koridors", "Katla telpa",
+  "Dzīvojamā istaba", "Vannas istaba", "Tualete", "Garderobe", "Cits",
 ];
 
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(
-    d.getMinutes()
-  )}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
 }
 
 // Safe decimal parsing ("1 234,56" → 1234.56)
@@ -55,43 +46,22 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
-// tolerant boolean
+// helpers for child/parent detection & indexing
 const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
-  (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
+  (typeof v === "string" && ["true", "yes", "y", "jā"].includes(v.trim().toLowerCase()));
 
-// detect a child row in the catalog
-const isChildItem = (it) =>
-  parseBool(it.is_child) || !!it.parent_uid || !!it.childOf || !!it.parentId ||
-  !!it.parent || !!it.parent_name || !!it.parentName;
-
-// normalize to compare
 const norm = (x) => String(x ?? "").trim().toLowerCase();
 
-// does this child belong to this parent?
-function linkMatchesParent(child, parent) {
-  // possible parent identifiers
-  const P = new Set([
-    norm(parent.uid),
-    norm(parent.id),
-    norm(parent.name),
-    norm(parent.category + "::" + parent.name),
-  ]);
+const isChildItem = (it) =>
+  parseBool(it.is_child) || parseBool(it.child) ||
+  !!it.parent_uid || !!it.parentUid || !!it.parent_id || !!it.parentId ||
+  !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf;
 
-  // possible child “links”
-  const C = [
-    child.parent_uid, child.parentUid, child.parentId,
-    child.parent, child.parent_name, child.parentName, child.childOf
-  ].map(norm).filter(Boolean);
-
-  return C.some((c) => P.has(c));
-}
-
-// map any child-like row to the compact structure export uses
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x.labor ?? 0) || 0;
   const mech  = Number(x.mechanisms ?? 0) || 0;
-  // if only unit_price exists, treat it as materials (BALTA style)
+  // if only unit_price exists, treat it as materials (common in BALTA lists)
   const materials = Number(x.materials ?? ((labor || mech) ? 0 : (x.unit_price ?? 0))) || 0;
   return {
     name: x.name || "",
@@ -103,30 +73,30 @@ function mapChildFromFlat(x, fallbackUnit) {
   };
 }
 
-// return children for a given parent from either embedded children[] or flat linked rows
-function getChildrenFor(parent, catalog) {
-  // A) fast path — embedded children on parent
-  if (Array.isArray(parent.children) && parent.children.length) {
-    return parent.children.map((ch) =>
-      mapChildFromFlat(
-        {
-          name: ch.name ?? ch.title ?? "",
-          unit: ch.unit,
-          coeff: ch.coeff ?? ch.multiplier,
-          labor: ch.labor,
-          materials: ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price),
-          mechanisms: ch.mechanisms,
-        },
-        parent.unit
-      )
-    );
+/** Build fast index childKey -> [childRows] once after loading the catalog */
+function buildChildIndex(items) {
+  const idx = new Map(); // key -> child[]
+  const add = (keyRaw, ch) => {
+    if (!keyRaw) return;
+    const key = norm(keyRaw);
+    if (!key) return;
+    const arr = idx.get(key) || [];
+    arr.push(ch);
+    idx.set(key, arr);
+  };
+  for (const it of items) {
+    if (!isChildItem(it)) continue;
+    // possible parent “link” fields in child rows
+    const linkFields = [
+      it.parent_uid, it.parentUid, it.parent_id, it.parentId,
+      it.parent, it.parent_name, it.parentName, it.childOf,
+      // sometimes datasets include a direct "parent key" like category::name
+      it.parent_key, it.parentKey,
+    ];
+    linkFields.forEach((k) => add(k, it));
   }
-
-  // B) fallback — scan flat catalog for linked child rows
-  const linked = catalog.filter((x) => isChildItem(x) && linkMatchesParent(x, parent));
-  return linked.map((x) => mapChildFromFlat(x, parent.unit));
+  return idx;
 }
-
 
 /* ---------- LocalStorage helpers ---------- */
 const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
@@ -170,7 +140,7 @@ export default function DamageIntakeForm() {
   // Profile
   const [estimatorName, setEstimatorName] = useState("");
   const [estimatorEmail, setEstimatorEmail] = useState("");
-  const [claimNumber, setClaimNumber] = useState(""); // Lietas Nr.
+  const [claimNumber, setClaimNumber] = useState("");
 
   // Core fields
   const [address, setAddress] = useState(""); // 1
@@ -196,134 +166,166 @@ export default function DamageIntakeForm() {
 
   // room instances & actions
   const [roomInstances, setRoomInstances] = useState([]); // {id,type,index,note?}[]
-  const [roomActions, setRoomActions] = useState({}); // { [roomId]: Array<{category,itemUid,itemId,itemName,quantity,unit,unit_price|null, labor, materials, mechanisms}> }
+  const [roomActions, setRoomActions] = useState({});     // { [roomId]: Array<{category,itemUid,itemId,itemName,quantity,unit,unit_price|null, labor, materials, mechanisms}> }
   const [editingRoomId, setEditingRoomId] = useState(null);
 
   // Pricing catalog (Balta)
-  const [priceCatalog, setPriceCatalog] = useState([]); // normalized rows
+  const [priceCatalog, setPriceCatalog] = useState([]); // parents + child rows (child rows are hidden in form)
   const [catalogError, setCatalogError] = useState("");
+  const [childIndex, setChildIndex] = useState(new Map()); // parentKey -> [childRows]
 
-  /* ---------- Load BALTA prices (+ optional link map) ---------- */
+  /* ---------- Load BALTA prices (prefer v2, fallback to v1) ---------- */
   useEffect(() => {
-  if (insurer !== "Balta") {
-    setPriceCatalog([]);
-    return;
-  }
-  setCatalogError("");
+    if (insurer !== "Balta") {
+      setPriceCatalog([]);
+      setChildIndex(new Map());
+      return;
+    }
+    setCatalogError("");
 
-  (async () => {
-    try {
-      const load = async (url) => {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const json = await res.json();
-        // accept either {items: [...] } or plain [...]
-        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
-      };
-
-      let raw;
+    (async () => {
       try {
-        raw = await load("prices/balta.v2.json");
-      } catch {
-        raw = await load("prices/balta.json");
-      }
-
-      const parents = [];
-      const childrenLinked = [];
-
-      raw.forEach((it, i) => {
-        const category = (it.category || "").trim();
-        const subcat =
-          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-        const idStr = String(it.id ?? i);
-        const name = (it.name || "").trim();
-        const uid = [category, subcat, idStr, name].join("::");
-
-        // detect child + parent link using tolerant keys
-        const parent_uid =
-          it.parent_uid || it.parentUid || it.parentId || it.parent || it.parent_name || it.parentName || null;
-        const is_child = parseBool(it.is_child) || !!parent_uid;
-
-        const base = {
-          id: idStr,
-          uid,
-          name,
-          category,
-          subcategory: subcat,
-          unit: normalizeUnit(it.unit),
-          unit_price: parseDec(it.unit_price),
-          labor: parseDec(it.labor ?? it.darbs),
-          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-          is_child,
-          parent_uid: parent_uid || null,
+        const load = async (url) => {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const json = await res.json();
+          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
         };
 
-        if (is_child) {
-          // flat child row linked to a parent
-          childrenLinked.push({
-            ...base,
-            // optional multipliers commonly used for child rows
-            coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
-          });
-        } else {
-          // parent row
-          const parent = { ...base };
-          parents.push(parent);
-
-          // also support nested children arrays inside parent row
-          const kidsArr =
-            (Array.isArray(it.children) && it.children) ||
-            (Array.isArray(it.komponentes) && it.komponentes) ||
-            (Array.isArray(it.apaks) && it.apaks) ||
-            [];
-
-          const normalizedKids = [];
-          kidsArr.forEach((ch, idxCh) => {
-            const chName = (ch.name || ch.title || "").trim();
-            if (!chName) return;
-
-            const chEntry = {
-              id: `${idStr}-c${idxCh}`,
-              uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-              name: chName,
-              category,
-              subcategory: subcat,
-              unit: normalizeUnit(ch.unit || it.unit),
-              unit_price: parseDec(ch.unit_price),
-              labor: parseDec(ch.labor),
-              materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-              mechanisms: parseDec(ch.mechanisms),
-              is_child: true,
-              parent_uid: uid,
-              coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-            };
-
-            // add a linked child row so getChildrenFor() can also find by parent_uid
-            childrenLinked.push(chEntry);
-
-            // keep a compact child on the parent for the fast path in getChildrenFor()
-            normalizedKids.push({
-              name: chEntry.name,
-              unit: chEntry.unit,
-              coeff: chEntry.coeff || 1,
-              labor: chEntry.labor || 0,
-              materials: chEntry.materials || 0,
-              mechanisms: chEntry.mechanisms || 0,
-            });
-          });
-
-          if (normalizedKids.length) parent.children = normalizedKids;
+        let raw;
+        try {
+          raw = await load("prices/balta.v2.json");
+        } catch {
+          raw = await load("prices/balta.json");
         }
-      });
 
-      // final catalog = parents + child rows (hidden in UI via !isChildItem)
-      setPriceCatalog([...parents, ...childrenLinked]);
-    } catch (e) {
-      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+        const parents = [];
+        const childrenFlat = [];
+
+        raw.forEach((it, i) => {
+          const category = (it.category || "").trim();
+          const subcat =
+            (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+          const idStr = String(it.id ?? i);
+          const name = (it.name || "").trim();
+          const uid = [category, subcat, idStr, name].join("::");
+
+          // tolerant child detection + parent link
+          const parent_uid =
+            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+            it.parent || it.parent_name || it.parentName || it.childOf || null;
+          const is_child = parseBool(it.is_child) || !!parent_uid;
+
+          const base = {
+            id: idStr,
+            uid,
+            name,
+            category,
+            subcategory: subcat,
+            unit: normalizeUnit(it.unit),
+            unit_price: parseDec(it.unit_price),
+            labor: parseDec(it.labor ?? it.darbs),
+            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+            is_child,
+            parent_uid: parent_uid || null,
+          };
+
+          if (is_child) {
+            childrenFlat.push({
+              ...base,
+              coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
+              parent_key: it.parent_key || it.parentKey || null, // optional
+            });
+          } else {
+            const parent = { ...base };
+            parents.push(parent);
+
+            // Support nested children arrays (if present in v2)
+            const kidsArr =
+              (Array.isArray(it.children) && it.children) ||
+              (Array.isArray(it.komponentes) && it.komponentes) ||
+              (Array.isArray(it.apaks) && it.apaks) ||
+              [];
+
+            if (kidsArr.length) {
+              const normalizedKids = [];
+              kidsArr.forEach((ch, idxCh) => {
+                const chName = (ch.name || ch.title || "").trim();
+                if (!chName) return;
+                const chEntry = {
+                  id: `${idStr}-c${idxCh}`,
+                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                  name: chName,
+                  category,
+                  subcategory: subcat,
+                  unit: normalizeUnit(ch.unit || it.unit),
+                  unit_price: parseDec(ch.unit_price),
+                  labor: parseDec(ch.labor),
+                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+                  mechanisms: parseDec(ch.mechanisms),
+                  is_child: true,
+                  parent_uid: uid,
+                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+                };
+                childrenFlat.push(chEntry); // add as flat so the index can find it
+                normalizedKids.push({
+                  name: chEntry.name,
+                  unit: chEntry.unit,
+                  coeff: chEntry.coeff || 1,
+                  labor: chEntry.labor || 0,
+                  materials: chEntry.materials || 0,
+                  mechanisms: chEntry.mechanisms || 0,
+                });
+              });
+              parent.children = normalizedKids;
+            }
+          }
+        });
+
+        const catalog = [...parents, ...childrenFlat];
+        setPriceCatalog(catalog);
+        setChildIndex(buildChildIndex(catalog));
+      } catch (e) {
+        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+      }
+    })();
+  }, [insurer]);
+
+  // children lookup using the prebuilt index; also respects embedded parent.children
+  const getChildrenFor = useCallback((parent) => {
+    const out = [];
+    const seen = new Set();
+
+    // A) embedded children[] on the parent (fast path)
+    if (Array.isArray(parent.children) && parent.children.length) {
+      for (const ch of parent.children) {
+        const mapped = mapChildFromFlat(ch, parent.unit);
+        const u = `${mapped.name}::${mapped.unit}`;
+        if (!seen.has(u)) { seen.add(u); out.push(mapped); }
+      }
     }
-  })();
-}, [insurer]);
+
+    // B) indexed flat children (robust to many field names)
+    const keys = [
+      parent.uid,
+      parent.id,
+      parent.name,
+      `${parent.category}::${parent.name}`,
+    ].map(norm);
+
+    for (const k of keys) {
+      const arr = childIndex.get(k);
+      if (!arr) continue;
+      for (const raw of arr) {
+        const ch = mapChildFromFlat(raw, parent.unit);
+        const u = raw.uid || `${ch.name}::${ch.unit}`;
+        if (!seen.has(u)) { seen.add(u); out.push(ch); }
+      }
+    }
+
+    return out;
+  }, [childIndex]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -422,7 +424,7 @@ export default function DamageIntakeForm() {
           ...list[idx],
           category: item.category || list[idx].category || "",
           itemUid: item.uid,
-          itemId: item.id, // informational
+          itemId: item.id,
           itemName: item.name,
           unit: item.unit || "",
           unit_price: item.unit_price ?? null,
@@ -488,41 +490,21 @@ export default function DamageIntakeForm() {
   const totalSteps = 12;
   const stepValid = useMemo(() => {
     switch (step) {
-      case 1:
-        return !!address.trim();
-      case 2:
-        return !!insurer;
-      case 3:
-        return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
-      case 4:
-        return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
-      case 5:
-        return ["Jā", "Nē"].includes(electricity);
-      case 6:
-        return ["Jā", "Nē"].includes(needsDrying);
-      case 7:
-        return ["Jā", "Nē"].includes(commonPropertyDamaged);
-      case 8:
-        return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
-      case 9:
-        return Object.values(rooms).some((r) => r.checked);
-      default:
-        return true;
+      case 1: return !!address.trim();
+      case 2: return !!insurer;
+      case 3: return !!locationType && (locationType !== "Dzīvojamā ēka" || !!dwellingSubtype);
+      case 4: return !!incidentType && (incidentType !== "Cits" || !!incidentOther.trim());
+      case 5: return ["Jā", "Nē"].includes(electricity);
+      case 6: return ["Jā", "Nē"].includes(needsDrying);
+      case 7: return ["Jā", "Nē"].includes(commonPropertyDamaged);
+      case 8: return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
+      case 9: return Object.values(rooms).some((r) => r.checked);
+      default: return true;
     }
   }, [
-    step,
-    address,
-    insurer,
-    locationType,
-    dwellingSubtype,
-    incidentType,
-    incidentOther,
-    electricity,
-    needsDrying,
-    commonPropertyDamaged,
-    lossKnown,
-    lossAmount,
-    rooms,
+    step, address, insurer, locationType, dwellingSubtype, incidentType,
+    incidentOther, electricity, needsDrying, commonPropertyDamaged,
+    lossKnown, lossAmount, rooms,
   ]);
 
   const suggestedCategoriesFor = () => [];
@@ -588,7 +570,6 @@ export default function DamageIntakeForm() {
       ws.getCell("J3").value = "Banka: Luminor";
       ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
 
-      // Big centered title
       ws.mergeCells(6, 2, 6, 12); // B6..L6
       const tCell = ws.getCell(6, 2);
       tCell.value = tameTitle;
@@ -603,7 +584,6 @@ export default function DamageIntakeForm() {
           const qty = parseDec(a.quantity);
           if (!qty) return;
 
-          // only parents are selectable in the form
           const parent =
             priceCatalog.find((i) => i.uid === a.itemUid) ||
             priceCatalog.find((i) => i.id === a.itemId);
@@ -613,8 +593,8 @@ export default function DamageIntakeForm() {
 
           // parent split (or fallback to unit_price)
           const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
-          const pMat = parseDec(a.materials ?? parent.materials ?? 0);
-          const pMech = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
+          const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
+          const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
           const pSplit = pLabor + pMat + pMech;
           const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
@@ -632,7 +612,7 @@ export default function DamageIntakeForm() {
           });
 
           // auto-append children
-          const kids = getChildrenFor(parent, priceCatalog);
+          const kids = getChildrenFor(parent);
           for (const ch of kids) {
             const cQty = parseDec(ch.coeff ?? 1) * qty;
 
@@ -645,7 +625,10 @@ export default function DamageIntakeForm() {
               labor: parseDec(ch.labor ?? 0),
               materials: parseDec(ch.materials ?? 0),
               mechanisms: parseDec(ch.mechanisms ?? 0),
-              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
+              unitPrice:
+                parseDec(ch.labor ?? 0) +
+                parseDec(ch.materials ?? 0) +
+                parseDec(ch.mechanisms ?? 0),
             });
           }
         });
@@ -738,14 +721,14 @@ export default function DamageIntakeForm() {
           row.getCell(6).value = hasSplit ? f : 0;
           row.getCell(7).value = hasSplit ? g : 0;
 
-          row.getCell(8).value = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-          row.getCell(9).value = { formula: `ROUND(E${r}*D${r},2)` };
+          row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+          row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
           row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
           row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
           row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
           row.getCell(4).numFmt = QTY;
-          for (const c of [5, 6, 7, 8, 9, 10, 11, 12]) row.getCell(c).numFmt = MONEY;
+          for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
 
           const isZebra = ((r - START) % 2) === 1;
           for (let c = 1; c <= COLS; c++) {
@@ -755,8 +738,9 @@ export default function DamageIntakeForm() {
             }
             cell.border = borderAll;
             cell.font = { ...FONT, italic: !!s.isChild }; // visual hint for children
-            cell.alignment =
-              c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
+            cell.alignment = c === 2
+              ? { wrapText: true, vertical: "middle" }
+              : { vertical: "middle", horizontal: "right" };
           }
 
           if (first === null) first = r;
@@ -765,10 +749,8 @@ export default function DamageIntakeForm() {
         }
       }
 
-      // Summary block (with borders for these rows)
-      const boldCell = (addr) => {
-        ws.getCell(addr).font = { ...FONT, bold: true };
-      };
+      // Summary block
+      const boldCell = (addr) => { ws.getCell(addr).font = { ...FONT, bold: true }; };
 
       const rowKopa = r + 1;
       ws.getCell(`B${rowKopa}`).value = "Kopā";
@@ -776,7 +758,7 @@ export default function DamageIntakeForm() {
       ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
       ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
       ws.getCell(`L${rowKopa}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
-      for (const c of [9, 10, 11, 12]) ws.getCell(rowKopa, c).numFmt = MONEY;
+      for (const c of [9,10,11,12]) ws.getCell(rowKopa, c).numFmt = MONEY;
       boldCell(`B${rowKopa}`);
 
       const rowTrans = rowKopa + 1;
@@ -793,7 +775,7 @@ export default function DamageIntakeForm() {
       ws.getCell(`J${rowDirect}`).value = { formula: `ROUND(J${rowKopa}+J${rowTrans},2)` };
       ws.getCell(`K${rowDirect}`).value = { formula: `K${rowKopa}` };
       ws.getCell(`L${rowDirect}`).value = { formula: `ROUND(I${rowDirect}+J${rowDirect}+K${rowDirect},2)` };
-      for (const c of [9, 10, 11, 12]) ws.getCell(rowDirect, c).numFmt = MONEY;
+      for (const c of [9,10,11,12]) ws.getCell(rowDirect, c).numFmt = MONEY;
       boldCell(`B${rowDirect}`);
 
       const rowOver = rowDirect + 1;
@@ -818,12 +800,9 @@ export default function DamageIntakeForm() {
 
       const rowTotal = rowDDSN + 1;
       ws.getCell(`B${rowTotal}`).value = "Kopējās izmaksas";
-      ws.getCell(`L${rowTotal}`).value = {
-        formula: `ROUND(L${rowDirect}+L${rowOver}+L${rowProfit}+L${rowDDSN},2)`,
-      };
+      ws.getCell(`L${rowTotal}`).value = { formula: `ROUND(L${rowDirect}+L${rowOver}+L${rowProfit}+L${rowDDSN},2)` };
       ws.getCell(`L${rowTotal}`).numFmt = MONEY;
-      boldCell(`B${rowTotal}`);
-      boldCell(`L${rowTotal}`);
+      boldCell(`B${rowTotal}`); boldCell(`L${rowTotal}`);
 
       const rowPVN = rowTotal + 1;
       ws.getCell(`B${rowPVN}`).value = "PVN";
@@ -835,29 +814,23 @@ export default function DamageIntakeForm() {
       ws.getCell(`B${rowGrand}`).value = "Pavisam kopā";
       ws.getCell(`L${rowGrand}`).value = { formula: `ROUND(L${rowTotal}+L${rowPVN},2)` };
       ws.getCell(`L${rowGrand}`).numFmt = MONEY;
-      boldCell(`B${rowGrand}`);
-      boldCell(`L${rowGrand}`);
+      boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
 
       // Top-right summary
       ws.getCell("J9").value = "Tāmes summa euro :";
-      ws.getCell("L9").value = { formula: `L${rowTotal}` };
-      ws.getCell("L9").numFmt = MONEY;
-      ws.getCell("J10").value = "PVN 21%:";
-      ws.getCell("L10").value = { formula: `L${rowPVN}` };
-      ws.getCell("L10").numFmt = MONEY;
-      ws.getCell("J11").value = "Pavisam kopā euro:";
-      ws.getCell("L11").value = { formula: `L${rowGrand}` };
-      ws.getCell("L11").numFmt = MONEY;
+      ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
+      ws.getCell("J10").value = "PVN 21%:";            ws.getCell("L10").value = { formula: `L${rowPVN}` };  ws.getCell("L10").numFmt = MONEY;
+      ws.getCell("J11").value = "Pavisam kopā euro:";  ws.getCell("L11").value = { formula: `L${rowGrand}` }; ws.getCell("L11").numFmt = MONEY;
 
       // Borders for summary rows
+      const COLS = 12; // re-declare for this scope
       const sumRows = [rowKopa, rowTrans, rowDirect, rowOver, rowProfit, rowDDSN, rowTotal, rowPVN, rowGrand];
       for (const rr of sumRows) {
         for (let c = 1; c <= COLS; c++) {
           const cell = ws.getCell(rr, c);
           cell.border = borderAll;
           cell.font = { ...FONT, bold: cell.font?.bold || false };
-          cell.alignment =
-            c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
+          cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
         }
       }
 
@@ -895,10 +868,9 @@ export default function DamageIntakeForm() {
         rowN++;
       }
 
-      // SASTĀDĪJA / SASKAŅOTS side-by-side (no borders)
+      // SASTĀDĪJA / SASKAŅOTS (no borders)
       const blockStart = rowN + 2;
 
-      // left block (B..F)
       ws.mergeCells(blockStart, 2, blockStart, 6);
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
       ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
@@ -912,7 +884,6 @@ export default function DamageIntakeForm() {
       ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
       ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
 
-      // right block (H..L)
       const rightOrg = insurer === "Balta" ? "AAS BALTA" : insurer || "";
       ws.mergeCells(blockStart, 9, blockStart, 12);
       ws.getCell(blockStart, 9).value = "SASKAŅOTS:";
@@ -926,7 +897,7 @@ export default function DamageIntakeForm() {
 
       // Column widths
       const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
-      for (let c = 1; c <= COLS; c++) ws.getColumn(c).width = baseW[c - 1];
+      for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
 
       wb.removeWorksheet(src.id);
       ws.name = "Tāme";
@@ -949,7 +920,7 @@ export default function DamageIntakeForm() {
 
   /* ---------- Input helpers (stable, no focus glitches) ---------- */
   const onText = useCallback((setter) => (e) => setter(e.target.value), []);
-  const onNum = useCallback((setter) => (e) => setter(e.target.value), []);
+  const onNum  = useCallback((setter) => (e) => setter(e.target.value), []);
 
   const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
 
@@ -1028,9 +999,7 @@ export default function DamageIntakeForm() {
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
               >
                 {INSURERS.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
+                  <option key={i} value={i}>{i}</option>
                 ))}
               </select>
             </LabeledRow>
@@ -1057,9 +1026,7 @@ export default function DamageIntakeForm() {
               >
                 <option value="">— Izvēlies —</option>
                 {LOCATION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </LabeledRow>
@@ -1073,9 +1040,7 @@ export default function DamageIntakeForm() {
                   >
                     <option value="">— Izvēlies —</option>
                     {DWELLING_SUBTYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
+                      <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </LabeledRow>
@@ -1106,9 +1071,7 @@ export default function DamageIntakeForm() {
               >
                 <option value="">— Izvēlies —</option>
                 {INCIDENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </LabeledRow>
@@ -1159,13 +1122,7 @@ export default function DamageIntakeForm() {
             <LabeledRow label="Kopīpašums">
               {YES_NO.map((yn) => (
                 <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
-                  <input
-                    type="radio"
-                    name="common"
-                    checked={commonPropertyDamaged === yn}
-                    onChange={() => setCommonPropertyDamaged(yn)}
-                  />{" "}
-                  {yn}
+                  <input type="radio" name="common" checked={commonPropertyDamaged === yn} onChange={() => setCommonPropertyDamaged(yn)} /> {yn}
                 </label>
               ))}
             </LabeledRow>
@@ -1221,13 +1178,7 @@ export default function DamageIntakeForm() {
                           onChange={(e) => setRooms({ ...rooms, [rt]: { ...rooms[rt], custom: e.currentTarget.value } })}
                           placeholder="Telpas nosaukums"
                           autoComplete="off"
-                          style={{
-                            width: "100%",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 10,
-                            padding: 8,
-                            marginBottom: 8,
-                          }}
+                          style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 8 }}
                         />
                       )}
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1264,25 +1215,14 @@ export default function DamageIntakeForm() {
                   const count = (roomActions[ri.id] || []).filter((a) => a.itemUid && a.quantity).length;
                   const suggested = suggestedCategoriesFor(ri.id);
                   return (
-                    <div
-                      key={ri.id}
-                      style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}
-                    >
+                    <div key={ri.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#f9fafb" }}>
                       <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-                        <div style={{ fontWeight: 700 }}>
-                          {ri.type} {ri.index}
-                        </div>
+                        <div style={{ fontWeight: 700 }}>{ri.type} {ri.index}</div>
                         <button
                           type="button"
                           onClick={() => removeRoomInstance(ri.id)}
                           title="Dzēst telpu"
-                          style={{
-                            marginLeft: "auto",
-                            padding: "4px 8px",
-                            borderRadius: 8,
-                            border: "1px solid #e5e7eb",
-                            background: "white",
-                          }}
+                          style={{ marginLeft: "auto", padding: "4px 8px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white" }}
                         >
                           Dzēst
                         </button>
@@ -1293,12 +1233,7 @@ export default function DamageIntakeForm() {
                       {suggested.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                           {suggested.map((c) => (
-                            <span
-                              key={c}
-                              style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}
-                            >
-                              {c}
-                            </span>
+                            <span key={c} style={{ background: "#e5e7eb", borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{c}</span>
                           ))}
                         </div>
                       )}
@@ -1306,10 +1241,7 @@ export default function DamageIntakeForm() {
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingRoomId(ri.id);
-                            setStep(11);
-                          }}
+                          onClick={() => { setEditingRoomId(ri.id); setStep(11); }}
                           style={{ padding: "8px 12px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
                         >
                           Atvērt
@@ -1367,16 +1299,7 @@ export default function DamageIntakeForm() {
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
               return (
-                <div
-                  key={idx}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto",
-                    gap: 8,
-                    alignItems: "end",
-                    marginBottom: 8,
-                  }}
-                >
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.2fr 1fr 0.8fr auto", gap: 8, alignItems: "end", marginBottom: 8 }}>
                   {/* Kategorija */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
@@ -1386,11 +1309,7 @@ export default function DamageIntakeForm() {
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">— visas —</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
+                      {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
                     </select>
                   </div>
 
@@ -1407,8 +1326,7 @@ export default function DamageIntakeForm() {
                         .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
                         .map((it) => (
                           <option key={it.uid} value={it.uid}>
-                            {it.subcategory ? `[${it.subcategory}] ` : ""}
-                            {it.name} · {it.unit || "—"}
+                            {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
                           </option>
                         ))}
                     </select>
@@ -1423,11 +1341,7 @@ export default function DamageIntakeForm() {
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">—</option>
-                      {allUnits.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
+                      {allUnits.map((u) => (<option key={u} value={u}>{u}</option>))}
                     </select>
                   </div>
 
@@ -1464,17 +1378,8 @@ export default function DamageIntakeForm() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingRoomId(null);
-                        setStep(9);
-                      }}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        border: "1px solid #e5e7eb",
-                        background: "white",
-                        color: "#111827",
-                      }}
+                      onClick={() => { setEditingRoomId(null); setStep(9); }}
+                      style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
                     >
                       + Pievienot vēl telpu
                     </button>
@@ -1486,10 +1391,7 @@ export default function DamageIntakeForm() {
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
               <button
                 type="button"
-                onClick={() => {
-                  setEditingRoomId(null);
-                  setStep(10);
-                }}
+                onClick={() => { setEditingRoomId(null); setStep(10); }}
                 style={{ padding: "10px 14px", borderRadius: 10, background: "#111827", color: "white", border: 0 }}
               >
                 Saglabāt un atgriezties
@@ -1505,13 +1407,7 @@ export default function DamageIntakeForm() {
               type="button"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "1px solid #e5e7eb",
-                background: step === 1 ? "#f3f4f6" : "white",
-                color: "#111827",
-              }}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: step === 1 ? "#f3f4f6" : "white", color: "#111827" }}
             >
               ← Atpakaļ
             </button>
@@ -1519,13 +1415,7 @@ export default function DamageIntakeForm() {
               type="button"
               onClick={() => setStep((s) => Math.min(totalSteps, s + 1))}
               disabled={!stepValid || step === totalSteps}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827",
-                color: "white",
-                border: 0,
-              }}
+              style={{ padding: "10px 14px", borderRadius: 10, background: !stepValid || step === totalSteps ? "#9ca3af" : "#111827", color: "white", border: 0 }}
             >
               {step === totalSteps ? "Beigas" : "Tālāk →"}
             </button>
@@ -1550,13 +1440,7 @@ export default function DamageIntakeForm() {
                 <tbody>
                   {saved.map((e) => (
                     <tr key={e.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                        }}
-                      >
+                      <td style={{ padding: "8px 12px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
                         {e.filename}
                       </td>
                       <td style={{ padding: "8px 12px" }}>{e.estimator}</td>
@@ -1570,9 +1454,8 @@ export default function DamageIntakeForm() {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024).
-          Ja kādai vecākai pozīcijai ir apakšpozīcijas, tās definē <code>prices/balta-links.json</code> vai
-          tieši <code>children</code> laukā — forma tās nerādīs, bet Excel tās pievienos automātiski zem vecāka.
+          Piezīme: cenrādis ielādējas no <code>public/prices/balta.v2.json</code> (ja nav – <code>balta.json</code>).
+          Apakšpozīcijas forma nerāda, taču Excel tās pievieno automātiski zem izvēlētās vecākās pozīcijas.
         </footer>
       </div>
     </div>
