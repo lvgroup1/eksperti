@@ -44,49 +44,50 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
+// tolerant boolean + tiny normalizer
 const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
-// fold diacritics, trim, lowercase, collapse spaces
-const norm = (x) =>
-  String(x ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")  // remove accents (ā→a, ē→e, etc.)
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+const norm = (x) => String(x ?? "").trim().toLowerCase();
 
-
+// a row is a child if it says so or has some parent-link field
 const isChildItem = (it) =>
   parseBool(it.is_child) || parseBool(it.child) ||
   !!it.parent_uid || !!it.parentUid || !!it.parent_id || !!it.parentId ||
-  !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf;
+  !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf || !!it.parentKey || !!it.parent_key;
 
-// ====== FALLBACK NAME HINTS (only used if no explicit links found) ======
-const CHILD_NAME_HINTS = {
-  // key must be lowercase
-  "jumta nesošās konstrukciju montāža (mūrlata, kopnes,spares, sijas, balstbrusas)": [
-    "impregnēta koka brusa",
-    "montāžas elementi",
-  ],
-  // Add more here if needed: "parent name in lowercase": ["child 1","child 2", ...]
-};
+// does this child belong to this parent?
+function linkMatchesParent(child, parent) {
+  const parentKeys = new Set(
+    [parent.uid, parent.id, parent.name, `${parent.category}::${parent.name}`]
+      .map(norm)
+      .filter(Boolean)
+  );
+  const childLinks = [
+    child.parent_uid, child.parentUid, child.parent_id, child.parentId,
+    child.parent, child.parent_name, child.parentName, child.childOf,
+    child.parent_key, child.parentKey
+  ].map(norm).filter(Boolean);
 
-// map any child-like row to export compact structure
+  return childLinks.some(k => parentKeys.has(k));
+}
+
+// compact child shape used in export
 function mapChildFromFlat(x, fallbackUnit) {
-  const labor = Number(x.labor ?? 0) || 0;
-  const mech  = Number(x.mechanisms ?? 0) || 0;
-  const materials = Number(x.materials ?? ((labor || mech) ? 0 : (x.unit_price ?? 0))) || 0;
+  const labor = Number(x?.labor ?? 0) || 0;
+  const mech  = Number(x?.mechanisms ?? 0) || 0;
+  const materials = Number(x?.materials ?? ((labor || mech) ? 0 : (x?.unit_price ?? 0))) || 0;
   return {
-    name: x.name || "",
-    unit: normalizeUnit(x.unit || fallbackUnit || ""),
-    coeff: Number(x.coeff ?? x.multiplier ?? 1) || 1,
+    name: x?.name || "",
+    unit: normalizeUnit(x?.unit || fallbackUnit || ""),
+    coeff: Number(x?.coeff ?? x?.multiplier ?? 1) || 1,
     labor,
     materials,
     mechanisms: mech,
   };
 }
+
 
 function buildChildIndex(items) {
   const idx = new Map(); // parentKey -> child rows[]
@@ -170,188 +171,142 @@ export default function DamageIntakeForm() {
   const [hintChildUids, setHintChildUids] = useState(new Set()); // children hidden by hints
 
   /* ---------- Load pricing ---------- */
-  useEffect(() => {
-    if (insurer !== "Balta") {
-      setPriceCatalog([]);
-      setChildIndex(new Map());
-      setHintChildUids(new Set());
-      return;
-    }
-    setCatalogError("");
+ useEffect(() => {
+  if (insurer !== "Balta") {
+    setPriceCatalog([]);
+    return;
+  }
+  setCatalogError("");
 
-    (async () => {
-      try {
-        const load = async (url) => {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-          const json = await res.json();
-          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+  (async () => {
+    try {
+      const load = async (url) => {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const json = await res.json();
+        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+      };
+
+      let raw;
+      try { raw = await load("prices/balta.v2.json"); } catch { raw = await load("prices/balta.json"); }
+
+      const parents = [];
+      const childrenFlat = [];
+
+      raw.forEach((it, i) => {
+        const category = (it.category || "").trim();
+        const subcat =
+          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+        const idStr = String(it.id ?? i);
+        const name = (it.name || "").trim();
+        const uid = [category, subcat, idStr, name].join("::");
+
+        const parent_uid =
+          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+          it.parent || it.parent_name || it.parentName || it.childOf || null;
+        const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+        const base = {
+          id: idStr,
+          uid,
+          name,
+          category,
+          subcategory: subcat,
+          unit: normalizeUnit(it.unit),
+          unit_price: parseDec(it.unit_price),
+          labor: parseDec(it.labor ?? it.darbs),
+          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+          is_child: childFlag,
+          parent_uid: parent_uid || null,
         };
 
-        let raw;
-        try { raw = await load("prices/balta.v2.json"); } catch { raw = await load("prices/balta.json"); }
+        if (childFlag) {
+          // flat child linked to a parent
+          childrenFlat.push({
+            ...base,
+            coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
+            parent_key: it.parent_key || it.parentKey || null,
+          });
+        } else {
+          // parent row
+          const parent = { ...base, is_child: false, parent_uid: null };
+          parents.push(parent);
 
-        const parents = [];
-        const childrenFlat = [];
+          // also support nested children arrays
+          const kidsArr =
+            (Array.isArray(it.children) && it.children) ||
+            (Array.isArray(it.komponentes) && it.komponentes) ||
+            (Array.isArray(it.apaks) && it.apaks) || [];
 
-        raw.forEach((it, i) => {
-          const category = (it.category || "").trim();
-          const subcat =
-            (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-          const idStr = String(it.id ?? i);
-          const name = (it.name || "").trim();
-          const uid = [category, subcat, idStr, name].join("::");
+          kidsArr.forEach((ch, idxCh) => {
+            const chName = (ch.name || ch.title || "").trim();
+            if (!chName) return;
 
-          const parent_uid =
-            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
-            it.parent || it.parent_name || it.parentName || it.childOf || null;
-          const is_child = parseBool(it.is_child) || !!parent_uid;
-
-          const base = {
-            id: idStr,
-            uid,
-            name,
-            category,
-            subcategory: subcat,
-            unit: normalizeUnit(it.unit),
-            unit_price: parseDec(it.unit_price),
-            labor: parseDec(it.labor ?? it.darbs),
-            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-            is_child,
-            parent_uid: parent_uid || null,
-          };
-
-          if (is_child) {
-            childrenFlat.push({ ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1, parent_key: it.parent_key || it.parentKey || null });
-          } else {
-            const parent = { ...base };
-            parents.push(parent);
-
-            // nested children
-            const kidsArr =
-              (Array.isArray(it.children) && it.children) ||
-              (Array.isArray(it.komponentes) && it.komponentes) ||
-              (Array.isArray(it.apaks) && it.apaks) || [];
-            if (kidsArr.length) {
-              const normalizedKids = [];
-              kidsArr.forEach((ch, idxCh) => {
-                const chName = (ch.name || ch.title || "").trim();
-                if (!chName) return;
-                const chEntry = {
-                  id: `${idStr}-c${idxCh}`,
-                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                  name: chName,
-                  category,
-                  subcategory: subcat,
-                  unit: normalizeUnit(ch.unit || it.unit),
-                  unit_price: parseDec(ch.unit_price),
-                  labor: parseDec(ch.labor),
-                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-                  mechanisms: parseDec(ch.mechanisms),
-                  is_child: true,
-                  parent_uid: uid,
-                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-                };
-                childrenFlat.push(chEntry);
-                normalizedKids.push({
-                  name: chEntry.name, unit: chEntry.unit, coeff: chEntry.coeff || 1,
-                  labor: chEntry.labor || 0, materials: chEntry.materials || 0, mechanisms: chEntry.mechanisms || 0,
-                });
-              });
-              parent.children = normalizedKids;
-            }
-          }
-        });
-
-        // Build catalog & index
-        const catalog = [...parents, ...childrenFlat];
-        setPriceCatalog(catalog);
-        const idx = buildChildIndex(catalog);
-        setChildIndex(idx);
-
-        // ----- Build HINT hidden set (so hinted children are not selectable) -----
-        const hinted = new Set();
-        const parentsByName = parents.reduce((m, p) => {
-          const k = norm(p.name);
-          (m.get(k) || m.set(k, []).get(k)).push(p);
-          return m;
-        }, new Map());
-
-        for (const [pNameLower, childNames] of Object.entries(CHILD_NAME_HINTS)) {
-          const parentList = parentsByName.get(pNameLower);
-          if (!parentList) continue;
-          for (const p of parentList) {
-            for (const childName of childNames) {
-              const cLower = norm(childName);
-              // match by same category as the parent (to avoid false positives)
-              const matches = catalog.filter(it => norm(it.name) === cLower && it.category === p.category);
-              matches.forEach(m => hinted.add(m.uid));
-            }
-          }
+            const chEntry = {
+              id: `${idStr}-c${idxCh}`,
+              uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+              name: chName,
+              category,
+              subcategory: subcat,
+              unit: normalizeUnit(ch.unit || it.unit),
+              unit_price: parseDec(ch.unit_price),
+              labor: parseDec(ch.labor),
+              materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+              mechanisms: parseDec(ch.mechanisms),
+              is_child: true,
+              parent_uid: uid,               // ← explicit link to this parent
+              coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+            };
+            childrenFlat.push(chEntry);
+            // keep a compact copy on parent for a fast path too
+            parent.children = parent.children || [];
+            parent.children.push({
+              name: chEntry.name,
+              unit: chEntry.unit,
+              coeff: chEntry.coeff || 1,
+              labor: chEntry.labor || 0,
+              materials: chEntry.materials || 0,
+              mechanisms: chEntry.mechanisms || 0,
+            });
+          });
         }
-        setHintChildUids(hinted);
-      } catch (e) {
-        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
-      }
-    })();
-  }, [insurer]);
+      });
+
+      // final catalog = parents + children (children are hidden in UI with !isChildItem)
+      setPriceCatalog([...parents, ...childrenFlat]);
+    } catch (e) {
+      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+    }
+  })();
+}, [insurer]);
 
   // Resolve children for a given parent
-  const getChildrenFor = useCallback((parent) => {
-    const out = [];
-    const seenKeys = new Set();
+const getChildrenFor = useCallback((parent) => {
+  const out = [];
+  const seen = new Set();
 
-    // A) embedded children (fast path)
-    if (Array.isArray(parent.children) && parent.children.length) {
-      for (const ch of parent.children) {
-        const mapped = mapChildFromFlat(ch, parent.unit);
-        const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
-        if (!seenKeys.has(key)) { seenKeys.add(key); out.push(mapped); }
-      }
+  // A) embedded (fast path)
+  if (Array.isArray(parent.children)) {
+    for (const ch of parent.children) {
+      const mapped = mapChildFromFlat(ch, parent.unit);
+      const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
+      if (!seen.has(key)) { seen.add(key); out.push(mapped); }
     }
+  }
 
-    // B) linked via index
-    const keys = [
-      parent.uid,
-      parent.id,
-      parent.name,
-      `${parent.category}::${parent.name}`,
-    ].map(norm);
+  // B) flat rows with links
+  for (const ch of priceCatalog) {
+    if (!isChildItem(ch)) continue;
+    if (!linkMatchesParent(ch, parent)) continue;
+    const mapped = mapChildFromFlat(ch, parent.unit);
+    const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
+    if (!seen.has(key)) { seen.add(key); out.push(mapped); }
+  }
 
-    for (const k of keys) {
-      const arr = childIndex.get(k);
-      if (!arr) continue;
-      for (const raw of arr) {
-        const mapped = mapChildFromFlat(raw, parent.unit);
-        const key = raw.uid || `${norm(mapped.name)}::${norm(mapped.unit)}`;
-        if (!seenKeys.has(key)) { seenKeys.add(key); out.push(mapped); }
-      }
-    }
+  return out;
+}, [priceCatalog]);
 
-    // C) fallback by HINTS (name-based, within same category)
-    if (out.length === 0) {
-      const hintList = CHILD_NAME_HINTS[norm(parent.name)];
-      if (hintList && hintList.length) {
-        for (const childName of hintList) {
-          const cLower = norm(childName);
-          // find matching row in same category
-          const match = priceCatalog.find(
-            it => norm(it.name) === cLower && it.category === parent.category
-          );
-          if (match) {
-            out.push(mapChildFromFlat(match, parent.unit));
-          }
-        }
-        if (out.length) {
-          // eslint-disable-next-line no-console
-          console.warn(`[HINT] Using name-based children for parent: ${parent.name}`);
-        }
-      }
-    }
-
-    return out;
-  }, [childIndex, priceCatalog]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -656,19 +611,23 @@ const childrenByUID = React.useMemo(() => {
           const pSplit = pLabor + pMat + pMech;
           const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-          selections.push({
-            isChild: false,
-            room: `${ri.type} ${ri.index}`,
-            name: a.itemName || parent.name || "",
-            unit, qty,
-            labor: pLabor, materials: pMat, mechanisms: pMech,
-            unitPrice: pUnitPrice,
-          });
+// push parent (numbered)
+selections.push({
+  isChild: false,
+  room: `${ri.type} ${ri.index}`,
+  name: a.itemName || parent.name || "",
+  unit,
+  qty,
+  labor: pLabor,
+  materials: pMat,
+  mechanisms: pMech,
+  unitPrice: pUnitPrice,
+});
 
-          // auto-append children (use precomputed map; fallback to getChildrenFor)
-let kids = childrenByUID.get(parent.uid) || [];
-if (!kids.length) {
-  kids = getChildrenFor(parent); // your getChildrenFor already consults childIndex + hints
+// auto-append children (indented, no numbering)
+const kids = getChildrenFor(parent);
+if (kids.length === 0) {
+  console.warn("No children found for:", parent.name, parent); // dev hint
 }
 for (const ch of kids) {
   const cQty = parseDec(ch.coeff ?? 1) * qty;
@@ -681,13 +640,9 @@ for (const ch of kids) {
     labor: parseDec(ch.labor ?? 0),
     materials: parseDec(ch.materials ?? 0),
     mechanisms: parseDec(ch.mechanisms ?? 0),
-    unitPrice:
-      parseDec(ch.labor ?? 0) +
-      parseDec(ch.materials ?? 0) +
-      parseDec(ch.mechanisms ?? 0),
+    unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
   });
 }
-
  
         });
       });
@@ -1318,24 +1273,21 @@ for (const ch of kids) {
                   {/* Pozīcija (parents only) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-                    <select
-                      value={row.itemUid ?? ""}
-                      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-                    >
-                      <option value="">— izvēlies pozīciju —</option>
-                      {priceCatalog
-                        .filter((it) =>
-                          (!row.category || it.category === row.category) &&
-                          !isChildItem(it) &&
-                          !hintChildUids.has(it.uid) // ← also hide hint-children
-                        )
-                        .map((it) => (
-                          <option key={it.uid} value={it.uid}>
-                            {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-                          </option>
-                        ))}
-                    </select>
+<select
+  value={row.itemUid ?? ""}
+  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+>
+  <option value="">— izvēlies pozīciju —</option>
+  {priceCatalog
+    .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+    .map((it) => (
+      <option key={it.uid} value={it.uid}>
+        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+      </option>
+    ))}
+</select>
+
                   </div>
 
                   {/* Mērv. */}
