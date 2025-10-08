@@ -55,50 +55,57 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
-/* ---------- child/parent utilities (work even if balta.json is flat) ---------- */
+// tolerant boolean
 const parseBool = (v) =>
-  v === true ||
-  v === 1 ||
-  v === "1" ||
-  (typeof v === "string" && ["true", "yes", "y", "jā"].includes(v.trim().toLowerCase()));
+  v === true || v === 1 || v === "1" ||
+  (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
+// detect a child row in the catalog
 const isChildItem = (it) =>
-  parseBool(it.is_child) ||
-  !!it.parent_uid ||
-  !!it.childOf ||
-  !!it.parentId ||
-  !!it.parent ||
-  !!it.parent_name ||
-  !!it.parentName;
+  parseBool(it.is_child) || !!it.parent_uid || !!it.childOf || !!it.parentId ||
+  !!it.parent || !!it.parent_name || !!it.parentName;
 
-// If we have an explicit link, check if child's link matches this parent
-const linkMatchesParent = (child, parent) => {
-  const pKeys = [parent.uid, parent.id, parent.name].filter(Boolean);
-  const cKeys = [
-    child.childOf,
-    child.parent_uid,
-    child.parentId,
-    child.parent,
-    child.parent_name,
-    child.parentName,
-  ].filter(Boolean);
-  return cKeys.some((k) => pKeys.includes(k));
-};
+// normalize to compare
+const norm = (x) => String(x ?? "").trim().toLowerCase();
 
-// Convert a flat child row to the structure we use in export
-const mapChildFromFlat = (x, fallbackUnit) => ({
-  name: x.name || "",
-  unit: normalizeUnit(x.unit || fallbackUnit || ""),
-  coeff: Number(x.coeff ?? 1) || 1,
-  labor: Number(x.labor ?? 0) || 0,
+// does this child belong to this parent?
+function linkMatchesParent(child, parent) {
+  // possible parent identifiers
+  const P = new Set([
+    norm(parent.uid),
+    norm(parent.id),
+    norm(parent.name),
+    norm(parent.category + "::" + parent.name),
+  ]);
+
+  // possible child “links”
+  const C = [
+    child.parent_uid, child.parentUid, child.parentId,
+    child.parent, child.parent_name, child.parentName, child.childOf
+  ].map(norm).filter(Boolean);
+
+  return C.some((c) => P.has(c));
+}
+
+// map any child-like row to the compact structure export uses
+function mapChildFromFlat(x, fallbackUnit) {
+  const labor = Number(x.labor ?? 0) || 0;
+  const mech  = Number(x.mechanisms ?? 0) || 0;
   // if only unit_price exists, treat it as materials (BALTA style)
-  materials: Number(x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)) || 0,
-  mechanisms: Number(x.mechanisms ?? 0) || 0,
-});
+  const materials = Number(x.materials ?? ((labor || mech) ? 0 : (x.unit_price ?? 0))) || 0;
+  return {
+    name: x.name || "",
+    unit: normalizeUnit(x.unit || fallbackUnit || ""),
+    coeff: Number(x.coeff ?? x.multiplier ?? 1) || 1,
+    labor,
+    materials,
+    mechanisms: mech,
+  };
+}
 
-// Resolve children for a parent either from nested children or from linked flat rows
-const getChildrenFor = (parent, catalog) => {
-  // A) nested children on the parent
+// return children for a given parent from either embedded children[] or flat linked rows
+function getChildrenFor(parent, catalog) {
+  // A) fast path — embedded children on parent
   if (Array.isArray(parent.children) && parent.children.length) {
     return parent.children.map((ch) =>
       mapChildFromFlat(
@@ -114,10 +121,12 @@ const getChildrenFor = (parent, catalog) => {
       )
     );
   }
-  // B) separate rows with links to parent
-  const linked = catalog.filter((x) => linkMatchesParent(x, parent) || (x.is_child && x.parent_uid === parent.uid));
+
+  // B) fallback — scan flat catalog for linked child rows
+  const linked = catalog.filter((x) => isChildItem(x) && linkMatchesParent(x, parent));
   return linked.map((x) => mapChildFromFlat(x, parent.unit));
-};
+}
+
 
 /* ---------- LocalStorage helpers ---------- */
 const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
