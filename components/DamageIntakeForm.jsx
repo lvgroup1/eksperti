@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 
 /* ==========================
    Damage Intake – STEP WIZARD (1..12)
-   BALTA pricing via public/prices/balta.json
+   BALTA pricing via public/prices/balta.json (+ optional prices/balta-links.json)
    UI hides ALL prices; expert enters ONLY quantities/units.
    Excel export uses a BALTA-style template with styles & VAT.
    ========================== */
@@ -55,33 +55,26 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2", "m3", "m", "gab", "kpl", "diena", "obj", "c/h"];
 
-// ---------- CHILD/PARENT DETECTION (robust) ----------
-const truthy = (v) => v === true || v === 1 || v === "1" ||
-  (typeof v === "string" && v.trim().toLowerCase() === "true") ||
-  (typeof v === "string" && v.trim().toLowerCase() === "yes");
+/* ---------- child/parent utilities (work even if balta.json is flat) ---------- */
+const parseBool = (v) =>
+  v === true ||
+  v === 1 ||
+  v === "1" ||
+  (typeof v === "string" && ["true", "yes", "y", "jā"].includes(v.trim().toLowerCase()));
 
-// is this item a child row?
-const isChildItem = (it) => {
-  // explicit boolean-ish flags that might exist in your JSON
-  const boolKeys = ["is_child", "child", "apakspozicija", "apakšpozīcija", "isSub", "is_sub"];
-  for (const k of boolKeys) {
-    if (k in it && truthy(it[k])) return true;
-  }
+const isChildItem = (it) =>
+  parseBool(it.is_child) ||
+  !!it.parent_uid ||
+  !!it.childOf ||
+  !!it.parentId ||
+  !!it.parent ||
+  !!it.parent_name ||
+  !!it.parentName;
 
-  // explicit links imply child
-  if (it.childOf || it.parent_uid || it.parentId || it.parent || it.parent_name || it.parentName) return true;
-
-  // level-based structures
-  const lvl = Number(it.level ?? it.lvl ?? it.depth);
-  if (Number.isFinite(lvl) && lvl > 1) return true;
-
-  return false;
-};
-
-// link child row to a parent row
+// If we have an explicit link, check if child's link matches this parent
 const linkMatchesParent = (child, parent) => {
-  const parentCandidates = [parent.uid, parent.id, parent.name].filter(Boolean);
-  const childLinks = [
+  const pKeys = [parent.uid, parent.id, parent.name].filter(Boolean);
+  const cKeys = [
     child.childOf,
     child.parent_uid,
     child.parentId,
@@ -89,25 +82,23 @@ const linkMatchesParent = (child, parent) => {
     child.parent_name,
     child.parentName,
   ].filter(Boolean);
-  return childLinks.some((l) => parentCandidates.includes(l));
+  return cKeys.some((k) => pKeys.includes(k));
 };
 
-// map a flat child row into the structure used by export
+// Convert a flat child row to the structure we use in export
 const mapChildFromFlat = (x, fallbackUnit) => ({
   name: x.name || "",
   unit: normalizeUnit(x.unit || fallbackUnit || ""),
-  coeff: parseDec(x.coeff ?? 1),
-  labor: parseDec(x.labor ?? 0),
-  // If child has only a unit price, treat it as materials (like in BALTA sheets)
-  materials: parseDec(
-    x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)
-  ),
-  mechanisms: parseDec(x.mechanisms ?? 0),
+  coeff: Number(x.coeff ?? 1) || 1,
+  labor: Number(x.labor ?? 0) || 0,
+  // if only unit_price exists, treat it as materials (BALTA style)
+  materials: Number(x.materials ?? (x.labor || x.mechanisms ? 0 : x.unit_price ?? 0)) || 0,
+  mechanisms: Number(x.mechanisms ?? 0) || 0,
 });
 
-// get children for a given parent (supports nested or linked)
+// Resolve children for a parent either from nested children or from linked flat rows
 const getChildrenFor = (parent, catalog) => {
-  // A) nested
+  // A) nested children on the parent
   if (Array.isArray(parent.children) && parent.children.length) {
     return parent.children.map((ch) =>
       mapChildFromFlat(
@@ -123,29 +114,12 @@ const getChildrenFor = (parent, catalog) => {
       )
     );
   }
-
   // B) separate rows with links to parent
-  const linked = catalog.filter((x) => linkMatchesParent(x, parent));
-  if (linked.length) {
-    return linked.map((x) => mapChildFromFlat(x, parent.unit));
-  }
-
-  // C) fallback: if your data marks children only with flags and shares the same category/subcategory
-  const flaggedSameGroup = catalog.filter(
-    (x) =>
-      isChildItem(x) &&
-      x.category === parent.category &&
-      x.subcategory === parent.subcategory
-  );
-  if (flaggedSameGroup.length) {
-    return flaggedSameGroup.map((x) => mapChildFromFlat(x, parent.unit));
-  }
-
-  return [];
+  const linked = catalog.filter((x) => linkMatchesParent(x, parent) || (x.is_child && x.parent_uid === parent.uid));
+  return linked.map((x) => mapChildFromFlat(x, parent.unit));
 };
 
-
-// LocalStorage helpers
+/* ---------- LocalStorage helpers ---------- */
 const STORAGE_KEY = "tames_profils_saglabatie"; // [{id, filename, createdAtISO, estimator, base64}]
 function loadSaved() {
   try {
@@ -161,7 +135,7 @@ function saveEntry(entry) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
-
+/* ---------- Small presentational components ---------- */
 const LabeledRow = React.memo(function LabeledRow({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
@@ -181,10 +155,10 @@ const StepShell = React.memo(function StepShell({ title, children }) {
 });
 
 export default function DamageIntakeForm() {
-  // Wizard step (1..12)
+  /* ---------- Wizard state ---------- */
   const [step, setStep] = useState(1);
 
-  // Profile (optional metadata for the Excel header)
+  // Profile
   const [estimatorName, setEstimatorName] = useState("");
   const [estimatorEmail, setEstimatorEmail] = useState("");
   const [claimNumber, setClaimNumber] = useState(""); // Lietas Nr.
@@ -211,78 +185,136 @@ export default function DamageIntakeForm() {
     }, /** @type {Record<string,{checked:boolean,count:number,custom:string}>} */ ({}))
   );
 
-  // Visible list of selected room instances
-  // structure: { id, type, index, note?: string }
-  const [roomInstances, setRoomInstances] = useState([]);
-
-  // Per-room priced rows:
-  // { [roomId]: Array<{category,itemUid,itemId,itemName,quantity,unit,unit_price|null, labor, materials, mechanisms}> }
-  const [roomActions, setRoomActions] = useState({});
-
-  // Which room is currently being edited (for step 11)
+  // room instances & actions
+  const [roomInstances, setRoomInstances] = useState([]); // {id,type,index,note?}[]
+  const [roomActions, setRoomActions] = useState({}); // { [roomId]: Array<{category,itemUid,itemId,itemName,quantity,unit,unit_price|null, labor, materials, mechanisms}> }
   const [editingRoomId, setEditingRoomId] = useState(null);
 
   // Pricing catalog (Balta)
-  const [priceCatalog, setPriceCatalog] = useState([]); // {id,category,subcategory,name,unit,unit_price,labor,materials,mechanisms,uid}[]
+  const [priceCatalog, setPriceCatalog] = useState([]); // normalized rows
   const [catalogError, setCatalogError] = useState("");
 
-
-  // Resolve asset base (root or /eksperti on GitHub Pages)
-  const assetBase =
-    typeof window !== "undefined" &&
-    (window.location.hostname.endsWith("github.io") || window.location.pathname.startsWith("/eksperti"))
-      ? "/eksperti"
-      : "";
-
-  // ===== Load BALTA prices
+  /* ---------- Load BALTA prices (+ optional link map) ---------- */
   useEffect(() => {
-    if (insurer !== "Balta") {
-      setPriceCatalog([]);
-      return;
+  if (insurer !== "Balta") {
+    setPriceCatalog([]);
+    return;
+  }
+  setCatalogError("");
+
+  (async () => {
+    try {
+      const load = async (url) => {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const json = await res.json();
+        // accept either {items: [...] } or plain [...]
+        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+      };
+
+      let raw;
+      try {
+        raw = await load("prices/balta.v2.json");
+      } catch {
+        raw = await load("prices/balta.json");
+      }
+
+      const parents = [];
+      const childrenLinked = [];
+
+      raw.forEach((it, i) => {
+        const category = (it.category || "").trim();
+        const subcat =
+          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+        const idStr = String(it.id ?? i);
+        const name = (it.name || "").trim();
+        const uid = [category, subcat, idStr, name].join("::");
+
+        // detect child + parent link using tolerant keys
+        const parent_uid =
+          it.parent_uid || it.parentUid || it.parentId || it.parent || it.parent_name || it.parentName || null;
+        const is_child = parseBool(it.is_child) || !!parent_uid;
+
+        const base = {
+          id: idStr,
+          uid,
+          name,
+          category,
+          subcategory: subcat,
+          unit: normalizeUnit(it.unit),
+          unit_price: parseDec(it.unit_price),
+          labor: parseDec(it.labor ?? it.darbs),
+          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+          is_child,
+          parent_uid: parent_uid || null,
+        };
+
+        if (is_child) {
+          // flat child row linked to a parent
+          childrenLinked.push({
+            ...base,
+            // optional multipliers commonly used for child rows
+            coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
+          });
+        } else {
+          // parent row
+          const parent = { ...base };
+          parents.push(parent);
+
+          // also support nested children arrays inside parent row
+          const kidsArr =
+            (Array.isArray(it.children) && it.children) ||
+            (Array.isArray(it.komponentes) && it.komponentes) ||
+            (Array.isArray(it.apaks) && it.apaks) ||
+            [];
+
+          const normalizedKids = [];
+          kidsArr.forEach((ch, idxCh) => {
+            const chName = (ch.name || ch.title || "").trim();
+            if (!chName) return;
+
+            const chEntry = {
+              id: `${idStr}-c${idxCh}`,
+              uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+              name: chName,
+              category,
+              subcategory: subcat,
+              unit: normalizeUnit(ch.unit || it.unit),
+              unit_price: parseDec(ch.unit_price),
+              labor: parseDec(ch.labor),
+              materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+              mechanisms: parseDec(ch.mechanisms),
+              is_child: true,
+              parent_uid: uid,
+              coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+            };
+
+            // add a linked child row so getChildrenFor() can also find by parent_uid
+            childrenLinked.push(chEntry);
+
+            // keep a compact child on the parent for the fast path in getChildrenFor()
+            normalizedKids.push({
+              name: chEntry.name,
+              unit: chEntry.unit,
+              coeff: chEntry.coeff || 1,
+              labor: chEntry.labor || 0,
+              materials: chEntry.materials || 0,
+              mechanisms: chEntry.mechanisms || 0,
+            });
+          });
+
+          if (normalizedKids.length) parent.children = normalizedKids;
+        }
+      });
+
+      // final catalog = parents + child rows (hidden in UI via !isChildItem)
+      setPriceCatalog([...parents, ...childrenLinked]);
+    } catch (e) {
+      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
     }
-    setCatalogError("");
-    fetch("prices/balta.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json();
-      })
-      .then((data) => {
-        const items = Array.isArray(data.items) ? data.items : [];
-
-        const mapped = items.map((it, i) => {
-          const category = (it.category || "").trim();
-          const subcat = (
-            it.subcategory ||
-            it.subcat ||
-            it.group ||
-            it.grupa ||
-            it["apakškategorija"] ||
-            ""
-          )
-            .toString()
-            .trim();
-          const idStr = String(it.id ?? i);
-          const name = (it.name || "").trim();
-          return {
-            ...it,
-            id: idStr,
-            name,
-            category,
-            subcategory: subcat,
-            unit: normalizeUnit(it.unit),
-            unit_price: parseDec(it.unit_price),
-            labor: parseDec(it.labor ?? it.darbs),
-            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-            // UID that stays unique across nested groups
-            uid: [category, subcat, idStr, name].join("::"),
-          };
-        });
-
-        setPriceCatalog(mapped);
-      })
-      .catch((e) => setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`));
-  }, [insurer]);
+  })();
+}, [insurer]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -295,11 +327,11 @@ export default function DamageIntakeForm() {
     return Array.from(set);
   }, [priceCatalog]);
 
-  // Saved estimates (local profile)
+  /* ---------- Saved estimates ---------- */
   const [saved, setSaved] = useState([]);
   useEffect(() => setSaved(loadSaved()), []);
 
-  // Build room instances when rooms selection changes (preserve notes & actions)
+  /* ---------- Build room instances on rooms change ---------- */
   useEffect(() => {
     const instances = [];
     Object.entries(rooms).forEach(([type, meta]) => {
@@ -329,9 +361,7 @@ export default function DamageIntakeForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-
-
-  // Actions helpers
+  /* ---------- Action row helpers ---------- */
   function addActionRow(roomId, presetCategory = "") {
     setRoomActions((ra) => ({
       ...ra,
@@ -412,7 +442,6 @@ export default function DamageIntakeForm() {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
   }
 
-  // Delete a specific room instance and reindex actions/rooms
   function removeRoomInstance(roomId) {
     const [baseType, idxStr] = String(roomId).split("-");
     const idx = parseInt(idxStr, 10) || 1;
@@ -446,7 +475,7 @@ export default function DamageIntakeForm() {
     setEditingRoomId((id) => (id === roomId ? null : id));
   }
 
-  // Validation per step
+  /* ---------- Step validation ---------- */
   const totalSteps = 12;
   const stepValid = useMemo(() => {
     switch (step) {
@@ -487,14 +516,10 @@ export default function DamageIntakeForm() {
     rooms,
   ]);
 
-  // Suggested categories (kept simple; no "areas" UI)
-  function suggestedCategoriesFor(/* roomId */) {
-    return [];
-  }
+  const suggestedCategoriesFor = () => [];
 
   /* ==========================
-     Excel export (BALTA template; only filled rows)
-     Ordering = exactly as entered in the form
+     Excel export (BALTA template; in form order; expands children)
      ========================== */
   async function exportToExcel() {
     try {
@@ -561,62 +586,61 @@ export default function DamageIntakeForm() {
       tCell.font = { ...FONT, size: 16, bold: true };
       tCell.alignment = { horizontal: "center", vertical: "middle" };
 
-      // Gather rows (exactly in the form order)
-// ========= collect rows IN FORM ORDER, and expand children =========
-const selections = [];
-roomInstances.forEach((ri) => {
-  const list = roomActions[ri.id] || [];
-  list.forEach((a) => {
-    const qty = parseDec(a.quantity);
-    if (!qty) return;
+      // Gather rows (exactly in the form order) + expand children
+      const selections = [];
+      roomInstances.forEach((ri) => {
+        const list = roomActions[ri.id] || [];
+        list.forEach((a) => {
+          const qty = parseDec(a.quantity);
+          if (!qty) return;
 
-    // only parents are selectable in the form
-    const parent =
-      priceCatalog.find((i) => i.uid === a.itemUid) ||
-      priceCatalog.find((i) => i.id === a.itemId);
-    if (!parent) return;
+          // only parents are selectable in the form
+          const parent =
+            priceCatalog.find((i) => i.uid === a.itemUid) ||
+            priceCatalog.find((i) => i.id === a.itemId);
+          if (!parent) return;
 
-    const unit = normalizeUnit(a.unit || parent.unit || "");
+          const unit = normalizeUnit(a.unit || parent.unit || "");
 
-    // parent split (or fallback to unit_price)
-    const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
-    const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
-    const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
-    const pSplit = pLabor + pMat + pMech;
-    const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
+          // parent split (or fallback to unit_price)
+          const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
+          const pMat = parseDec(a.materials ?? parent.materials ?? 0);
+          const pMech = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
+          const pSplit = pLabor + pMat + pMech;
+          const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-    // push parent (numbered)
-    selections.push({
-      isChild: false,
-      room: `${ri.type} ${ri.index}`,
-      name: a.itemName || parent.name || "",
-      unit,
-      qty,
-      labor: pLabor,
-      materials: pMat,
-      mechanisms: pMech,
-      unitPrice: pUnitPrice,
-    });
+          // push parent (numbered)
+          selections.push({
+            isChild: false,
+            room: `${ri.type} ${ri.index}`,
+            name: a.itemName || parent.name || "",
+            unit,
+            qty,
+            labor: pLabor,
+            materials: pMat,
+            mechanisms: pMech,
+            unitPrice: pUnitPrice,
+          });
 
-    // auto-append children
-    const kids = getChildrenFor(parent, priceCatalog);
-    for (const ch of kids) {
-      const cQty = parseDec(ch.coeff ?? 1) * qty;
+          // auto-append children
+          const kids = getChildrenFor(parent, priceCatalog);
+          for (const ch of kids) {
+            const cQty = parseDec(ch.coeff ?? 1) * qty;
 
-      selections.push({
-        isChild: true, // ← Excel will indent and remove numbering
-        room: `${ri.type} ${ri.index}`,
-        name: ch.name || "",
-        unit: normalizeUnit(ch.unit || unit),
-        qty: cQty,
-        labor: parseDec(ch.labor ?? 0),
-        materials: parseDec(ch.materials ?? 0),
-        mechanisms: parseDec(ch.mechanisms ?? 0),
-        unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
+            selections.push({
+              isChild: true, // Excel will indent and remove numbering
+              room: `${ri.type} ${ri.index}`,
+              name: ch.name || "",
+              unit: normalizeUnit(ch.unit || unit),
+              qty: cQty,
+              labor: parseDec(ch.labor ?? 0),
+              materials: parseDec(ch.materials ?? 0),
+              mechanisms: parseDec(ch.mechanisms ?? 0),
+              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
+            });
+          }
+        });
       });
-    }
-  });
-});
 
       if (!selections.length) {
         alert("Nav nevienas pozīcijas ar daudzumu.");
@@ -684,55 +708,53 @@ roomInstances.forEach((ri) => {
         ws.getRow(r).height = 18;
         r++;
 
-for (const s of rows) {
-    const row = ws.getRow(r);
+        for (const s of rows) {
+          const row = ws.getRow(r);
 
-    // Nr. column: only for parents
-    row.getCell(1).value = s.isChild ? "" : nr++;
+          // Nr. column: only for parents
+          row.getCell(1).value = s.isChild ? "" : nr++;
 
-    // indent children name
-    row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
-    row.getCell(3).value = s.unit;
-    row.getCell(4).value = s.qty;
+          // indent children name
+          row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+          row.getCell(3).value = s.unit;
+          row.getCell(4).value = s.qty;
 
-    // split
-    const e = s.labor || 0;
-    const f = s.materials || 0;
-    const g = s.mechanisms || 0;
-    const hasSplit = (e + f + g) > 0;
+          // split
+          const e = s.labor || 0;
+          const f = s.materials || 0;
+          const g = s.mechanisms || 0;
+          const hasSplit = e + f + g > 0;
 
-    row.getCell(5).value = hasSplit ? e : s.unitPrice;
-    row.getCell(6).value = hasSplit ? f : 0;
-    row.getCell(7).value = hasSplit ? g : 0;
+          row.getCell(5).value = hasSplit ? e : s.unitPrice;
+          row.getCell(6).value = hasSplit ? f : 0;
+          row.getCell(7).value = hasSplit ? g : 0;
 
-    row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-    row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-    row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
-    row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-    row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+          row.getCell(8).value = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+          row.getCell(9).value = { formula: `ROUND(E${r}*D${r},2)` };
+          row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
+          row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
+          row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
 
-    // formatting you already have:
-    row.getCell(4).numFmt = QTY;
-    for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
+          row.getCell(4).numFmt = QTY;
+          for (const c of [5, 6, 7, 8, 9, 10, 11, 12]) row.getCell(c).numFmt = MONEY;
 
-    const isZebra = ((r - START) % 2) === 1;
-    for (let c = 1; c <= COLS; c++) {
-      const cell = row.getCell(c);
-      if (ZEBRA && isZebra) {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
+          const isZebra = ((r - START) % 2) === 1;
+          for (let c = 1; c <= COLS; c++) {
+            const cell = row.getCell(c);
+            if (ZEBRA && isZebra) {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
+            }
+            cell.border = borderAll;
+            cell.font = { ...FONT, italic: !!s.isChild }; // visual hint for children
+            cell.alignment =
+              c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
+          }
+
+          if (first === null) first = r;
+          last = r;
+          r++;
+        }
       }
-      cell.border = borderAll;
-      cell.font = { ...FONT, italic: !!s.isChild }; // child rows italic (optional)
-      cell.alignment = c === 2
-        ? { wrapText: true, vertical: "middle" }
-        : { vertical: "middle", horizontal: "right" };
-    }
-
-    if (first === null) first = r;
-    last = r;
-    r++;
-  }
-}
 
       // Summary block (with borders for these rows)
       const boldCell = (addr) => {
@@ -818,7 +840,7 @@ for (const s of rows) {
       ws.getCell("L11").value = { formula: `L${rowGrand}` };
       ws.getCell("L11").numFmt = MONEY;
 
-      // Apply borders to summary rows
+      // Borders for summary rows
       const sumRows = [rowKopa, rowTrans, rowDirect, rowOver, rowProfit, rowDDSN, rowTotal, rowPVN, rowGrand];
       for (const rr of sumRows) {
         for (let c = 1; c <= COLS; c++) {
@@ -836,12 +858,11 @@ for (const s of rows) {
       ws.getCell(`B${notesTitleRow}`).font = { ...FONT, bold: true };
       ws.mergeCells(notesTitleRow, 2, notesTitleRow, 12);
 
-      const tameIdForNote = tameId; // same as top
       const notes = [
         "1. Tāmes derīguma termiņš – 1 mēnesis.",
         "2. Tāme sastādīta provizoriski, atbilstoši bojātā īpašuma apskates protokolam un bildēm.",
         "3. Iespējami slēpti defekti, kuri atklāsies remontdarbu laikā.",
-        `4. Tāme ir sagatavota elektroniski un ir autorizēta ar Nr.${tameIdForNote}.`,
+        `4. Tāme ir sagatavota elektroniski un ir autorizēta ar Nr.${tameId}.`,
       ];
 
       let rowN = notesTitleRow + 1;
@@ -917,27 +938,24 @@ for (const s of rows) {
     }
   }
 
-  // ===== UI helpers =====
-
-
-const onText = React.useCallback((setter) => (e) => setter(e.target.value), []);
-const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
-
+  /* ---------- Input helpers (stable, no focus glitches) ---------- */
+  const onText = useCallback((setter) => (e) => setter(e.target.value), []);
+  const onNum = useCallback((setter) => (e) => setter(e.target.value), []);
 
   const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
-        {/* Lietas Nr. (formas sākumā) */}
+        {/* Lietas Nr. */}
         <div style={{ background: "white", padding: 12, borderRadius: 12, marginBottom: 12 }}>
           <LabeledRow label="Lietas Nr.">
             <input
-  value={claimNumber ?? ""}
-  onChange={onText(setClaimNumber)}
-  placeholder="piem., CLV1234567"
-  autoComplete="off"
-  spellCheck={false}
+              value={claimNumber ?? ""}
+              onChange={onText(setClaimNumber)}
+              placeholder="piem., CLV1234567"
+              autoComplete="off"
+              spellCheck={false}
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
           </LabeledRow>
@@ -954,16 +972,16 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
             <input
-  value={estimatorName ?? ""}
-  onChange={onText(setEstimatorName)}
-  placeholder="Vārds, Uzvārds"
+              value={estimatorName ?? ""}
+              onChange={onText(setEstimatorName)}
+              placeholder="Vārds, Uzvārds"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
             />
             <input
-   value={estimatorEmail ?? ""}
-  onChange={onText(setEstimatorEmail)}
-  placeholder="E-pasts"
+              value={estimatorEmail ?? ""}
+              onChange={onText(setEstimatorEmail)}
+              placeholder="E-pasts"
               autoComplete="off"
               style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
             />
@@ -975,14 +993,14 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           <div style={{ width: `${progressPct}%`, height: 8, background: "#10b981", borderRadius: 999 }} />
         </div>
 
-        {/* Steps 1..9 */}
+        {/* Step 1 */}
         {step === 1 && (
           <StepShell title="1. Objekta adrese">
             <LabeledRow label="Objekta adrese">
               <input
-   value={address ?? ""}
-  onChange={onText(setAddress)}
-  placeholder="Iela 1, Pilsēta"
+                value={address ?? ""}
+                onChange={onText(setAddress)}
+                placeholder="Iela 1, Pilsēta"
                 autoComplete="off"
                 spellCheck={false}
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
@@ -991,6 +1009,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 2 */}
         {step === 2 && (
           <StepShell title="2. Apdrošināšanas kompānija">
             <LabeledRow label="Izvēlies kompāniju">
@@ -1018,6 +1037,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 3 */}
         {step === 3 && (
           <StepShell title="3. Kur notika negadījums?">
             <LabeledRow label="Vieta">
@@ -1053,9 +1073,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                 {dwellingSubtype === "Cits" && (
                   <LabeledRow label="3.1.1. Norādi">
                     <input
-   value={dwellingOther ?? ""}
-  onChange={onText(setDwellingOther)}
-  placeholder="NI tips"
+                      value={dwellingOther ?? ""}
+                      onChange={onText(setDwellingOther)}
+                      placeholder="NI tips"
                       autoComplete="off"
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                     />
@@ -1066,6 +1086,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 4 */}
         {step === 4 && (
           <StepShell title="4. Kas notika ar nekustamo īpašumu?">
             <LabeledRow label="Notikuma veids">
@@ -1085,9 +1106,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
             {incidentType === "Cits" && (
               <LabeledRow label="4.1. Norādi">
                 <input
-   value={incidentOther ?? ""}
-  onChange={onText(setIncidentOther)}
-   placeholder="Notikuma apraksts"
+                  value={incidentOther ?? ""}
+                  onChange={onText(setIncidentOther)}
+                  placeholder="Notikuma apraksts"
                   autoComplete="off"
                   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                 />
@@ -1096,6 +1117,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 5 */}
         {step === 5 && (
           <StepShell title="5. Elektrības traucējumi">
             <LabeledRow label="Elektrības traucējumi">
@@ -1109,6 +1131,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 6 */}
         {step === 6 && (
           <StepShell title="6. Vai nepieciešama žāvēšana?">
             <LabeledRow label="Žāvēšana">
@@ -1121,6 +1144,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 7 */}
         {step === 7 && (
           <StepShell title="7. Vai bojāts kopīpašums?">
             <LabeledRow label="Kopīpašums">
@@ -1139,6 +1163,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 8 */}
         {step === 8 && (
           <StepShell title="8. Zaudējuma novērtējums pēc klienta vārdiem">
             <LabeledRow label="Vai ir zināma summa?">
@@ -1151,13 +1176,13 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
             {lossKnown === "Jā" && (
               <LabeledRow label="Summa EUR">
                 <input
-  type="number"
-  inputMode="decimal"
-  step="0.01"
-  value={lossAmount ?? ""}
-  onChange={onNum(setLossAmount)}
-  autoComplete="off"
-  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={lossAmount ?? ""}
+                  onChange={onNum(setLossAmount)}
+                  autoComplete="off"
+                  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                   placeholder="€ summa"
                 />
               </LabeledRow>
@@ -1165,12 +1190,13 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 9 */}
         {step === 9 && (
           <StepShell title="9. Izvēlies telpu/as, kas tika bojātas">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 12 }}>
               {ROOM_TYPES.map((rt) => (
                 <div key={rt} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12 }}>
-                  <label style={{ fontWeight: 600, display: "flex", alignItems: "center, ", gap: 8 }}>
+                  <label style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
                     <input
                       type="checkbox"
                       checked={rooms[rt].checked}
@@ -1218,6 +1244,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 10 */}
         {step === 10 && (
           <StepShell title="10. Izvēlētās telpas">
             {roomInstances.length === 0 ? (
@@ -1309,6 +1336,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           </StepShell>
         )}
 
+        {/* Step 11 */}
         {step === 11 && editingRoomId && (
           <StepShell
             title={`11. Pozīcijas un apjomi – ${
@@ -1317,9 +1345,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
           >
             <LabeledRow label="Piezīmes">
               <input
-   value={(roomInstances.find((r) => r.id === editingRoomId)?.note) ?? ""}
-  onChange={(e) => setRoomNote(editingRoomId, e.target.value)}
-  placeholder="Papildus informācija"
+                value={roomInstances.find((r) => r.id === editingRoomId)?.note ?? ""}
+                onChange={(e) => setRoomNote(editingRoomId, e.target.value)}
+                placeholder="Papildus informācija"
                 autoComplete="off"
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
               />
@@ -1346,13 +1374,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                     <select
                       value={row.category ?? ""}
                       onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
-                      style={{
-                        width: "100%",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 10,
-                        padding: 8,
-                        background: "white",
-                      }}
+                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">— visas —</option>
                       {categories.map((c) => (
@@ -1363,25 +1385,24 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                     </select>
                   </div>
 
-                  {/* Pozīcija (UID-based) */}
+                  {/* Pozīcija (parents only) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-<select
-  value={row.itemUid ?? ""}
-  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
->
-  <option value="">— izvēlies pozīciju —</option>
-  {priceCatalog
-    .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
-    .map((it) => (
-      <option key={it.uid} value={it.uid}>
-        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-      </option>
-    ))}
-</select>
-
-
+                    <select
+                      value={row.itemUid ?? ""}
+                      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+                    >
+                      <option value="">— izvēlies pozīciju —</option>
+                      {priceCatalog
+                        .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+                        .map((it) => (
+                          <option key={it.uid} value={it.uid}>
+                            {it.subcategory ? `[${it.subcategory}] ` : ""}
+                            {it.name} · {it.unit || "—"}
+                          </option>
+                        ))}
+                    </select>
                   </div>
 
                   {/* Mērv. */}
@@ -1390,13 +1411,7 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                     <select
                       value={normalizeUnit(row.unit) || ""}
                       onChange={(e) => setRowField(editingRoomId, idx, "unit", normalizeUnit(e.target.value))}
-                      style={{
-                        width: "100%",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 10,
-                        padding: 8,
-                        background: "white",
-                      }}
+                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">—</option>
                       {allUnits.map((u) => (
@@ -1411,12 +1426,12 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Daudz.</div>
                     <input
-  type="number"
-  min={0}
-  step="0.01"
-  value={row.quantity ?? ""}
-  onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
-  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={row.quantity ?? ""}
+                      onChange={(e) => setRowField(editingRoomId, idx, "quantity", e.target.value)}
+                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
                       autoComplete="off"
                       placeholder="Skaitlis"
                     />
@@ -1546,8 +1561,9 @@ const onNum  = React.useCallback((setter) => (e) => setter(e.target.value), []);
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024). Cenas netiek rādītas formā; tās
-          parādās tikai gala tāmē.
+          Piezīme: cenrādis ielādējas no <code>public/prices/balta.json</code> (Balta 27.08.2024).
+          Ja kādai vecākai pozīcijai ir apakšpozīcijas, tās definē <code>prices/balta-links.json</code> vai
+          tieši <code>children</code> laukā — forma tās nerādīs, bet Excel tās pievienos automātiski zem vecāka.
         </footer>
       </div>
     </div>
