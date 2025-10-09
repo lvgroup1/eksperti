@@ -304,13 +304,64 @@ export default function DamageIntakeForm() {
     }
 
     // C) adjacency fallback
-    const adj = adjChildrenByParent.get(parent.uid) || [];
-    for (const mapped of adj) {
-      const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
-      if (!seen.has(key)) { seen.add(key); out.push(mapped); }
-    }
+    // Heuristic adjacency fallback:
+// treat a "parent-ish" row (labor>0 or mechanisms>0) as a parent,
+// and subsequent "materials-only" rows (labor==0 && mechanisms==0)
+// as its children, until the next parent-ish row or category/subcategory change.
+const adj = new Map();
 
-    return out;
+const isParentish = (row) => (parseDec(row.labor) > 0) || (parseDec(row.mechanisms) > 0);
+const isMaterialOnly = (row) => parseDec(row.labor) === 0 && parseDec(row.mechanisms) === 0;
+
+let currentParent = null;
+
+for (let i = 0; i < ordered.length; i++) {
+  const row = ordered[i];
+
+  // reset parent on category/subcategory change
+  if (
+    currentParent &&
+    (row.category !== currentParent.category || row.subcategory !== currentParent.subcategory)
+  ) {
+    currentParent = null;
+  }
+
+  // row explicitly marked child – attach to the closest valid parent
+  if (row.is_child) {
+    if (currentParent) {
+      const arr = adj.get(currentParent.uid) || [];
+      const ch = mapChildFromFlat(row, currentParent.unit);
+      if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+        arr.push(ch);
+      }
+      adj.set(currentParent.uid, arr);
+    }
+    continue;
+  }
+
+  // parent-ish row becomes the current parent
+  if (isParentish(row)) {
+    currentParent = row;
+    continue;
+  }
+
+  // material-only row: if we have a current parent in same category/subcategory, attach as child
+  if (currentParent && isMaterialOnly(row)) {
+    const arr = adj.get(currentParent.uid) || [];
+    const ch = mapChildFromFlat(row, currentParent.unit);
+    if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+      arr.push(ch);
+    }
+    adj.set(currentParent.uid, arr);
+    continue;
+  }
+
+  // otherwise this breaks the chain
+  currentParent = null;
+}
+
+setAdjChildrenByParent(adj);
+
   }, [priceCatalog, adjChildrenByParent]);
 
   const categories = useMemo(() => {
