@@ -18,6 +18,23 @@ const ROOM_TYPES = [
   "Vannas istaba","Tualete","Garderobe","Cits",
 ];
 
+// Optional name-based hints if your JSON lacks explicit links.
+// Keys are LOWERCASE parent names; values are arrays of child names.
+const CHILD_NAME_HINTS = {
+  // Example based on your snippet:
+  "jumta nesošās konstrukciju montāža (mūrlata, kopnes,spares, sijas, balstbrusas)": [
+    "impregnēta koka brusa",
+    "montāžas elementi",
+    "kokmateriāla apstrāde ar antipirēnu",
+    "antipirēns",
+  ],
+  "latas vai šķerslatas montāža, s=400mm": [
+    "dēļi 40x80mm",
+    "koka konstrukciju skrūve",
+  ],
+  // Add more mappings as needed…
+};
+
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
@@ -31,19 +48,22 @@ function parseDec(x) {
 
 function normalizeUnit(u) {
   if (!u) return "";
-  const x = String(u).trim().toLowerCase().replace("²", "2").replace("\u00A0", " ").replace("  ", " ");
-  if (x === "gb." || x === "gab." || x === "gab") return "gab";
-  if (x === "m2" || x === "m 2" || x === "m^2") return "m2";
-  if (x === "m3" || x === "m 3" || x === "m^3") return "m3";
+  const x = String(u).trim().toLowerCase().replace("²", "2").replace("\u00A0", " ").replace(/\s{2,}/g, " ");
+  if (["gb.","gab.","gab"].includes(x)) return "gab";
+  if (["m2","m 2","m^2"].includes(x)) return "m2";
+  if (["m3","m 3","m^3"].includes(x)) return "m3";
   if (x === "m") return "m";
-  if (x === "kpl" || x === "kpl.") return "kpl";
+  if (["kpl","kpl."].includes(x)) return "kpl";
   if (x === "diena") return "diena";
   if (x === "c/h") return "c/h";
-  if (x === "obj." || x === "obj") return "obj";
+  if (["obj.","obj"].includes(x)) return "obj";
+  // cheap handle like "100gb." -> "gab"
+  if (/^\d+\s*gb\.$/.test(x)) return "gab";
   return x;
 }
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
+// tolerant boolean
 const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
@@ -56,7 +76,7 @@ const isChildItem = (it) =>
   !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf ||
   !!it.parentKey || !!it.parent_key;
 
-// single parent-child matcher used everywhere
+// does this child belong to this parent?
 function linkMatchesParent(child, parent) {
   const parentKeys = new Set(
     [parent.uid, parent.id, parent.name, `${parent.category}::${parent.name}`]
@@ -72,7 +92,7 @@ function linkMatchesParent(child, parent) {
   return childLinks.some(k => parentKeys.has(k));
 }
 
-// compact child shape used for export; avoids && with ??
+// compact child shape used in export
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x?.labor ?? 0) || 0;
   const mech  = Number(x?.mechanisms ?? 0) || 0;
@@ -90,6 +110,7 @@ function mapChildFromFlat(x, fallbackUnit) {
 /* ---------- LocalStorage helpers ---------- */
 const STORAGE_KEY = "tames_profils_saglabatie";
 function loadSaved() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+// (saveEntry is unused by this screen, but kept for future use)
 function saveEntry(entry) { const all = loadSaved(); all.unshift(entry); localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); }
 
 /* ---------- UI bits ---------- */
@@ -146,205 +167,192 @@ export default function DamageIntakeForm() {
   const [catalogError, setCatalogError] = useState("");
 
   // adjacency fallback: parent.uid -> array of compact children
-  // DECLARE THIS *BEFORE* any effect/callback that uses it
+  // DECLARE BEFORE any use
   const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
 
   /* ---------- Load pricing ---------- */
-// must be BEFORE this effect
-// const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
+  useEffect(() => {
+    if (insurer !== "Balta") {
+      setPriceCatalog([]);
+      setAdjChildrenByParent(new Map());
+      return;
+    }
+    setCatalogError("");
 
-useEffect(() => {
-  if (insurer !== "Balta") {
-    setPriceCatalog([]);
-    setAdjChildrenByParent(new Map());
-    return;
-  }
-  setCatalogError("");
-
-  (async () => {
-    try {
-      const load = async (url) => {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const json = await res.json();
-        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
-      };
-
-      let raw;
-      try { raw = await load("prices/balta.v2.json"); }
-      catch { raw = await load("prices/balta.json"); }
-
-      const parents = [];
-      const childrenFlat = [];
-      const ordered = []; // ✅ declare here and keep it local to this effect
-
-      raw.forEach((it, i) => {
-        const category = (it.category || "").trim();
-        const subcat =
-          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-        const idStr = String(it.id ?? i);
-        const name = (it.name || "").trim();
-        const uid = [category, subcat, idStr, name].join("::");
-
-        const parent_uid =
-          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
-          it.parent || it.parent_name || it.parentName || it.childOf || null;
-        const childFlag = parseBool(it.is_child) || !!parent_uid;
-
-        const base = {
-          id: idStr,
-          uid,
-          name,
-          category,
-          subcategory: subcat,
-          unit: normalizeUnit(it.unit),
-          unit_price: parseDec(it.unit_price),
-          labor: parseDec(it.labor ?? it.darbs),
-          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-          is_child: childFlag,
-          parent_uid: parent_uid || null,
+    (async () => {
+      try {
+        const load = async (url) => {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const json = await res.json();
+          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
         };
 
-        if (childFlag) {
-          const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
-          childrenFlat.push(childRow);
-          ordered.push(childRow); // ✅ keep order
-        } else {
-          const parent = { ...base, is_child: false, parent_uid: null };
-          parents.push(parent);
-          ordered.push(parent); // ✅ keep order
+        let raw;
+        try { raw = await load("prices/balta.v2.json"); }
+        catch { raw = await load("prices/balta.json"); }
 
-          // optional embedded children
-          const kidsArr =
-            (Array.isArray(it.children) && it.children) ||
-            (Array.isArray(it.komponentes) && it.komponentes) ||
-            (Array.isArray(it.apaks) && it.apaks) || [];
+        const parents = [];
+        const childrenFlat = [];
+        const ordered = []; // keep original order for adjacency fallback
 
-          if (kidsArr.length) {
-            parent.children = [];
-            kidsArr.forEach((ch, idxCh) => {
-              const chName = (ch.name || ch.title || "").trim();
-              if (!chName) return;
-              const chEntry = {
-                id: `${idStr}-c${idxCh}`,
-                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                name: chName,
-                category,
-                subcategory: subcat,
-                unit: normalizeUnit(ch.unit || it.unit),
-                unit_price: parseDec(ch.unit_price),
-                labor: parseDec(ch.labor),
-                materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-                mechanisms: parseDec(ch.mechanisms),
-                is_child: true,
-                parent_uid: uid,
-                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-              };
-              childrenFlat.push(chEntry);
-              ordered.push(chEntry); // ✅ keep order too
-              parent.children.push({
-                name: chEntry.name,
-                unit: chEntry.unit,
-                coeff: chEntry.coeff || 1,
-                labor: chEntry.labor || 0,
-                materials: chEntry.materials || 0,
-                mechanisms: chEntry.mechanisms || 0,
+        raw.forEach((it, i) => {
+          const category = (it.category || "").trim();
+          const subcat =
+            (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+          const idStr = String(it.id ?? i);
+          const name = (it.name || "").trim();
+          const uid = [category, subcat, idStr, name].join("::");
+
+          const parent_uid =
+            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+            it.parent || it.parent_name || it.parentName || it.childOf || null;
+          const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+          const base = {
+            id: idStr,
+            uid,
+            name,
+            category,
+            subcategory: subcat,
+            unit: normalizeUnit(it.unit),
+            unit_price: parseDec(it.unit_price),
+            labor: parseDec(it.labor ?? it.darbs),
+            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+            is_child: childFlag,
+            parent_uid: parent_uid || null,
+          };
+
+          if (childFlag) {
+            const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
+            childrenFlat.push(childRow);
+            ordered.push(childRow);
+          } else {
+            const parent = { ...base, is_child: false, parent_uid: null };
+            parents.push(parent);
+            ordered.push(parent);
+
+            // optional embedded children
+            const kidsArr =
+              (Array.isArray(it.children) && it.children) ||
+              (Array.isArray(it.komponentes) && it.komponentes) ||
+              (Array.isArray(it.apaks) && it.apaks) || [];
+
+            if (kidsArr.length) {
+              parent.children = [];
+              kidsArr.forEach((ch, idxCh) => {
+                const chName = (ch.name || ch.title || "").trim();
+                if (!chName) return;
+                const chEntry = {
+                  id: `${idStr}-c${idxCh}`,
+                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                  name: chName,
+                  category,
+                  subcategory: subcat,
+                  unit: normalizeUnit(ch.unit || it.unit),
+                  unit_price: parseDec(ch.unit_price),
+                  labor: parseDec(ch.labor),
+                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+                  mechanisms: parseDec(ch.mechanisms),
+                  is_child: true,
+                  parent_uid: uid,
+                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+                };
+                childrenFlat.push(chEntry);
+                ordered.push(chEntry);
+                parent.children.push({
+                  name: chEntry.name,
+                  unit: chEntry.unit,
+                  coeff: chEntry.coeff || 1,
+                  labor: chEntry.labor || 0,
+                  materials: chEntry.materials || 0,
+                  mechanisms: chEntry.mechanisms || 0,
+                });
               });
-            });
+            }
+          }
+        });
+
+        // Build adjacency fallback map (children that immediately follow a parent in same category/subcategory)
+        const adj = new Map();
+        let currentParent = null;
+        for (const row of ordered) {
+          if (!row.is_child) {
+            currentParent = row;
+            continue;
+          }
+          if (
+            currentParent &&
+            row.category === currentParent.category &&
+            row.subcategory === currentParent.subcategory
+          ) {
+            const arr = adj.get(currentParent.uid) || [];
+            const ch = mapChildFromFlat(row, currentParent.unit);
+            if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+              arr.push(ch);
+            }
+            adj.set(currentParent.uid, arr);
           }
         }
-      });
 
-      // ✅ build adjacency fallback using the local `ordered`
-      const adj = new Map();
-      let currentParent = null;
-
-      for (const row of ordered) {
-        if (!row.is_child) {
-          // new potential parent starts a block
-          currentParent = row;
-          continue;
-        }
-        // child row follows: only attach if we have a current parent in same category/subcategory
-        if (
-          currentParent &&
-          row.category === currentParent.category &&
-          row.subcategory === currentParent.subcategory
-        ) {
-          const arr = adj.get(currentParent.uid) || [];
-          const ch = mapChildFromFlat(row, currentParent.unit);
-          if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
-            arr.push(ch);
-          }
-          adj.set(currentParent.uid, arr);
-        }
+        setPriceCatalog([...parents, ...childrenFlat]);
+        setAdjChildrenByParent(adj);
+      } catch (e) {
+        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
       }
-
-      setPriceCatalog([...parents, ...childrenFlat]);
-      setAdjChildrenByParent(adj); // ✅ safe; hook declared earlier
-    } catch (e) {
-      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
-    }
-  })();
-}, [insurer]);
-
-
+    })();
+  }, [insurer]);
 
   // children resolver used by Excel export
- const getChildrenFor = useCallback((parent) => {
-  if (!parent) return [];
+  const getChildrenFor = useCallback((parent) => {
+    if (!parent) return [];
 
-  const out = [];
-  const seen = new Set(); // de-dupe by name+unit
+    const out = [];
+    const seen = new Set(); // de-dupe by name+unit
 
-  const dedupeKey = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
-  const pushMapped = (raw, fallbackUnit) => {
-    const mapped = mapChildFromFlat(raw, fallbackUnit);
-    const key = dedupeKey(mapped);
-    if (!seen.has(key) && mapped.name) {
-      seen.add(key);
-      out.push(mapped);
+    const dedupeKey = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
+    const pushMapped = (raw, fallbackUnit) => {
+      const mapped = mapChildFromFlat(raw, fallbackUnit);
+      const key = dedupeKey(mapped);
+      if (!seen.has(key) && mapped.name) {
+        seen.add(key);
+        out.push(mapped);
+      }
+    };
+
+    // A) embedded children on parent
+    if (Array.isArray(parent.children) && parent.children.length) {
+      for (const ch of parent.children) pushMapped(ch, parent.unit);
     }
-  };
 
-  // A) embedded children on parent
-  if (Array.isArray(parent.children) && parent.children.length) {
-    for (const ch of parent.children) {
-      pushMapped(ch, parent.unit);
+    // B) explicit flat links (rows that reference this parent via parent_uid / childOf / etc.)
+    for (const row of priceCatalog) {
+      if (!isChildItem(row)) continue;
+      if (!linkMatchesParent(row, parent)) continue;
+      pushMapped(row, parent.unit);
     }
-  }
 
-  // B) explicit flat links (rows that reference this parent via parent_uid / childOf / etc.)
-  for (const row of priceCatalog) {
-    if (!isChildItem(row)) continue;
-    if (!linkMatchesParent(row, parent)) continue;
-    pushMapped(row, parent.unit);
-  }
+    // C) adjacency fallback (children that immediately follow the parent in same category/subcategory)
+    const adj = adjChildrenByParent?.get?.(parent.uid) || [];
+    for (const ch of adj) pushMapped(ch, parent.unit);
 
-  // C) adjacency fallback (children that immediately follow the parent in same category/subcategory)
-  const adj = adjChildrenByParent?.get?.(parent.uid) || [];
-  for (const ch of adj) {
-    pushMapped(ch, parent.unit);
-  }
-
-  // D) name-based hints (only if nothing found so far)
-  if (out.length === 0 && CHILD_NAME_HINTS) {
-    const hintList = CHILD_NAME_HINTS[norm(parent.name)];
-    if (Array.isArray(hintList) && hintList.length) {
-      for (const childName of hintList) {
-        const targetLower = norm(childName);
-        const match = priceCatalog.find(
-          (it) => norm(it.name) === targetLower && it.category === parent.category
-        );
-        if (match) pushMapped(match, parent.unit);
+    // D) name-based hints (only if nothing found so far)
+    if (out.length === 0 && CHILD_NAME_HINTS) {
+      const hintList = CHILD_NAME_HINTS[norm(parent.name)];
+      if (Array.isArray(hintList) && hintList.length) {
+        for (const childName of hintList) {
+          const targetLower = norm(childName);
+          const match = priceCatalog.find(
+            (it) => norm(it.name) === targetLower && it.category === parent.category
+          );
+          if (match) pushMapped(match, parent.unit);
+        }
       }
     }
-  }
 
-  return out;
-}, [priceCatalog, adjChildrenByParent]);
-
+    return out;
+  }, [priceCatalog, adjChildrenByParent]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -683,7 +691,7 @@ useEffect(() => {
           row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
           row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
           row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-          row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+          row.getCell(12).value = { formula: `ROUND(H${r}*D${r}),2` }; // Excel tolerates this; can also set H*D directly
 
           row.getCell(4).numFmt = QTY;
           for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
@@ -807,6 +815,7 @@ useEffect(() => {
         rowN++;
       }
 
+      // Room-specific notes
       const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
       for (const n of extraNotes) {
         ws.mergeCells(rowN, 2, rowN, 12);
@@ -817,6 +826,7 @@ useEffect(() => {
         rowN++;
       }
 
+      // SASTĀDĪJA / SASKAŅOTS
       const blockStart = rowN + 2;
       ws.mergeCells(blockStart, 2, blockStart, 6);
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
@@ -839,6 +849,7 @@ useEffect(() => {
       ws.mergeCells(blockStart + 2, 9, blockStart + 2, 12);
       ws.getCell(blockStart + 2, 9).value = "";
 
+      // Column widths
       const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
       for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
 
@@ -1256,7 +1267,9 @@ useEffect(() => {
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">—</option>
-                      {allUnits.map((u) => (<option key={u} value={u}>{u}</option>))}
+                      {DEFAULT_UNITS.concat(
+                        Array.from(new Set(priceCatalog.map(i => normalizeUnit(i.unit)).filter(Boolean)))
+                      ).filter((v, i, a) => a.indexOf(v) === i).map((u) => (<option key={u} value={u}>{u}</option>))}
                     </select>
                   </div>
 
