@@ -44,20 +44,19 @@ function normalizeUnit(u) {
 }
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
-// tolerant boolean + tiny normalizer
 const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
 const norm = (x) => String(x ?? "").trim().toLowerCase();
 
-// a row is a child if it says so or has some parent-link field
 const isChildItem = (it) =>
   parseBool(it.is_child) || parseBool(it.child) ||
   !!it.parent_uid || !!it.parentUid || !!it.parent_id || !!it.parentId ||
-  !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf || !!it.parentKey || !!it.parent_key;
+  !!it.parent || !!it.parent_name || !!it.parentName || !!it.childOf ||
+  !!it.parentKey || !!it.parent_key;
 
-// does this child belong to this parent?
+// single parent-child matcher used everywhere
 function linkMatchesParent(child, parent) {
   const parentKeys = new Set(
     [parent.uid, parent.id, parent.name, `${parent.category}::${parent.name}`]
@@ -73,7 +72,7 @@ function linkMatchesParent(child, parent) {
   return childLinks.some(k => parentKeys.has(k));
 }
 
-// compact child shape used in export
+// compact child shape used for export; avoids && with ??
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x?.labor ?? 0) || 0;
   const mech  = Number(x?.mechanisms ?? 0) || 0;
@@ -86,28 +85,6 @@ function mapChildFromFlat(x, fallbackUnit) {
     materials,
     mechanisms: mech,
   };
-}
-
-
-function buildChildIndex(items) {
-  const idx = new Map(); // parentKey -> child rows[]
-  const add = (keyRaw, ch) => {
-    const key = norm(keyRaw);
-    if (!key) return;
-    const arr = idx.get(key) || [];
-    arr.push(ch);
-    idx.set(key, arr);
-  };
-  for (const it of items) {
-    if (!isChildItem(it)) continue;
-    const linkFields = [
-      it.parent_uid, it.parentUid, it.parent_id, it.parentId,
-      it.parent, it.parent_name, it.parentName, it.childOf,
-      it.parent_key, it.parentKey,
-    ];
-    linkFields.forEach((k) => add(k, it));
-  }
-  return idx;
 }
 
 /* ---------- LocalStorage helpers ---------- */
@@ -167,174 +144,174 @@ export default function DamageIntakeForm() {
   // Catalog
   const [priceCatalog, setPriceCatalog] = useState([]);  // parents + children (children hidden in UI)
   const [catalogError, setCatalogError] = useState("");
-  const [childIndex, setChildIndex] = useState(new Map());      // link-based lookup
-  const [hintChildUids, setHintChildUids] = useState(new Set()); // children hidden by hints
+
+  // adjacency fallback: parent.uid -> array of compact children
+  // DECLARE THIS *BEFORE* any effect/callback that uses it
+  const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
 
   /* ---------- Load pricing ---------- */
- useEffect(() => {
-  if (insurer !== "Balta") {
-    setPriceCatalog([]);
-    setAdjChildrenByParent(new Map());
-    return;
-  }
-  setCatalogError("");
+  useEffect(() => {
+    if (insurer !== "Balta") {
+      setPriceCatalog([]);
+      setAdjChildrenByParent(new Map());
+      return;
+    }
+    setCatalogError("");
 
-  (async () => {
-    try {
-      const load = async (url) => {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const json = await res.json();
-        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
-      };
-
-      let raw;
-      try { raw = await load("prices/balta.v2.json"); }
-      catch { raw = await load("prices/balta.json"); }
-
-      const parents = [];
-      const childrenFlat = [];
-      const ordered = []; // ← keep original order for adjacency fallback
-
-      raw.forEach((it, i) => {
-        const category = (it.category || "").trim();
-        const subcat = (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-        const idStr = String(it.id ?? i);
-        const name = (it.name || "").trim();
-        const uid = [category, subcat, idStr, name].join("::");
-
-        const parent_uid =
-          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
-          it.parent || it.parent_name || it.parentName || it.childOf || null;
-        const childFlag = parseBool(it.is_child) || !!parent_uid;
-
-        const base = {
-          id: idStr,
-          uid,
-          name,
-          category,
-          subcategory: subcat,
-          unit: normalizeUnit(it.unit),
-          unit_price: parseDec(it.unit_price),
-          labor: parseDec(it.labor ?? it.darbs),
-          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-          is_child: childFlag,
-          parent_uid: parent_uid || null,
+    (async () => {
+      try {
+        const load = async (url) => {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const json = await res.json();
+          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
         };
 
-        if (childFlag) {
-          const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
-          childrenFlat.push(childRow);
-          ordered.push(childRow);
-        } else {
-          const parent = { ...base, is_child: false, parent_uid: null };
-          parents.push(parent);
-          ordered.push(parent);
+        let raw;
+        try { raw = await load("prices/balta.v2.json"); }
+        catch { raw = await load("prices/balta.json"); }
 
-          // nested children support
-          const kidsArr =
-            (Array.isArray(it.children) && it.children) ||
-            (Array.isArray(it.komponentes) && it.komponentes) ||
-            (Array.isArray(it.apaks) && it.apaks) || [];
+        const parents = [];
+        const childrenFlat = [];
+        const ordered = []; // keep original order for adjacency fallback
 
-          if (kidsArr.length) {
-            parent.children = [];
-            kidsArr.forEach((ch, idxCh) => {
-              const chName = (ch.name || ch.title || "").trim();
-              if (!chName) return;
-              const chEntry = {
-                id: `${idStr}-c${idxCh}`,
-                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                name: chName,
-                category,
-                subcategory: subcat,
-                unit: normalizeUnit(ch.unit || it.unit),
-                unit_price: parseDec(ch.unit_price),
-                labor: parseDec(ch.labor),
-                materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-                mechanisms: parseDec(ch.mechanisms),
-                is_child: true,
-                parent_uid: uid,
-                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-              };
-              childrenFlat.push(chEntry);
-              ordered.push(chEntry); // keep order too
-              parent.children.push({
-                name: chEntry.name,
-                unit: chEntry.unit,
-                coeff: chEntry.coeff || 1,
-                labor: chEntry.labor || 0,
-                materials: chEntry.materials || 0,
-                mechanisms: chEntry.mechanisms || 0,
+        raw.forEach((it, i) => {
+          const category = (it.category || "").trim();
+          const subcat = (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+          const idStr = String(it.id ?? i);
+          const name = (it.name || "").trim();
+          const uid = [category, subcat, idStr, name].join("::");
+
+          const parent_uid =
+            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+            it.parent || it.parent_name || it.parentName || it.childOf || null;
+          const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+          const base = {
+            id: idStr,
+            uid,
+            name,
+            category,
+            subcategory: subcat,
+            unit: normalizeUnit(it.unit),
+            unit_price: parseDec(it.unit_price),
+            labor: parseDec(it.labor ?? it.darbs),
+            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+            is_child: childFlag,
+            parent_uid: parent_uid || null,
+          };
+
+          if (childFlag) {
+            const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
+            childrenFlat.push(childRow);
+            ordered.push(childRow);
+          } else {
+            const parent = { ...base, is_child: false, parent_uid: null };
+            parents.push(parent);
+            ordered.push(parent);
+
+            // nested children support
+            const kidsArr =
+              (Array.isArray(it.children) && it.children) ||
+              (Array.isArray(it.komponentes) && it.komponentes) ||
+              (Array.isArray(it.apaks) && it.apaks) || [];
+
+            if (kidsArr.length) {
+              parent.children = [];
+              kidsArr.forEach((ch, idxCh) => {
+                const chName = (ch.name || ch.title || "").trim();
+                if (!chName) return;
+                const chEntry = {
+                  id: `${idStr}-c${idxCh}`,
+                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                  name: chName,
+                  category,
+                  subcategory: subcat,
+                  unit: normalizeUnit(ch.unit || it.unit),
+                  unit_price: parseDec(ch.unit_price),
+                  labor: parseDec(ch.labor),
+                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+                  mechanisms: parseDec(ch.mechanisms),
+                  is_child: true,
+                  parent_uid: uid,
+                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+                };
+                childrenFlat.push(chEntry);
+                ordered.push(chEntry); // keep order too
+                parent.children.push({
+                  name: chEntry.name,
+                  unit: chEntry.unit,
+                  coeff: chEntry.coeff || 1,
+                  labor: chEntry.labor || 0,
+                  materials: chEntry.materials || 0,
+                  mechanisms: chEntry.mechanisms || 0,
+                });
               });
-            });
+            }
           }
-        }
-      });
+        });
 
-      // Build adjacency fallback map (children that immediately follow a parent in the same category/subcategory)
-      const adj = new Map();
-      let currentParent = null;
-      for (const row of ordered) {
-        if (!row.is_child) {
-          currentParent = row; // new parent
-          continue;
+        // Build adjacency fallback map (children that immediately follow a parent in the same category/subcategory)
+        const adj = new Map();
+        let currentParent = null;
+        for (const row of ordered) {
+          if (!row.is_child) {
+            currentParent = row; // new parent
+            continue;
+          }
+          // child row
+          if (!currentParent) continue;
+          if (row.category !== currentParent.category || row.subcategory !== currentParent.subcategory) continue;
+          const arr = adj.get(currentParent.uid) || [];
+          const ch = mapChildFromFlat(row, currentParent.unit);
+          // de-dupe name+unit
+          if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+            arr.push(ch);
+          }
+          adj.set(currentParent.uid, arr);
         }
-        // child row
-        if (!currentParent) continue;
-        if (row.category !== currentParent.category || row.subcategory !== currentParent.subcategory) continue;
-        const arr = adj.get(currentParent.uid) || [];
-        const ch = mapChildFromFlat(row, currentParent.unit);
-        // de-dupe name+unit
-        if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
-          arr.push(ch);
-        }
-        adj.set(currentParent.uid, arr);
+
+        setPriceCatalog([...parents, ...childrenFlat]);
+        setAdjChildrenByParent(adj);
+      } catch (e) {
+        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
       }
+    })();
+  }, [insurer]);
 
-      setPriceCatalog([...parents, ...childrenFlat]);
-      setAdjChildrenByParent(adj);
-      // console.log('Adjacency map built for', adj.size, 'parents'); // debug if needed
-    } catch (e) {
-      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+  // children resolver used by Excel export
+  const getChildrenFor = useCallback((parent) => {
+    const out = [];
+    const seen = new Set();
+
+    // A) embedded children
+    if (Array.isArray(parent.children)) {
+      for (const ch of parent.children) {
+        const mapped = mapChildFromFlat(ch, parent.unit);
+        const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
+        if (!seen.has(key)) { seen.add(key); out.push(mapped); }
+      }
     }
-  })();
-}, [insurer]);
 
-// ✅ 1) put this BEFORE exportToExcel
-const getChildrenFor = useCallback((parent) => {
-  const out = [];
-  const seen = new Set();
-
-  // embedded children
-  if (Array.isArray(parent.children)) {
-    for (const ch of parent.children) {
+    // B) explicit links (flat rows)
+    for (const ch of priceCatalog) {
+      if (!isChildItem(ch)) continue;
+      if (!linkMatchesParent(ch, parent)) continue;
       const mapped = mapChildFromFlat(ch, parent.unit);
       const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
       if (!seen.has(key)) { seen.add(key); out.push(mapped); }
     }
-  }
 
-  // explicit links in flat rows
-  for (const ch of priceCatalog) {
-    if (!isChildItem(ch)) continue;
-    if (!linkMatchesParent(ch, parent)) continue;
-    const mapped = mapChildFromFlat(ch, parent.unit);
-    const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
-    if (!seen.has(key)) { seen.add(key); out.push(mapped); }
-  }
+    // C) adjacency fallback
+    const adj = adjChildrenByParent.get(parent.uid) || [];
+    for (const mapped of adj) {
+      const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
+      if (!seen.has(key)) { seen.add(key); out.push(mapped); }
+    }
 
-  // adjacency fallback
-  const adj = adjChildrenByParent.get(parent.uid) || [];
-  for (const mapped of adj) {
-    const key = `${norm(mapped.name)}::${norm(mapped.unit)}`;
-    if (!seen.has(key)) { seen.add(key); out.push(mapped); }
-  }
-
-  return out;
-}, [priceCatalog, adjChildrenByParent]);
-
+    return out;
+  }, [priceCatalog, adjChildrenByParent]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -349,9 +326,6 @@ const getChildrenFor = useCallback((parent) => {
 
   /* ---------- Saved estimates ---------- */
   const [saved, setSaved] = useState([]);
-  // adjacency fallback: parent.uid -> array of compact children
-const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
-
   useEffect(() => setSaved(loadSaved()), []);
 
   /* ---------- Build room instances when rooms change ---------- */
@@ -383,77 +357,6 @@ const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
-const childrenByUID = React.useMemo(() => {
-  const map = new Map(); // key: parent.uid, value: [{name, unit, coeff, labor, materials, mechanisms}]
-
-  const parents = (priceCatalog || []).filter(it => !isChildItem(it));
-  const kids    = (priceCatalog || []).filter(it =>  isChildItem(it));
-
-  // compare child ↔ parent by many possible link fields
-  function linkMatchesParent(child, parent) {
-    const P = new Set([
-      norm(parent.uid),
-      norm(parent.id),
-      norm(parent.name),
-      norm(parent.category + "::" + parent.name),
-    ]);
-    const C = [
-      child.parent_uid, child.parentUid, child.parent_id, child.parentId,
-      child.parent, child.parent_name, child.parentName, child.childOf,
-      child.parent_key, child.parentKey,
-    ].map(norm).filter(Boolean);
-    return C.some((c) => P.has(c));
-  }
-
-  // compact child shape for export
- function toChild(x, fallbackUnit) {
-  const labor = Number(x?.labor ?? 0) || 0;
-  const mech  = Number(x?.mechanisms ?? 0) || 0;
-  const materials = Number(x?.materials ?? ((labor || mech) ? 0 : (x?.unit_price ?? 0))) || 0;
-
-  return {
-    name: x?.name || "",
-    unit: normalizeUnit(x?.unit || fallbackUnit || ""),
-    coeff: Number(x?.coeff ?? x?.multiplier ?? 1) || 1,
-    labor,
-    materials,
-    mechanisms: mech,
-  };
-}
-
-
-  // 1) link flat child rows to parents
-  for (const child of kids) {
-    const parent = parents.find(p => linkMatchesParent(child, p));
-    if (!parent) continue;
-    const key = parent.uid;
-    const arr = map.get(key) || [];
-    const ch  = toChild(child, parent.unit);
-    if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
-      arr.push(ch);
-    }
-    map.set(key, arr);
-  }
-
-  // 2) fold in any embedded parent.children arrays
-  for (const p of parents) {
-    const embedded = Array.isArray(p.children) ? p.children : [];
-    if (!embedded.length) continue;
-    const key = p.uid;
-    const arr = map.get(key) || [];
-    for (const raw of embedded) {
-      const ch = toChild(raw, p.unit);
-      if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
-        arr.push(ch);
-      }
-    }
-    map.set(key, arr);
-  }
-
-  return map;
-}, [priceCatalog]);
-
-
 
   /* ---------- Action row helpers ---------- */
   function addActionRow(roomId, presetCategory = "") {
@@ -642,39 +545,35 @@ const childrenByUID = React.useMemo(() => {
           const pSplit = pLabor + pMat + pMech;
           const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-// push parent (numbered)
-selections.push({
-  isChild: false,
-  room: `${ri.type} ${ri.index}`,
-  name: a.itemName || parent.name || "",
-  unit,
-  qty,
-  labor: pLabor,
-  materials: pMat,
-  mechanisms: pMech,
-  unitPrice: pUnitPrice,
-});
+          // push parent (numbered)
+          selections.push({
+            isChild: false,
+            room: `${ri.type} ${ri.index}`,
+            name: a.itemName || parent.name || "",
+            unit,
+            qty,
+            labor: pLabor,
+            materials: pMat,
+            mechanisms: pMech,
+            unitPrice: pUnitPrice,
+          });
 
-// auto-append children (indented, no numbering)
-const kids = getChildrenFor(parent);
-if (kids.length === 0) {
-  console.warn("No children found for:", parent.name, parent); // dev hint
-}
-for (const ch of kids) {
-  const cQty = parseDec(ch.coeff ?? 1) * qty;
-  selections.push({
-    isChild: true,
-    room: `${ri.type} ${ri.index}`,
-    name: ch.name || "",
-    unit: normalizeUnit(ch.unit || unit),
-    qty: cQty,
-    labor: parseDec(ch.labor ?? 0),
-    materials: parseDec(ch.materials ?? 0),
-    mechanisms: parseDec(ch.mechanisms ?? 0),
-    unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
-  });
-}
- 
+          // auto-append children (indented, no numbering)
+          const kids = getChildrenFor(parent);
+          for (const ch of kids) {
+            const cQty = parseDec(ch.coeff ?? 1) * qty;
+            selections.push({
+              isChild: true,
+              room: `${ri.type} ${ri.index}`,
+              name: ch.name || "",
+              unit: normalizeUnit(ch.unit || unit),
+              qty: cQty,
+              labor: parseDec(ch.labor ?? 0),
+              materials: parseDec(ch.materials ?? 0),
+              mechanisms: parseDec(ch.mechanisms ?? 0),
+              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
+            });
+          }
         });
       });
 
@@ -875,7 +774,6 @@ for (const ch of kids) {
         rowN++;
       }
 
-      // Room-specific notes
       const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
       for (const n of extraNotes) {
         ws.mergeCells(rowN, 2, rowN, 12);
@@ -886,7 +784,6 @@ for (const ch of kids) {
         rowN++;
       }
 
-      // SASTĀDĪJA / SASKAŅOTS
       const blockStart = rowN + 2;
       ws.mergeCells(blockStart, 2, blockStart, 6);
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
@@ -909,7 +806,6 @@ for (const ch of kids) {
       ws.mergeCells(blockStart + 2, 9, blockStart + 2, 12);
       ws.getCell(blockStart + 2, 9).value = "";
 
-      // Column widths
       const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
       for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
 
@@ -937,8 +833,6 @@ for (const ch of kids) {
   const onNum  = useCallback((setter) => (e) => setter(e.target.value), []);
 
   const progressPct = Math.round(((step - 1) / (totalSteps - 1)) * 100);
-
- 
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
@@ -1304,21 +1198,20 @@ for (const ch of kids) {
                   {/* Pozīcija (parents only) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-<select
-  value={row.itemUid ?? ""}
-  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
->
-  <option value="">— izvēlies pozīciju —</option>
-  {priceCatalog
-    .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
-    .map((it) => (
-      <option key={it.uid} value={it.uid}>
-        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-      </option>
-    ))}
-</select>
-
+                    <select
+                      value={row.itemUid ?? ""}
+                      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+                    >
+                      <option value="">— izvēlies pozīciju —</option>
+                      {priceCatalog
+                        .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+                        .map((it) => (
+                          <option key={it.uid} value={it.uid}>
+                            {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+                          </option>
+                        ))}
+                    </select>
                   </div>
 
                   {/* Mērv. */}
@@ -1435,8 +1328,7 @@ for (const ch of kids) {
         </div>
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-          Piezīme: forma nerāda apakšpozīcijas; Excel tās pievieno automātiski. Ja kādai vecākai pozīcijai
-          nav saites uz apakšpozīcijām JSON datnē, tiek izmantoti nosaukumu HINTI (skat. kodu).
+          Piezīme: forma nerāda apakšpozīcijas; Excel tās pievieno automātiski (saites, iebūvētie vai blakus esošie).
         </footer>
       </div>
     </div>
