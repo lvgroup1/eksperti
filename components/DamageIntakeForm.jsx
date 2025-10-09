@@ -151,134 +151,151 @@ export default function DamageIntakeForm() {
 
   /* ---------- Load pricing ---------- */
   useEffect(() => {
-    if (insurer !== "Balta") {
-      setPriceCatalog([]);
-      setAdjChildrenByParent(new Map());
-      return;
-    }
-    setCatalogError("");
+  if (insurer !== "Balta") {
+    setPriceCatalog([]);
+    setAdjChildrenByParent(new Map());
+    return;
+  }
+  setCatalogError("");
 
-    (async () => {
-      try {
-        const load = async (url) => {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-          const json = await res.json();
-          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+  (async () => {
+    try {
+      const load = async (url) => {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const json = await res.json();
+        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+      };
+
+      let raw;
+      try { raw = await load("prices/balta.v2.json"); }
+      catch { raw = await load("prices/balta.json"); }
+
+      const parents = [];
+      const childrenFlat = [];
+      const ordered = []; // ✅ declare here
+
+      raw.forEach((it, i) => {
+        const category = (it.category || "").trim();
+        const subcat = (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+        const idStr = String(it.id ?? i);
+        const name = (it.name || "").trim();
+        const uid = [category, subcat, idStr, name].join("::");
+
+        const parent_uid =
+          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+          it.parent || it.parent_name || it.parentName || it.childOf || null;
+        const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+        const base = {
+          id: idStr, uid, name, category, subcategory: subcat,
+          unit: normalizeUnit(it.unit),
+          unit_price: parseDec(it.unit_price),
+          labor: parseDec(it.labor ?? it.darbs),
+          materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
+          mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
+          is_child: childFlag,
+          parent_uid: parent_uid || null,
         };
 
-        let raw;
-        try { raw = await load("prices/balta.v2.json"); }
-        catch { raw = await load("prices/balta.json"); }
+        if (childFlag) {
+          const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
+          childrenFlat.push(childRow);
+          ordered.push(childRow);           // ✅ keep order
+        } else {
+          const parent = { ...base, is_child: false, parent_uid: null };
+          parents.push(parent);
+          ordered.push(parent);             // ✅ keep order
 
-        const parents = [];
-        const childrenFlat = [];
-        const ordered = []; // keep original order for adjacency fallback
-
-        raw.forEach((it, i) => {
-          const category = (it.category || "").trim();
-          const subcat = (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-          const idStr = String(it.id ?? i);
-          const name = (it.name || "").trim();
-          const uid = [category, subcat, idStr, name].join("::");
-
-          const parent_uid =
-            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
-            it.parent || it.parent_name || it.parentName || it.childOf || null;
-          const childFlag = parseBool(it.is_child) || !!parent_uid;
-
-          const base = {
-            id: idStr,
-            uid,
-            name,
-            category,
-            subcategory: subcat,
-            unit: normalizeUnit(it.unit),
-            unit_price: parseDec(it.unit_price),
-            labor: parseDec(it.labor ?? it.darbs),
-            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-            is_child: childFlag,
-            parent_uid: parent_uid || null,
-          };
-
-          if (childFlag) {
-            const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
-            childrenFlat.push(childRow);
-            ordered.push(childRow);
-          } else {
-            const parent = { ...base, is_child: false, parent_uid: null };
-            parents.push(parent);
-            ordered.push(parent);
-
-            // nested children support
-            const kidsArr =
-              (Array.isArray(it.children) && it.children) ||
-              (Array.isArray(it.komponentes) && it.komponentes) ||
-              (Array.isArray(it.apaks) && it.apaks) || [];
-
-            if (kidsArr.length) {
-              parent.children = [];
-              kidsArr.forEach((ch, idxCh) => {
-                const chName = (ch.name || ch.title || "").trim();
-                if (!chName) return;
-                const chEntry = {
-                  id: `${idStr}-c${idxCh}`,
-                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                  name: chName,
-                  category,
-                  subcategory: subcat,
-                  unit: normalizeUnit(ch.unit || it.unit),
-                  unit_price: parseDec(ch.unit_price),
-                  labor: parseDec(ch.labor),
-                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-                  mechanisms: parseDec(ch.mechanisms),
-                  is_child: true,
-                  parent_uid: uid,
-                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-                };
-                childrenFlat.push(chEntry);
-                ordered.push(chEntry); // keep order too
-                parent.children.push({
-                  name: chEntry.name,
-                  unit: chEntry.unit,
-                  coeff: chEntry.coeff || 1,
-                  labor: chEntry.labor || 0,
-                  materials: chEntry.materials || 0,
-                  mechanisms: chEntry.mechanisms || 0,
-                });
+          // embedded children (optional)
+          const kidsArr =
+            (Array.isArray(it.children) && it.children) ||
+            (Array.isArray(it.komponentes) && it.komponentes) ||
+            (Array.isArray(it.apaks) && it.apaks) || [];
+          if (kidsArr.length) {
+            parent.children = [];
+            kidsArr.forEach((ch, idxCh) => {
+              const chName = (ch.name || ch.title || "").trim();
+              if (!chName) return;
+              const chEntry = {
+                id: `${idStr}-c${idxCh}`,
+                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                name: chName, category, subcategory: subcat,
+                unit: normalizeUnit(ch.unit || it.unit),
+                unit_price: parseDec(ch.unit_price),
+                labor: parseDec(ch.labor),
+                materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
+                mechanisms: parseDec(ch.mechanisms),
+                is_child: true,
+                parent_uid: uid,
+                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+              };
+              childrenFlat.push(chEntry);
+              ordered.push(chEntry);        // ✅ keep order
+              parent.children.push({
+                name: chEntry.name, unit: chEntry.unit, coeff: chEntry.coeff || 1,
+                labor: chEntry.labor || 0, materials: chEntry.materials || 0, mechanisms: chEntry.mechanisms || 0,
               });
-            }
+            });
           }
-        });
+        }
+      });
 
-        // Build adjacency fallback map (children that immediately follow a parent in the same category/subcategory)
-        const adj = new Map();
-        let currentParent = null;
-        for (const row of ordered) {
-          if (!row.is_child) {
-            currentParent = row; // new parent
-            continue;
+      // ✅ heuristic adjacency fallback built from `ordered`
+      const adj = new Map();
+      const isParentish = (row) => (parseDec(row.labor) > 0) || (parseDec(row.mechanisms) > 0);
+      const isMaterialOnly = (row) => parseDec(row.labor) === 0 && parseDec(row.mechanisms) === 0;
+
+      let currentParent = null;
+
+      for (let i = 0; i < ordered.length; i++) {
+        const row = ordered[i];
+
+        if (
+          currentParent &&
+          (row.category !== currentParent.category || row.subcategory !== currentParent.subcategory)
+        ) {
+          currentParent = null;
+        }
+
+        if (row.is_child) {
+          if (currentParent) {
+            const arr = adj.get(currentParent.uid) || [];
+            const ch = mapChildFromFlat(row, currentParent.unit);
+            if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
+              arr.push(ch);
+            }
+            adj.set(currentParent.uid, arr);
           }
-          // child row
-          if (!currentParent) continue;
-          if (row.category !== currentParent.category || row.subcategory !== currentParent.subcategory) continue;
+          continue;
+        }
+
+        if (isParentish(row)) {
+          currentParent = row;
+          continue;
+        }
+
+        if (currentParent && isMaterialOnly(row)) {
           const arr = adj.get(currentParent.uid) || [];
           const ch = mapChildFromFlat(row, currentParent.unit);
-          // de-dupe name+unit
           if (!arr.some(a => norm(a.name) === norm(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit))) {
             arr.push(ch);
           }
           adj.set(currentParent.uid, arr);
+          continue;
         }
 
-        setPriceCatalog([...parents, ...childrenFlat]);
-        setAdjChildrenByParent(adj);
-      } catch (e) {
-        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+        currentParent = null;
       }
-    })();
-  }, [insurer]);
+
+      setPriceCatalog([...parents, ...childrenFlat]);
+      setAdjChildrenByParent(adj); // ✅ now defined (see #2)
+    } catch (e) {
+      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+    }
+  })();
+}, [insurer]);
+
 
   // children resolver used by Excel export
   const getChildrenFor = useCallback((parent) => {
