@@ -1,0 +1,656 @@
+{
+  "jumta nesošās konstrukciju montāža (mūrlata, kopnes,spares, sijas, balstbrusas)": [
+    {
+      "name": "impregnēta koka brusa",
+      "unit": "m3",
+      "coeff": 1.15
+    },
+    {
+      "name": "montāžas elementi",
+      "unit": "m3",
+      "coeff": 1.1
+    }
+  ],
+  "kokmateriāla apstrāde ar antipirēnu": [
+    {
+      "name": "antipirēns",
+      "unit": "kg",
+      "coeff": 30.0
+    }
+  ],
+  "latas vai šķerslatas montāža, s=400mm": [
+    {
+      "name": "dēļi 40x80mm",
+      "unit": "m3",
+      "coeff": 0.01
+    },
+    {
+      "name": "koka konstrukciju skrūve",
+      "unit": "100gb.",
+      "coeff": 0.11
+    },
+    {
+      "name": "dēļi 25x100mm",
+      "unit": "m3",
+      "coeff": 0.01
+    },
+    {
+      "name": "koka konstrukciju skrūve",
+      "unit": "100gb.",
+      "coeff": 0.13
+    }
+  ],
+  "ciešs dēlu klājs zem jumta seguma": [
+    {
+      "name": "dēļi 25x100mm",
+      "unit": "m3",
+      "coeff": 0.03
+    },
+    {
+      "name": "koka konstrukciju skrūve",
+      "unit": "100gb.",
+      "coeff": 0.11
+    }
+  ],
+  "jumta siltumizolācija ar akmens vati starp spārēm, 200mm": [
+    {
+      "name": "VATE  610X1220, 2x100mm",
+      "unit": "m2",
+      "coeff": 2.1
+    }
+  ],
+  "jumta tērauda nesoša profila montāža": [
+    {
+      "name": "nesošais profils BTR 135 0,75mm Zn",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "uzgrieznis M16",
+      "unit": "gb.",
+      "coeff": 10.3
+    },
+    {
+      "name": "blīvgumija",
+      "unit": "m",
+      "coeff": 1.0
+    },
+    {
+      "name": "silikons",
+      "unit": "gb.",
+      "coeff": 1.0
+    }
+  ],
+  "jumta siltumizolācija 100+20 mm": [
+    {
+      "name": "akmens vate, 100mm",
+      "unit": "m2",
+      "coeff": 1.05
+    },
+    {
+      "name": "akmens vate , 20mm",
+      "unit": "m2",
+      "coeff": 1.05
+    },
+    {
+      "name": "dībeļi",
+      "unit": "gb.",
+      "coeff": 6.0
+    }
+  ],
+  "jumta nesošo tērauda konstrukciju pretrūsas apstrāde": [
+    {
+      "name": "rūsas pārviedotājs",
+      "unit": "l",
+      "coeff": 0.15
+    }
+  ],
+  "jumta nesošo tērauda konstrukciju gruntēšana": [
+    {
+      "name": "gruntskrāsa",
+      "unit": "l",
+      "coeff": 0.2
+    }
+  ],
+  "jumta nesošo tērauda konstrukciju krāsošana": [
+    {
+      "name": "atmosfēras izturīga spīdīga alkīda emalja",
+      "unit": "l",
+      "coeff": 0.3
+    }
+  ],
+  "mitrumizturīgā osb plāksnes montāža": [
+    {
+      "name": "mitrumizturīgā plāksne OSB-3, 15mm",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "skrūves, pašzeņķējošās, dzeltenā Sp27Dz 4.2X45",
+      "unit": "200gb.",
+      "coeff": 0.11
+    },
+    {
+      "name": "mitrumizturīgā plāksne OSB-3, 15mm",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "skrūves, pašzeņķējošās, dzeltenā Sp27Dz 4.2X45",
+      "unit": "200gb.",
+      "coeff": 0.11
+    }
+  ],
+  "pašlīmējošu polimērbitumena apakšklāja montāža": [
+    {
+      "name": "bitumena grunts",
+      "unit": "kg",
+      "coeff": 0.35
+    },
+    {
+      "name": "polimēr bitumena apakšklājas",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.16
+    }
+  ],
+  "karnīzes un vējmalas skārda elementu montāža": [
+    {
+      "name": "karnīzes, vējmalas",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "papes naglas",
+      "unit": "5kg",
+      "coeff": 0.01
+    }
+  ],
+  "jumta pieslēgumu ierīkošana": [
+    {
+      "name": "atloks",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "blīvlenta",
+      "unit": "m",
+      "coeff": 1.1
+    },
+    {
+      "name": "atloks",
+      "unit": "m",
+      "coeff": 1.2
+    },
+    {
+      "name": "blīvlenta",
+      "unit": "m",
+      "coeff": 1.1
+    }
+  ],
+  "bitumena dakstiņu klāja montāža": [
+    {
+      "name": "bitumena šindeļi (vidējā cena)",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.16
+    },
+    {
+      "name": "papes naglas 5.kg/pakā",
+      "unit": "5kg",
+      "coeff": 0.02
+    }
+  ],
+  "kores un šķautņu dakstiņu montāža": [
+    {
+      "name": "kores - karnīzes dakstiņi   (vidējā cena)",
+      "unit": "m2",
+      "coeff": 0.29
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 0.33
+    },
+    {
+      "name": "papes naglas",
+      "unit": "5kg",
+      "coeff": 0.01
+    }
+  ],
+  "jumta vējkastes apšūšana ar  koka dēlīšiem": [
+    {
+      "name": "vagondēlis 18mm",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "skrūves, pašzeņķējošās, dzeltenā Sp27Dz 4.2X45",
+      "unit": "200gb.",
+      "coeff": 0.11
+    }
+  ],
+  "dēļu krāsošana": [
+    {
+      "name": "aizsargeļļa",
+      "unit": "l",
+      "coeff": 0.4
+    }
+  ],
+  "bitumena dakstiņu klāja remonts": [
+    {
+      "name": "bitumena šindeļi  (vidējā cena)",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.16
+    },
+    {
+      "name": "papes naglas",
+      "unit": "5kg",
+      "coeff": 0.02
+    }
+  ],
+  "pretvēja izolācija": [
+    {
+      "name": "difūzijas pretvēja plēve",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "savienošanas lente",
+      "unit": "m",
+      "coeff": 1.05
+    },
+    {
+      "name": "difūzijas pretvēja plēve",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "savienošanas lente",
+      "unit": "m",
+      "coeff": 1.05
+    },
+    {
+      "name": "difūzijas pretvēja plēve",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "savienošanas lente",
+      "unit": "m",
+      "coeff": 1.05
+    },
+    {
+      "name": "difūzijas pretvēja plēve",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "savienošanas lente",
+      "unit": "m",
+      "coeff": 1.05
+    }
+  ],
+  "onduline jumta seguma ieklāšana": [
+    {
+      "name": "Onduline viļņotās jumta loksnes PP",
+      "unit": "m2",
+      "coeff": 1.3
+    },
+    {
+      "name": "Onduline naglas (73x3)",
+      "unit": "gb.",
+      "coeff": 10.5
+    }
+  ],
+  "kores, karnīzes,vējmalas, sateknes skārda elementu montāža": [
+    {
+      "name": "kore, karnīze,vējmala, satekne",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "Onduline naglas (73x3)",
+      "unit": "gb.",
+      "coeff": 4.2
+    },
+    {
+      "name": "kore, karnīze,vējmala, satekne",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "naglas/skrūve",
+      "unit": "gb.",
+      "coeff": 4.2
+    },
+    {
+      "name": "kore, karnīze,vējmala, satekne",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "skrūves metāla jumtiem, krāsotas",
+      "unit": "gb.",
+      "coeff": 6.0
+    },
+    {
+      "name": "kore, karnīze,vējmala, satekne",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "skrūves metāla jumtiem, krāsotas",
+      "unit": "gb.",
+      "coeff": 6.0
+    }
+  ],
+  "latas montāža, s=400mm": [
+    {
+      "name": "dēļi 60x60mm",
+      "unit": "m3",
+      "coeff": 0.02
+    },
+    {
+      "name": "koka konstrukciju skrūve",
+      "unit": "100gb.",
+      "coeff": 0.11
+    }
+  ],
+  "bezazbesta šīfera jumta seguma ieklāšana": [
+    {
+      "name": "bezazbesta viļņotā loksne pelēka",
+      "unit": "m2",
+      "coeff": 1.3
+    },
+    {
+      "name": "naglas/skrūve",
+      "unit": "gb.",
+      "coeff": 10.5
+    }
+  ],
+  "jumta skārda seguma ierīkošana": [
+    {
+      "name": "vertikālo šuvju profils",
+      "unit": "m2",
+      "coeff": 1.1
+    },
+    {
+      "name": "skaņas izolācijas lenta 95mmx30m",
+      "unit": "m",
+      "coeff": 1.76
+    },
+    {
+      "name": "skrūves metāla jumtiem, krāsotas",
+      "unit": "gb.",
+      "coeff": 10.3
+    },
+    {
+      "name": "dakstiņveida tērauda jumta segums",
+      "unit": "m2",
+      "coeff": 1.1
+    },
+    {
+      "name": "skrūves metāla jumtiem, krāsotas",
+      "unit": "gb.",
+      "coeff": 10.3
+    }
+  ],
+  "polimērbitumena apakšklāja montāža": [
+    {
+      "name": "bitumena grunts",
+      "unit": "kg",
+      "coeff": 0.37
+    },
+    {
+      "name": "apakšklājas",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.16
+    }
+  ],
+  "karnīžu un vējmalu skārda elementu ierīkošna": [
+    {
+      "name": "karnīzes, vējmalas",
+      "unit": "m",
+      "coeff": 1.15
+    },
+    {
+      "name": "papes naglas",
+      "unit": "5kg",
+      "coeff": 0.01
+    }
+  ],
+  "koka šindeļu montāža": [
+    {
+      "name": "koka šindeļi",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 0.55
+    },
+    {
+      "name": "papes naglas",
+      "unit": "5kg",
+      "coeff": 0.02
+    }
+  ],
+  "kores dakstiņu montāža": [
+    {
+      "name": "kores - karnīzes dakstiņi",
+      "unit": "m2",
+      "coeff": 0.3
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 0.44
+    },
+    {
+      "name": "papes naglas 5.kg/pakā",
+      "unit": "5kg",
+      "coeff": 0.01
+    }
+  ],
+  "kausējama hidroizolācijas apakšklāja iebūve": [
+    {
+      "name": "bitumena grunts",
+      "unit": "kg",
+      "coeff": 0.35
+    },
+    {
+      "name": "apakšklājs",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.1
+    },
+    {
+      "name": "gāze",
+      "unit": "m2",
+      "coeff": 1.0
+    }
+  ],
+  "kausējama hidroizolācijas virsklāja iebūve": [
+    {
+      "name": "virsklājs",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "mastika bitumena",
+      "unit": "kg",
+      "coeff": 1.1
+    },
+    {
+      "name": "gāze",
+      "unit": "m2",
+      "coeff": 1.0
+    },
+    {
+      "name": "Jumta dakstiņu demontāža",
+      "unit": "m2",
+      "coeff": 1.0
+    },
+    {
+      "name": "Jumta dakstiņu demontāža, montāža",
+      "unit": "m2",
+      "coeff": 1.0
+    },
+    {
+      "name": "- betona dakstiņi Benders",
+      "unit": "m2",
+      "coeff": 1.2
+    },
+    {
+      "name": "Jumta dakstiņu demontāža, montāža",
+      "unit": "m2",
+      "coeff": 1.0
+    },
+    {
+      "name": "- betona dakstiņi  Roben Art.2PL140715",
+      "unit": "m2",
+      "coeff": 1.2
+    }
+  ],
+  "ūdensnotekas teknes montāža": [
+    {
+      "name": "ūdensnotekas tekne ar aksesuāriem un stiprīnajumiem",
+      "unit": "m",
+      "coeff": 1.0
+    }
+  ],
+  "ūdensnotekas caurules montāža": [
+    {
+      "name": "ūdensnotekas caurule ar aksesuāriem un stiprīnajumiem",
+      "unit": "m",
+      "coeff": 1.0
+    }
+  ],
+  "esošās ūdensnotekas teknes un caurules montāža": [
+    {
+      "name": "ūdensnotekas caurules stiprīnajumi",
+      "unit": "m",
+      "coeff": 1.0
+    }
+  ],
+  "jumta lūkas montāža": [
+    {
+      "name": "jumta luka ar pieslēgumu 400x600mm",
+      "unit": "kpl.",
+      "coeff": 1.0
+    }
+  ],
+  "dūmvada nosegcepures montāža": [
+    {
+      "name": "dūmvada cepure 400x600mm",
+      "unit": "kpl.",
+      "coeff": 1.0
+    }
+  ],
+  "skārda sniega barjera montāža": [
+    {
+      "name": "skārda sniega barjers (PE)",
+      "unit": "m",
+      "coeff": 1.1
+    }
+  ],
+  "pārseguma koka siju montāža": [
+    {
+      "name": "impregnēta koka brusa",
+      "unit": "m3",
+      "coeff": 1.15
+    },
+    {
+      "name": "montāžas elementi",
+      "unit": "m3",
+      "coeff": 1.1
+    }
+  ],
+  "melno koka griestu ierīkošana 25mm": [
+    {
+      "name": "dēļi 25mm",
+      "unit": "m3",
+      "coeff": 0.03
+    },
+    {
+      "name": "skrūve kokam, dzeltenā 4.5X70/42",
+      "unit": "250gb.",
+      "coeff": 0.08
+    }
+  ],
+  "tvaika izolācijas plēves ieklāšana": [
+    {
+      "name": "tvaika izolācijas plēve",
+      "unit": "m2",
+      "coeff": 1.15
+    },
+    {
+      "name": "savienošanas lente",
+      "unit": "m",
+      "coeff": 1.05
+    }
+  ],
+  "pārseguma siltināšana ar beramo vati": [
+    {
+      "name": "beramā vate",
+      "unit": "m3",
+      "coeff": 1.15
+    }
+  ],
+  "pārseguma siltināšana ar akmens vati 100mm": [
+    {
+      "name": "akmens vate  610X1220",
+      "unit": "m2",
+      "coeff": 1.05
+    },
+    {
+      "name": "Materiālu, grunts apmaiņas un būvgružu transporta izdevumi",
+      "unit": "0.07",
+      "coeff": 1.0
+    },
+    {
+      "name": "Virsizdevumi",
+      "unit": "0.09",
+      "coeff": 1.0
+    },
+    {
+      "name": "Peļņa",
+      "unit": "0.07",
+      "coeff": 1.0
+    },
+    {
+      "name": "Darba devēja sociālais nodoklis",
+      "unit": "0.2359",
+      "coeff": 1.0
+    },
+    {
+      "name": "PVN",
+      "unit": "0.21",
+      "coeff": 1.0
+    }
+  ]
+}

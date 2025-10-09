@@ -34,6 +34,38 @@ const CHILD_NAME_HINTS = {
   ],
   // Add more mappings as needed…
 };
+// add next to other state
+const [childHints, setChildHints] = useState({});
+
+// helper: same base-path logic as the template
+const assetBase =
+  typeof window !== "undefined" &&
+  (window.__NEXT_DATA__?.assetPrefix || window.location.pathname.startsWith("/eksperti"))
+    ? "/eksperti"
+    : "";
+    
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${assetBase}/prices/child_hints.json`, { cache: "no-store" });
+        if (!res.ok) return; // optional: console.warn('No child_hints.json found');
+        const json = await res.json();
+        if (cancelled || !json || typeof json !== "object") return;
+
+        // normalize keys once (lowercase & trimmed)
+        const normKey = (s) => String(s ?? "").trim().toLowerCase();
+        const m = {};
+        for (const [k, v] of Object.entries(json)) {
+          m[normKey(k)] = Array.isArray(v) ? v : [];
+        }
+        setChildHints(m);
+      } catch {
+        // hints are optional; ignore load errors
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [assetBase]);
 
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
@@ -338,18 +370,24 @@ export default function DamageIntakeForm() {
     for (const ch of adj) pushMapped(ch, parent.unit);
 
     // D) name-based hints (only if nothing found so far)
-    if (out.length === 0 && CHILD_NAME_HINTS) {
-      const hintList = CHILD_NAME_HINTS[norm(parent.name)];
-      if (Array.isArray(hintList) && hintList.length) {
-        for (const childName of hintList) {
-          const targetLower = norm(childName);
-          const match = priceCatalog.find(
-            (it) => norm(it.name) === targetLower && it.category === parent.category
-          );
-          if (match) pushMapped(match, parent.unit);
-        }
+if (out.length === 0) {
+  const hints = CHILD_HINTS?.[norm(parent.name)];
+  if (Array.isArray(hints)) {
+    for (const { name, unit, coeff = 1 } of hints) {
+      const row = priceCatalog.find(
+        (it) => norm(it.name) === norm(name) && it.category === parent.category
+      );
+      // Prefer real catalog row so prices split/materials are correct
+      if (row) {
+        pushMapped({ ...row, unit: unit || row.unit, coeff }, parent.unit);
+      } else {
+        // Fallback to a synthetic child (materials-only if no price row exists)
+        pushMapped({ name, unit: unit || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
       }
     }
+  }
+}
+
 
     return out;
   }, [priceCatalog, adjChildrenByParent]);
