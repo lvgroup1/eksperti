@@ -46,16 +46,37 @@ function parseDec(x) {
 
 function pickNum(obj, keys) {
   if (!obj || typeof obj !== "object") return 0;
-  const entries = Object.entries(obj);
+
+  // normalize keys: lowercase, strip accents, collapse spaces
+  const normKey = (s) =>
+    String(s ?? "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+      .replace(/\s+/g, "")
+      .trim();
+
+  const entries = Object.entries(obj).map(([k, v]) => [normKey(k), v]);
+
   for (const want of keys) {
-    const w = String(want).toLowerCase();
-    const hit = entries.find(([k]) => String(k).toLowerCase() === w);
+    const w = normKey(want);
+    const hit = entries.find(([k]) => k === w);
     if (hit) {
-      const v = parseDec(hit[1]);
-      if (Number.isFinite(v)) return v;
+      const v = parseDec(hit[1]); // <- your existing tolerant number parser
+      return Number.isFinite(v) ? v : 0;
     }
   }
   return 0;
+}
+
+// strip diacritics & normalize punctuation/whitespace for matching
+function deburrLower(s) {
+  return String(s ?? "")
+    .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[.,;:()\[\]{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function norm(s) {
@@ -98,7 +119,8 @@ const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
-const norm = (x) => String(x ?? "").trim().toLowerCase();
+const norm = (x) => deburrLower(x);
+
 
 const isChildItem = (it) =>
   parseBool(it.is_child) || parseBool(it.child) ||
@@ -654,369 +676,399 @@ if (Array.isArray(hints)) {
      Excel export (BALTA template; expands children)
      ========================== */
   async function exportToExcel() {
-    try {
-      const pad2 = (n) => String(n).padStart(2, "0");
-      const ExcelJSImport = await import("exceljs/dist/exceljs.min.js");
-      const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
+  try {
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const ExcelJSImport = await import("exceljs/dist/exceljs.min.js");
+    const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
 
-      const tplUrl = `${assetBase}/templates/balta_template.xlsx`;
-      const resp = await fetch(tplUrl);
-      if (!resp.ok) { alert(`Neizdevās ielādēt ${tplUrl}. Pārliecinies, ka fails ir public/templates/balta_template.xlsx`); return; }
-      const arrayBuf = await resp.arrayBuffer();
-      const wb = new ExcelJS.Workbook();
-      await wb.xlsx.load(arrayBuf);
+    // template path using same base as the app
+    const tplUrl = `${assetBase}/templates/balta_template.xlsx`;
+    const resp = await fetch(tplUrl);
+    if (!resp.ok) {
+      alert(`Neizdevās ielādēt ${tplUrl}. Pārliecinies, ka fails ir public/templates/balta_template.xlsx`);
+      return;
+    }
+    const arrayBuf = await resp.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(arrayBuf);
 
-      const src = wb.getWorksheet("Tāme") || wb.worksheets[0];
-      const ws = wb.addWorksheet("Tāme (izvade)", { views: [{ showGridLines: false }] });
+    // base & output worksheets
+    const src = wb.getWorksheet("Tāme") || wb.worksheets[0];
+    const ws  = wb.addWorksheet("Tāme (izvade)", { views: [{ showGridLines: false }] });
 
-      // Styles
-      const FONT = { name: "Calibri", size: 11 };
-      const MONEY = "#,##0.00";
-      const QTY = "#,##0.00";
-      const thin = { style: "thin" };
-      const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
-      const SECTION_BG = "FFF3F6FD";
-      const HEADER_BG = "FFEFEFEF";
-      const ZEBRA_BG = "FFF9FAFB";
-      const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
-      const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
-      const ZEBRA = true;
+    // Styles
+    const FONT = { name: "Calibri", size: 11 };
+    const MONEY = "#,##0.00";
+    const QTY   = "#,##0.00";
+    const thin = { style: "thin" };
+    const borderAll = { top: thin, left: thin, bottom: thin, right: thin };
+    const SECTION_BG = "FFF3F6FD";
+    const HEADER_BG  = "FFEFEFEF";
+    const ZEBRA_BG   = "FFF9FAFB";
+    const sectionFill = { type: "pattern", pattern: "solid", fgColor: { argb: SECTION_BG } };
+    const headerFill  = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+    const ZEBRA = true;
 
-      // Header
-      const d = new Date();
-      const dateStamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
-      const tameId = insurer === "Balta" ? `B-${dateStamp}` : dateStamp;
-      const tameTitle = insurer === "Balta" ? `LOKĀLĀ TĀME NR.${tameId}` : `TĀMES NR.: ${tameId}`;
-      const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+    // Header
+    const d = new Date();
+    const dateStamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+    const tameId    = insurer === "Balta" ? `B-${dateStamp}` : dateStamp;
+    const tameTitle = insurer === "Balta" ? `LOKĀLĀ TĀME NR.${tameId}` : `TĀMES NR.: ${tameId}`;
+    const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
 
-      ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
-      ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
-      ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
-      ws.getCell("A8").value = `Rīga, ${humanDate}`;
-      ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
+    ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
+    ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
+    ws.getCell("A3").value = `Objekta adrese: ${address || ""}`;
+    ws.getCell("A8").value = `Rīga, ${humanDate}`;
+    ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
 
-      ws.getCell("J1").value = "LV GROUP SIA";
-      ws.getCell("J2").value = "Reģ. Nr.: LV40003216553";
-      ws.getCell("J3").value = "Banka: Luminor";
-      ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
+    ws.getCell("J1").value = "LV GROUP SIA";
+    ws.getCell("J2").value = "Reģ. Nr.: LV40003216553";
+    ws.getCell("J3").value = "Banka: Luminor";
+    ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
 
-      ws.mergeCells(6, 2, 6, 12);
-      const tCell = ws.getCell(6, 2);
-      tCell.value = tameTitle;
-      tCell.font = { ...FONT, size: 16, bold: true };
-      tCell.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells(6, 2, 6, 12);
+    const tCell = ws.getCell(6, 2);
+    tCell.value = tameTitle;
+    tCell.font = { ...FONT, size: 16, bold: true };
+    tCell.alignment = { horizontal: "center", vertical: "middle" };
 
-      // Gather rows in form order + expand children
-      const selections = [];
-      roomInstances.forEach((ri) => {
-        const list = roomActions[ri.id] || [];
-        list.forEach((a) => {
-          const qty = parseDec(a.quantity);
-          if (!qty) return;
+    // Build selections (parents + auto-added children)
+    const selections = [];
+    roomInstances.forEach((ri) => {
+      const list = roomActions[ri.id] || [];
+      list.forEach((a) => {
+        const qty = parseDec(a.quantity);
+        if (!qty) return;
 
-          const parent = priceCatalog.find((i) => i.uid === a.itemUid) || priceCatalog.find((i) => i.id === a.itemId);
-          if (!parent) return;
+        const parent =
+          priceCatalog.find((i) => i.uid === a.itemUid) ||
+          priceCatalog.find((i) => i.id === a.itemId);
+        if (!parent) return;
 
-          const unit = normalizeUnit(a.unit || parent.unit || "");
-          const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
-          const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
-          const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
-          const pSplit = pLabor + pMat + pMech;
-          const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
+        const unit = normalizeUnit(a.unit || parent.unit || "");
+        const pLabor = parseDec(a.labor ?? parent.labor ?? 0);
+        const pMat   = parseDec(a.materials ?? parent.materials ?? 0);
+        const pMech  = parseDec(a.mechanisms ?? parent.mechanisms ?? 0);
+        const pSplit = pLabor + pMat + pMech;
+        const pUnitPrice = pSplit ? pSplit : parseDec(a.unit_price ?? parent.unit_price ?? 0);
 
-          // push parent (numbered)
-          selections.push({
-            isChild: false,
-            room: `${ri.type} ${ri.index}`,
-            name: a.itemName || parent.name || "",
-            unit,
-            qty,
-            labor: pLabor,
-            materials: pMat,
-            mechanisms: pMech,
-            unitPrice: pUnitPrice,
-          });
-
-          // auto-append children (indented, no numbering)
-          const kids = getChildrenFor(parent);
-          for (const ch of kids) {
-            const cQty = parseDec(ch.coeff ?? 1) * qty;
-            selections.push({
-              isChild: true,
-              room: `${ri.type} ${ri.index}`,
-              name: ch.name || "",
-              unit: normalizeUnit(ch.unit || unit),
-              qty: cQty,
-              labor: parseDec(ch.labor ?? 0),
-              materials: parseDec(ch.materials ?? 0),
-              mechanisms: parseDec(ch.mechanisms ?? 0),
-              unitPrice: parseDec(ch.labor ?? 0) + parseDec(ch.materials ?? 0) + parseDec(ch.mechanisms ?? 0),
-            });
-          }
+        // Parent row
+        selections.push({
+          isChild: false,
+          room: `${ri.type} ${ri.index}`,
+          name: a.itemName || parent.name || "",
+          unit,
+          qty,
+          labor: pLabor,
+          materials: pMat,
+          mechanisms: pMech,
+          unitPrice: pUnitPrice,
         });
+
+        // Children from resolver
+        const kids = getChildrenFor(parent);
+        for (const ch of kids) {
+          const cQty = parseDec(ch.coeff ?? 1) * qty;
+          const cLabor = parseDec(ch.labor ?? 0);
+          const cMat   = parseDec(ch.materials ?? 0);
+          const cMech  = parseDec(ch.mechanisms ?? 0);
+          const cSplit = cLabor + cMat + cMech;
+          const cUnitPrice = cSplit ? cSplit : parseDec(ch.unit_price ?? 0);
+
+          selections.push({
+            isChild: true,
+            room: `${ri.type} ${ri.index}`,
+            name: ch.name || "",
+            unit: normalizeUnit(ch.unit || unit),
+            qty: cQty,
+            labor: cLabor,
+            materials: cMat,
+            mechanisms: cMech,
+            unitPrice: cUnitPrice,
+          });
+        }
       });
+    });
 
-      if (!selections.length) { alert("Nav nevienas pozīcijas ar daudzumu."); return; }
+    if (!selections.length) {
+      alert("Nav nevienas pozīcijas ar daudzumu.");
+      return;
+    }
 
-      // Headers
-      const START = 15;
-      const HEAD1 = START - 2;
-      const HEAD2 = START - 1;
-      const COLS = 12;
+    // Headers
+    const START = 15;
+    const HEAD1 = START - 2;
+    const HEAD2 = START - 1;
+    const COLS  = 12;
 
-      ws.getCell(HEAD1, 1).value = "Nr.";
-      ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
-      ws.getCell(HEAD1, 3).value = "Mērv.";
-      ws.getCell(HEAD1, 4).value = "Daudz.";
-      ws.mergeCells(HEAD1, 5, HEAD1, 8);  ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
-      ws.mergeCells(HEAD1, 9, HEAD1, 12); ws.getCell(HEAD1, 9).value = "Summa, EUR";
+    ws.getCell(HEAD1, 1).value = "Nr.";
+    ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
+    ws.getCell(HEAD1, 3).value = "Mērv.";
+    ws.getCell(HEAD1, 4).value = "Daudz.";
+    ws.mergeCells(HEAD1, 5, HEAD1, 8);  ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
+    ws.mergeCells(HEAD1, 9, HEAD1, 12); ws.getCell(HEAD1, 9).value = "Summa, EUR";
 
-      ws.getCell(HEAD2, 5).value = "Darbs";
-      ws.getCell(HEAD2, 6).value = "Materiāli";
-      ws.getCell(HEAD2, 7).value = "Mehānismi";
-      ws.getCell(HEAD2, 8).value = "Cena";
-      ws.getCell(HEAD2, 9).value = "Darbs";
-      ws.getCell(HEAD2, 10).value = "Materiāli";
-      ws.getCell(HEAD2, 11).value = "Mehānismi";
-      ws.getCell(HEAD2, 12).value = "Kopā";
+    ws.getCell(HEAD2, 5).value = "Darbs";
+    ws.getCell(HEAD2, 6).value = "Materiāli";
+    ws.getCell(HEAD2, 7).value = "Mehānismi";
+    ws.getCell(HEAD2, 8).value = "Cena";
+    ws.getCell(HEAD2, 9).value = "Darbs";
+    ws.getCell(HEAD2,10).value = "Materiāli";
+    ws.getCell(HEAD2,11).value = "Mehānismi";
+    ws.getCell(HEAD2,12).value = "Kopā";
 
-      for (const rr of [HEAD1, HEAD2]) {
-        const row = ws.getRow(rr);
+    for (const rr of [HEAD1, HEAD2]) {
+      const row = ws.getRow(rr);
+      for (let c = 1; c <= COLS; c++) {
+        const cell = row.getCell(c);
+        cell.font = { ...FONT, bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.fill = headerFill;
+        cell.border = borderAll;
+      }
+      row.height = 22;
+    }
+
+    // Data rows
+    let r = START, nr = 1;
+    let first = null, last = null;
+
+    // group selections by room
+    const groups = new Map();
+    selections.forEach((s) => {
+      if (!groups.has(s.room)) groups.set(s.room, []);
+      groups.get(s.room).push(s);
+    });
+
+    for (const [roomName, rows] of groups.entries()) {
+      // section header
+      ws.mergeCells(r, 2, r, 12);
+      const sec = ws.getCell(r, 2);
+      sec.value = roomName;
+      sec.fill = sectionFill;
+      sec.font = { ...FONT, bold: true };
+      sec.alignment = { wrapText: true, vertical: "middle" };
+      sec.border = { bottom: thin };
+      ws.getRow(r).height = 18;
+      r++;
+
+      for (const s of rows) {
+        const row = ws.getRow(r);
+
+        row.getCell(1).value = s.isChild ? "" : nr++;
+        row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+        row.getCell(3).value = s.unit;
+        row.getCell(4).value = s.qty;
+
+        // split (E/F/G) with robust fallback
+        const e = Number(s.labor || 0);
+        const f = Number(s.materials || 0);
+        const g = Number(s.mechanisms || 0);
+        const hasSplit = (e + f + g) > 0;
+
+        if (hasSplit) {
+          ws.getCell(r, 5).value = e; // E
+          ws.getCell(r, 6).value = f; // F
+          ws.getCell(r, 7).value = g; // G
+        } else {
+          const fallback = Number(s.unitPrice || 0);
+          ws.getCell(r, 5).value = 0;         // E
+          ws.getCell(r, 6).value = fallback;  // F (materials-only fallback)
+          ws.getCell(r, 7).value = 0;         // G
+        }
+
+        // H = E+F+G ; I..L = per split * qty ; L = H * qty
+        ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+        ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+        ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
+        ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
+        ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` }; // ✅ fixed comma placement
+
+        row.getCell(4).numFmt = QTY;
+        for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
+
+        const isZebra = ((r - START) % 2) === 1;
         for (let c = 1; c <= COLS; c++) {
           const cell = row.getCell(c);
-          cell.font = { ...FONT, bold: true };
-          cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-          cell.fill = headerFill;
+          if (ZEBRA && isZebra) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
+          }
           cell.border = borderAll;
+          cell.font = { ...FONT, italic: !!s.isChild };
+          cell.alignment = c === 2
+            ? { wrapText: true, vertical: "middle" }
+            : { vertical: "middle", horizontal: "right" };
         }
-        row.height = 22;
-      }
 
-      // Data rows
-      let r = START, nr = 1;
-      let first = null, last = null;
-
-      // group by room
-      const groups = new Map();
-      selections.forEach((s) => { if (!groups.has(s.room)) groups.set(s.room, []); groups.get(s.room).push(s); });
-
-      for (const [roomName, rows] of groups.entries()) {
-        ws.mergeCells(r, 2, r, 12);
-        const sec = ws.getCell(r, 2);
-        sec.value = roomName;
-        sec.fill = sectionFill;
-        sec.font = { ...FONT, bold: true };
-        sec.alignment = { wrapText: true, vertical: "middle" };
-        sec.border = { bottom: thin };
-        ws.getRow(r).height = 18;
+        if (first === null) first = r;
+        last = r;
         r++;
+      }
+    }
 
-        for (const s of rows) {
-          const row = ws.getRow(r);
-          row.getCell(1).value = s.isChild ? "" : nr++;
-          row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
-          row.getCell(3).value = s.unit;
-          row.getCell(4).value = s.qty;
+    const boldCell = (addr) => { ws.getCell(addr).font = { ...FONT, bold: true }; };
 
-const e = Number(s.labor || 0);
-const f = Number(s.materials || 0);
-const g = Number(s.mechanisms || 0);
-const hasSplit = (e + f + g) > 0;
+    // Totals block
+    const rowKopa = r + 1;
+    ws.getCell(`B${rowKopa}`).value = "Kopā";
+    ws.getCell(`I${rowKopa}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
+    ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
+    ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
+    ws.getCell(`L${rowKopa}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
+    for (const c of [9,10,11,12]) ws.getCell(rowKopa, c).numFmt = MONEY;
+    boldCell(`B${rowKopa}`);
 
-if (hasSplit) {
-  ws.getCell(r, 5).value = e;                 // E = Darbs
-  ws.getCell(r, 6).value = f;                 // F = Materiāli
-  ws.getCell(r, 7).value = g;                 // G = Mehānismi
-} else {
-  const fallback = Number(s.unitPrice || 0);  // from step #2 above
-  ws.getCell(r, 5).value = 0;                 // E
-  ws.getCell(r, 6).value = fallback;          // F (put all into Materiāli)
-  ws.getCell(r, 7).value = 0;                 // G
+    const rowTrans = rowKopa + 1;
+    ws.getCell(`B${rowTrans}`).value = "Materiālu, grunts apmaiņas un būvgružu transporta izdevumi";
+    ws.getCell(`C${rowTrans}`).value = 0.07;
+    ws.getCell(`J${rowTrans}`).value = { formula: `ROUND(J${rowKopa}*C${rowTrans},2)` };
+    ws.getCell(`L${rowTrans}`).value = { formula: `J${rowTrans}` };
+    ws.getCell(`J${rowTrans}`).numFmt = MONEY;
+    ws.getCell(`L${rowTrans}`).numFmt = MONEY;
+
+    const rowDirect = rowTrans + 1;
+    ws.getCell(`B${rowDirect}`).value = "Tiešās izmaksas kopā";
+    ws.getCell(`I${rowDirect}`).value = { formula: `I${rowKopa}` };
+    ws.getCell(`J${rowDirect}`).value = { formula: `ROUND(J${rowKopa}+J${rowTrans},2)` };
+    ws.getCell(`K${rowDirect}`).value = { formula: `K${rowKopa}` };
+    ws.getCell(`L${rowDirect}`).value = { formula: `ROUND(I${rowDirect}+J${rowDirect}+K${rowDirect},2)` };
+    for (const c of [9,10,11,12]) ws.getCell(rowDirect, c).numFmt = MONEY;
+    boldCell(`B${rowDirect}`);
+
+    const rowOver = rowDirect + 1;
+    ws.getCell(`B${rowOver}`).value = "Virsizdevumi";
+    ws.getCell(`C${rowOver}`).value = 0.09;
+    ws.getCell(`L${rowOver}`).value = { formula: `ROUND(L${rowDirect}*C${rowOver},2)` };
+    ws.getCell(`L${rowOver}`).numFmt = MONEY;
+
+    const rowProfit = rowOver + 1;
+    ws.getCell(`B${rowProfit}`).value = "Peļņa";
+    ws.getCell(`C${rowProfit}`).value = 0.07;
+    ws.getCell(`L${rowProfit}`).value = { formula: `ROUND(L${rowDirect}*C${rowProfit},2)` };
+    ws.getCell(`L${rowProfit}`).numFmt = MONEY;
+
+    const rowDDSN = rowProfit + 1;
+    ws.getCell(`B${rowDDSN}`).value = "Darba devēja sociālais nodoklis";
+    ws.getCell(`C${rowDDSN}`).value = 0.2359;
+    ws.getCell(`I${rowDDSN}`).value = { formula: `ROUND(I${rowKopa}*C${rowDDSN},2)` };
+    ws.getCell(`L${rowDDSN}`).value = { formula: `I${rowDDSN}` };
+    ws.getCell(`I${rowDDSN}`).numFmt = MONEY;
+    ws.getCell(`L${rowDDSN}`).numFmt = MONEY;
+
+    const rowTotal = rowDDSN + 1;
+    ws.getCell(`B${rowTotal}`).value = "Kopējās izmaksas";
+    ws.getCell(`L${rowTotal}`).value = { formula: `ROUND(L${rowDirect}+L${rowOver}+L${rowProfit}+L${rowDDSN},2)` };
+    ws.getCell(`L${rowTotal}`).numFmt = MONEY;
+    boldCell(`B${rowTotal}`); boldCell(`L${rowTotal}`);
+
+    const rowPVN = rowTotal + 1;
+    ws.getCell(`B${rowPVN}`).value = "PVN";
+    ws.getCell(`C${rowPVN}`).value = 0.21;
+    ws.getCell(`L${rowPVN}`).value = { formula: `ROUND(L${rowTotal}*C${rowPVN},2)` };
+    ws.getCell(`L${rowPVN}`).numFmt = MONEY;
+
+    const rowGrand = rowPVN + 1;
+    ws.getCell(`B${rowGrand}`).value = "Pavisam kopā";
+    ws.getCell(`L${rowGrand}`).value = { formula: `ROUND(L${rowTotal}+L${rowPVN},2)` };
+    ws.getCell(`L${rowGrand}`).numFmt = MONEY;
+    boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
+
+    ws.getCell("J9").value = "Tāmes summa euro :";
+    ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
+    ws.getCell("J10").value = "PVN 21%:";            ws.getCell("L10").value = { formula: `L${rowPVN}` };  ws.getCell("L10").numFmt = MONEY;
+    ws.getCell("J11").value = "Pavisam kopā euro:";  ws.getCell("L11").value = { formula: `L${rowGrand}` }; ws.getCell("L11").numFmt = MONEY;
+
+    const sumRows = [rowKopa,rowTrans,rowDirect,rowOver,rowProfit,rowDDSN,rowTotal,rowPVN,rowGrand];
+    for (const rr of sumRows) {
+      for (let c = 1; c <= COLS; c++) {
+        const cell = ws.getCell(rr, c);
+        cell.border = borderAll;
+        cell.font = { ...FONT, bold: cell.font?.bold || false };
+        cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
+      }
+    }
+
+    // Notes
+    const notesTitleRow = rowGrand + 3;
+    ws.getCell(`B${notesTitleRow}`).value = "Piezīmes:";
+    ws.getCell(`B${notesTitleRow}`).font = { ...FONT, bold: true };
+    ws.mergeCells(notesTitleRow, 2, notesTitleRow, 12);
+
+    const notes = [
+      "1. Tāmes derīguma termiņš – 1 mēnesis.",
+      "2. Tāme sastādīta provizoriski, atbilstoši bojātā īpašuma apskates protokolam un bildēm.",
+      "3. Iespējami slēpti defekti, kuri atklāsies remontdarbu laikā.",
+      `4. Tāme ir sagatavota elektroniski un ir autorizēta ar Nr.${tameId}.`,
+    ];
+
+    let rowN = notesTitleRow + 1;
+    for (const line of notes) {
+      ws.mergeCells(rowN, 2, rowN, 12);
+      const c = ws.getCell(rowN, 2);
+      c.value = line;
+      c.font = FONT;
+      c.alignment = { wrapText: true, vertical: "top" };
+      rowN++;
+    }
+
+    const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
+    for (const n of extraNotes) {
+      ws.mergeCells(rowN, 2, rowN, 12);
+      const c = ws.getCell(rowN, 2);
+      c.value = n;
+      c.font = FONT;
+      c.alignment = { wrapText: true, vertical: "top" };
+      rowN++;
+    }
+
+    // SASTĀDĪJA / SASKAŅOTS
+    const blockStart = rowN + 2;
+    ws.mergeCells(blockStart, 2, blockStart, 6);
+    ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
+    ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
+
+    ws.getCell(blockStart + 1, 2).value = "Būvkomersanta Nr.:";
+    ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
+    ws.getCell(blockStart + 2, 2).value = "Vārds, uzvārds:";
+    ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
+    ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
+    ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
+
+    const rightOrg = insurer === "Balta" ? "AAS BALTA" : insurer || "";
+    ws.mergeCells(blockStart, 9, blockStart, 12);
+    ws.getCell(blockStart, 9).value = "SASKAŅOTS:";
+    ws.getCell(blockStart, 9).font = { ...FONT, bold: true };
+
+    ws.mergeCells(blockStart + 1, 9, blockStart + 1, 12);
+    ws.getCell(blockStart + 1, 9).value = rightOrg;
+    ws.mergeCells(blockStart + 2, 9, blockStart + 2, 12);
+    ws.getCell(blockStart + 2, 9).value = "";
+
+    // Column widths
+    const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
+    for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
+
+    // finalize
+    wb.removeWorksheet(src.id);
+    ws.name = "Tāme";
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Excel export error:", err);
+    alert("Neizdevās izveidot Excel failu. Skaties konsolē kļūdu.");
+  }
 }
 
-ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
-ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
-ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` };
-
-
-
-          row.getCell(4).numFmt = QTY;
-          for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
-
-          const isZebra = ((r - START) % 2) === 1;
-          for (let c = 1; c <= COLS; c++) {
-            const cell = row.getCell(c);
-            if (ZEBRA && isZebra) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-            cell.border = borderAll;
-            cell.font = { ...FONT, italic: !!s.isChild };
-            cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
-          }
-
-          if (first === null) first = r;
-          last = r;
-          r++;
-        }
-      }
-
-      const boldCell = (addr) => { ws.getCell(addr).font = { ...FONT, bold: true }; };
-
-      const rowKopa = r + 1;
-      ws.getCell(`B${rowKopa}`).value = "Kopā";
-      ws.getCell(`I${rowKopa}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
-      ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
-      ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
-      ws.getCell(`L${rowKopa}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
-      for (const c of [9,10,11,12]) ws.getCell(rowKopa, c).numFmt = MONEY;
-      boldCell(`B${rowKopa}`);
-
-      const rowTrans = rowKopa + 1;
-      ws.getCell(`B${rowTrans}`).value = "Materiālu, grunts apmaiņas un būvgružu transporta izdevumi";
-      ws.getCell(`C${rowTrans}`).value = 0.07;
-      ws.getCell(`J${rowTrans}`).value = { formula: `ROUND(J${rowKopa}*C${rowTrans},2)` };
-      ws.getCell(`L${rowTrans}`).value = { formula: `J${rowTrans}` };
-      ws.getCell(`J${rowTrans}`).numFmt = MONEY;
-      ws.getCell(`L${rowTrans}`).numFmt = MONEY;
-
-      const rowDirect = rowTrans + 1;
-      ws.getCell(`B${rowDirect}`).value = "Tiešās izmaksas kopā";
-      ws.getCell(`I${rowDirect}`).value = { formula: `I${rowKopa}` };
-      ws.getCell(`J${rowDirect}`).value = { formula: `ROUND(J${rowKopa}+J${rowTrans},2)` };
-      ws.getCell(`K${rowDirect}`).value = { formula: `K${rowKopa}` };
-      ws.getCell(`L${rowDirect}`).value = { formula: `ROUND(I${rowDirect}+J${rowDirect}+K${rowDirect},2)` };
-      for (const c of [9,10,11,12]) ws.getCell(rowDirect, c).numFmt = MONEY;
-      boldCell(`B${rowDirect}`);
-
-      const rowOver = rowDirect + 1;
-      ws.getCell(`B${rowOver}`).value = "Virsizdevumi";
-      ws.getCell(`C${rowOver}`).value = 0.09;
-      ws.getCell(`L${rowOver}`).value = { formula: `ROUND(L${rowDirect}*C${rowOver},2)` };
-      ws.getCell(`L${rowOver}`).numFmt = MONEY;
-
-      const rowProfit = rowOver + 1;
-      ws.getCell(`B${rowProfit}`).value = "Peļņa";
-      ws.getCell(`C${rowProfit}`).value = 0.07;
-      ws.getCell(`L${rowProfit}`).value = { formula: `ROUND(L${rowDirect}*C${rowProfit},2)` };
-      ws.getCell(`L${rowProfit}`).numFmt = MONEY;
-
-      const rowDDSN = rowProfit + 1;
-      ws.getCell(`B${rowDDSN}`).value = "Darba devēja sociālais nodoklis";
-      ws.getCell(`C${rowDDSN}`).value = 0.2359;
-      ws.getCell(`I${rowDDSN}`).value = { formula: `ROUND(I${rowKopa}*C${rowDDSN},2)` };
-      ws.getCell(`L${rowDDSN}`).value = { formula: `I${rowDDSN}` };
-      ws.getCell(`I${rowDDSN}`).numFmt = MONEY;
-      ws.getCell(`L${rowDDSN}`).numFmt = MONEY;
-
-      const rowTotal = rowDDSN + 1;
-      ws.getCell(`B${rowTotal}`).value = "Kopējās izmaksas";
-      ws.getCell(`L${rowTotal}`).value = { formula: `ROUND(L${rowDirect}+L${rowOver}+L${rowProfit}+L${rowDDSN},2)` };
-      ws.getCell(`L${rowTotal}`).numFmt = MONEY;
-      boldCell(`B${rowTotal}`); boldCell(`L${rowTotal}`);
-
-      const rowPVN = rowTotal + 1;
-      ws.getCell(`B${rowPVN}`).value = "PVN";
-      ws.getCell(`C${rowPVN}`).value = 0.21;
-      ws.getCell(`L${rowPVN}`).value = { formula: `ROUND(L${rowTotal}*C${rowPVN},2)` };
-      ws.getCell(`L${rowPVN}`).numFmt = MONEY;
-
-      const rowGrand = rowPVN + 1;
-      ws.getCell(`B${rowGrand}`).value = "Pavisam kopā";
-      ws.getCell(`L${rowGrand}`).value = { formula: `ROUND(L${rowTotal}+L${rowPVN},2)` };
-      ws.getCell(`L${rowGrand}`).numFmt = MONEY;
-      boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
-
-      ws.getCell("J9").value = "Tāmes summa euro :";
-      ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
-      ws.getCell("J10").value = "PVN 21%:";            ws.getCell("L10").value = { formula: `L${rowPVN}` };  ws.getCell("L10").numFmt = MONEY;
-      ws.getCell("J11").value = "Pavisam kopā euro:";  ws.getCell("L11").value = { formula: `L${rowGrand}` }; ws.getCell("L11").numFmt = MONEY;
-
-      const sumRows = [rowKopa,rowTrans,rowDirect,rowOver,rowProfit,rowDDSN,rowTotal,rowPVN,rowGrand];
-      for (const rr of sumRows) {
-        for (let c = 1; c <= COLS; c++) {
-          const cell = ws.getCell(rr, c);
-          cell.border = borderAll;
-          cell.font = { ...FONT, bold: cell.font?.bold || false };
-          cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
-        }
-      }
-
-      // Notes
-      const notesTitleRow = rowGrand + 3;
-      ws.getCell(`B${notesTitleRow}`).value = "Piezīmes:";
-      ws.getCell(`B${notesTitleRow}`).font = { ...FONT, bold: true };
-      ws.mergeCells(notesTitleRow, 2, notesTitleRow, 12);
-
-      const notes = [
-        "1. Tāmes derīguma termiņš – 1 mēnesis.",
-        "2. Tāme sastādīta provizoriski, atbilstoši bojātā īpašuma apskates protokolam un bildēm.",
-        "3. Iespējami slēpti defekti, kuri atklāsies remontdarbu laikā.",
-        `4. Tāme ir sagatavota elektroniski un ir autorizēta ar Nr.${tameId}.`,
-      ];
-
-      let rowN = notesTitleRow + 1;
-      for (const line of notes) {
-        ws.mergeCells(rowN, 2, rowN, 12);
-        const c = ws.getCell(rowN, 2);
-        c.value = line;
-        c.font = FONT;
-        c.alignment = { wrapText: true, vertical: "top" };
-        rowN++;
-      }
-
-      const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
-      for (const n of extraNotes) {
-        ws.mergeCells(rowN, 2, rowN, 12);
-        const c = ws.getCell(rowN, 2);
-        c.value = n;
-        c.font = FONT;
-        c.alignment = { wrapText: true, vertical: "top" };
-        rowN++;
-      }
-
-      const blockStart = rowN + 2;
-      ws.mergeCells(blockStart, 2, blockStart, 6);
-      ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
-      ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
-
-      ws.getCell(blockStart + 1, 2).value = "Būvkomersanta Nr.:";
-      ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
-      ws.getCell(blockStart + 2, 2).value = "Vārds, uzvārds:";
-      ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
-      ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
-      ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
-
-      const rightOrg = insurer === "Balta" ? "AAS BALTA" : insurer || "";
-      ws.mergeCells(blockStart, 9, blockStart, 12);
-      ws.getCell(blockStart, 9).value = "SASKAŅOTS:";
-      ws.getCell(blockStart, 9).font = { ...FONT, bold: true };
-
-      ws.mergeCells(blockStart + 1, 9, blockStart + 1, 12);
-      ws.getCell(blockStart + 1, 9).value = rightOrg;
-      ws.mergeCells(blockStart + 2, 9, blockStart + 2, 12);
-      ws.getCell(blockStart + 2, 9).value = "";
-
-      const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
-      for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
-
-      wb.removeWorksheet(src.id);
-      ws.name = "Tāme";
-
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Tame_Balta_${prettyDate()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Excel export error:", err);
-      alert("Neizdevās izveidot Excel failu. Skaties konsolē kļūdu.");
-    }
-  }
 
   /* ---------- Input helpers (stable) ---------- */
   const onText = useCallback((setter) => (e) => setter(e.target.value), []);
