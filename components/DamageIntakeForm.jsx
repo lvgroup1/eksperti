@@ -701,18 +701,29 @@ const getChildrenFor = useCallback((parent) => {
           row.getCell(3).value = s.unit;
           row.getCell(4).value = s.qty;
 
-          const e = s.labor || 0, f = s.materials || 0, g = s.mechanisms || 0;
-          const hasSplit = e + f + g > 0;
+const e = Number(s.labor || 0);
+const f = Number(s.materials || 0);
+const g = Number(s.mechanisms || 0);
+const hasSplit = (e + f + g) > 0;
 
-          row.getCell(5).value = hasSplit ? e : s.unitPrice;
-          row.getCell(6).value = hasSplit ? f : 0;
-          row.getCell(7).value = hasSplit ? g : 0;
+// If no split is provided, default the whole price to "Materiāli" (F).
+// This matches how BALTA children typically behave (materials-only lines).
+if (hasSplit) {
+  row.getCell(5).value = e;
+  row.getCell(6).value = f;
+  row.getCell(7).value = g;
+} else {
+  row.getCell(5).value = 0;              // Darbs
+  row.getCell(6).value = s.unitPrice;    // Materiāli
+  row.getCell(7).value = 0;              // Mehānismi
+}
 
 row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
 row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
 row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
 row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-row.getCell(12).value = { formula: `ROUND(SUM(I${r}:K${r}),2)` }; // also valid
+row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+
 
           row.getCell(4).numFmt = QTY;
           for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
