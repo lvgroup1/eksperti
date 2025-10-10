@@ -58,6 +58,38 @@ function pickNum(obj, keys) {
   return 0;
 }
 
+function norm(s) {
+  return String(s ?? "")
+    .normalize("NFD")                 // split accents
+    .replace(/\p{Diacritic}/gu, "")   // strip diacritics
+    .replace(/\s+/g, " ")             // collapse spaces
+    .trim()
+    .toLowerCase();
+}
+
+const byId = useMemo(() => {
+  const m = new Map();
+  for (const it of priceCatalog) m.set(String(it.id), it);
+  return m;
+}, [priceCatalog]);
+
+const byName = useMemo(() => {
+  const m = new Map();
+  for (const it of priceCatalog) {
+    const key = norm(it.name);
+    if (key) m.set(key, it);
+  }
+  return m;
+}, [priceCatalog]);
+
+const byCatAndName = useMemo(() => {
+  const m = new Map();
+  for (const it of priceCatalog) {
+    const key = `${norm(it.category)}||${norm(it.name)}`;
+    if (key) m.set(key, it);
+  }
+  return m;
+}, [priceCatalog]);
 
 
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
@@ -390,9 +422,43 @@ const getChildrenFor = useCallback((parent) => {
     pushMapped(row, parent.unit);
   }
 
-  // C) adjacency fallback (children immediately after parent in same cat/subcat)
-  const adj = adjChildrenByParent?.get?.(parent.uid) || [];
-  for (const ch of adj) pushMapped(ch, parent.unit);
+ // C) name/id-based hints — merge them IN ADDITION to embedded/linked children
+const hints = childHints[norm(parent.name)];
+if (Array.isArray(hints)) {
+  for (const hint of hints) {
+    // allow either {id, coeff, unit} or {name, coeff, unit} or plain "name"
+    const hintName = typeof hint === "string" ? hint : hint?.name;
+    const hintId   = typeof hint === "object" ? hint?.id : undefined;
+    const coeff    = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
+    const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
+
+    let match = null;
+
+    // 1) exact ID
+    if (hintId && byId.has(String(hintId))) {
+      match = byId.get(String(hintId));
+    }
+
+    // 2) same-category + name
+    if (!match && hintName) {
+      const keyCat = `${norm(parent.category)}||${norm(hintName)}`;
+      match = byCatAndName.get(keyCat) || null;
+    }
+
+    // 3) name anywhere
+    if (!match && hintName) {
+      match = byName.get(norm(hintName)) || null;
+    }
+
+    if (match) {
+      pushMapped({ ...match, unit: unitHint || match.unit, coeff }, parent.unit);
+    } else if (hintName) {
+      // last resort (no price available) – better than nothing
+      pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
+    }
+  }
+}
+
 
   // D) name-based hints — use ONLY if we still found nothing
   if (out.length === 0) {
