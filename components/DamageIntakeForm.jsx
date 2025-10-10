@@ -75,13 +75,14 @@ function linkMatchesParent(child, parent) {
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x?.labor ?? 0) || 0;
   const mech  = Number(x?.mechanisms ?? 0) || 0;
-  const unitPrice = Number(x?.unit_price ?? 0) || 0;
+  const unitPriceRaw = Number(x?.unit_price ?? 0) || 0;
 
-  // If only unit_price is present (no split), treat it as materials by default
-  const materials = Number(
-    x?.materials ??
-    ((labor || mech) ? 0 : unitPrice)
-  ) || 0;
+  // If no split provided but unit_price exists, treat it as materials.
+  const materials =
+    Number(
+      x?.materials ??
+      ((labor || mech) ? 0 : unitPriceRaw)
+    ) || 0;
 
   return {
     name: x?.name || "",
@@ -90,7 +91,7 @@ function mapChildFromFlat(x, fallbackUnit) {
     labor,
     materials,
     mechanisms: mech,
-    unit_price: unitPrice,    // <-- keep raw unit price for fallback
+    unit_price_raw: unitPriceRaw,   // <— keep it
   };
 }
 
@@ -706,23 +707,23 @@ const f = Number(s.materials || 0);
 const g = Number(s.mechanisms || 0);
 const hasSplit = (e + f + g) > 0;
 
-// If no split is provided, default the whole price to "Materiāli" (F).
-// This matches how BALTA children typically behave (materials-only lines).
 if (hasSplit) {
-  row.getCell(5).value = e;
-  row.getCell(6).value = f;
-  row.getCell(7).value = g;
+  ws.getCell(r, 5).value = e;                 // E = Darbs
+  ws.getCell(r, 6).value = f;                 // F = Materiāli
+  ws.getCell(r, 7).value = g;                 // G = Mehānismi
 } else {
-  row.getCell(5).value = 0;              // Darbs
-  row.getCell(6).value = s.unitPrice;    // Materiāli
-  row.getCell(7).value = 0;              // Mehānismi
+  const fallback = Number(s.unitPrice || 0);  // from step #2 above
+  ws.getCell(r, 5).value = 0;                 // E
+  ws.getCell(r, 6).value = fallback;          // F (put all into Materiāli)
+  ws.getCell(r, 7).value = 0;                 // G
 }
 
-row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
-row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
+ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
+ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` };
+
 
 
           row.getCell(4).numFmt = QTY;
