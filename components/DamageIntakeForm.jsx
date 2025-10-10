@@ -75,11 +75,8 @@ function linkMatchesParent(child, parent) {
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x?.labor ?? 0) || 0;
   const mech  = Number(x?.mechanisms ?? 0) || 0;
-  // if there is no split, but there is unit_price → put it under materials
   const up    = Number(x?.unit_price ?? 0) || 0;
-  const materials = Number(
-    x?.materials ?? ((labor || mech) ? 0 : up)
-  ) || 0;
+  const materials = Number(x?.materials ?? ((labor || mech) ? 0 : up)) || 0;
 
   return {
     name: x?.name || "",
@@ -90,6 +87,7 @@ function mapChildFromFlat(x, fallbackUnit) {
     mechanisms: mech,
   };
 }
+
 
 /* ---------- LocalStorage helpers ---------- */
 const STORAGE_KEY = "tames_profils_saglabatie";
@@ -306,83 +304,65 @@ export default function DamageIntakeForm() {
   }, [insurer, assetBase]);
 
   // children resolver used by Excel export
-  const getChildrenFor = useCallback((parent) => {
-    if (!parent) return [];
+const getChildrenFor = useCallback((parent) => {
+  if (!parent) return [];
 
-    const out = [];
-    const seen = new Set(); // de-dupe by name+unit
+  const out = [];
+  const seen = new Set(); // dedupe by name+unit
 
-    const dedupeKey = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
-    const pushMapped = (raw, fallbackUnit) => {
-      const mapped = mapChildFromFlat(raw, fallbackUnit);
-      const key = dedupeKey(mapped);
-      if (!seen.has(key) && mapped.name) {
-        seen.add(key);
-        out.push(mapped);
-      }
-    };
-
-    // A) embedded children on parent
-    if (Array.isArray(parent.children) && parent.children.length) {
-      for (const ch of parent.children) pushMapped(ch, parent.unit);
+  const k = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
+  const pushMapped = (raw, fallbackUnit) => {
+    const mapped = mapChildFromFlat(raw, fallbackUnit);
+    const key = k(mapped);
+    if (!seen.has(key) && mapped.name) {
+      seen.add(key);
+      out.push(mapped);
     }
+  };
 
-    // B) explicit flat links
-    for (const row of priceCatalog) {
-      if (!isChildItem(row)) continue;
-      if (!linkMatchesParent(row, parent)) continue;
-      pushMapped(row, parent.unit);
-    }
+  // A) embedded children on parent
+  if (Array.isArray(parent.children) && parent.children.length) {
+    for (const ch of parent.children) pushMapped(ch, parent.unit);
+  }
 
-    // C) adjacency fallback
-    const adj = adjChildrenByParent?.get?.(parent.uid) || [];
-    for (const ch of adj) pushMapped(ch, parent.unit);
+  // B) explicit flat links (rows that reference this parent via parent_uid / childOf / etc.)
+  for (const row of priceCatalog) {
+    if (!isChildItem(row)) continue;
+    if (!linkMatchesParent(row, parent)) continue;
+    pushMapped(row, parent.unit);
+  }
 
-// D) name-based hints (only if nothing found so far)
-if (out.length === 0) {
+  // C) name-based hints — ALWAYS try to add them (merge)
   const hints = childHints[norm(parent.name)];
   if (Array.isArray(hints)) {
     for (const hint of hints) {
       const hintName = typeof hint === "string" ? hint : hint?.name;
       if (!hintName) continue;
-
       const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
       const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
 
-      // 1) exact name + same category
-      let match = priceCatalog.find(
-        (it) => norm(it.name) === norm(hintName) && it.category === parent.category
-      );
-
-      // 2) exact name anywhere (sometimes children are listed in a shared category)
-      if (!match) {
-        match = priceCatalog.find((it) => norm(it.name) === norm(hintName));
-      }
-
-      // 3) loose contains() in same category (helps when tiny differences exist)
-      if (!match) {
-        match = priceCatalog.find(
-          (it) => it.category === parent.category && norm(it.name).includes(norm(hintName))
-        );
-      }
+      // Prefer a real catalog row so we keep its labor/materials/mechanisms split
+      let match =
+        priceCatalog.find(it => norm(it.name) === norm(hintName) && it.category === parent.category) ||
+        priceCatalog.find(it => norm(it.name) === norm(hintName)) ||
+        priceCatalog.find(it => it.category === parent.category && norm(it.name).includes(norm(hintName)));
 
       if (match) {
-        // use the real row so we keep its labor/materials/mechanisms split
         pushMapped({ ...match, unit: unitHint || match.unit, coeff }, parent.unit);
       } else {
-        // last-resort synthetic child (no price) – user can still enter custom units/qty
-        // mapChildFromFlat will keep zeros if no unit_price is available
-        pushMapped(
-          { name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 },
-          parent.unit
-        );
+        // Last-resort synthetic child (no price)
+        pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
       }
     }
   }
-}
 
-    return out;
-  }, [priceCatalog, adjChildrenByParent, childHints]);
+  // D) adjacency fallback (use as the very last source)
+  const adj = adjChildrenByParent?.get?.(parent.uid) || [];
+  for (const ch of adj) pushMapped(ch, parent.unit);
+
+  return out;
+}, [priceCatalog, adjChildrenByParent, childHints]);
+
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -713,11 +693,11 @@ if (out.length === 0) {
           row.getCell(6).value = hasSplit ? f : 0;
           row.getCell(7).value = hasSplit ? g : 0;
 
-          row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-          row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-          row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
-          row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
-          row.getCell(12).value = { formula: `ROUND(H${r}*D${r},2)` };
+row.getCell(8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+row.getCell(9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+row.getCell(10).value = { formula: `ROUND(F${r}*D${r},2)` };
+row.getCell(11).value = { formula: `ROUND(G${r}*D${r},2)` };
+row.getCell(12).value = { formula: `ROUND(SUM(I${r}:K${r}),2)` }; // also valid
 
           row.getCell(4).numFmt = QTY;
           for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
