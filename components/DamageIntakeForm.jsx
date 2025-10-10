@@ -75,8 +75,13 @@ function linkMatchesParent(child, parent) {
 function mapChildFromFlat(x, fallbackUnit) {
   const labor = Number(x?.labor ?? 0) || 0;
   const mech  = Number(x?.mechanisms ?? 0) || 0;
-  const up    = Number(x?.unit_price ?? 0) || 0;
-  const materials = Number(x?.materials ?? ((labor || mech) ? 0 : up)) || 0;
+  const unitPrice = Number(x?.unit_price ?? 0) || 0;
+
+  // If only unit_price is present (no split), treat it as materials by default
+  const materials = Number(
+    x?.materials ??
+    ((labor || mech) ? 0 : unitPrice)
+  ) || 0;
 
   return {
     name: x?.name || "",
@@ -85,8 +90,10 @@ function mapChildFromFlat(x, fallbackUnit) {
     labor,
     materials,
     mechanisms: mech,
+    unit_price: unitPrice,    // <-- keep raw unit price for fallback
   };
 }
+
 
 
 /* ---------- LocalStorage helpers ---------- */
@@ -308,14 +315,14 @@ const getChildrenFor = useCallback((parent) => {
   if (!parent) return [];
 
   const out = [];
-  const seen = new Set(); // dedupe by name+unit
+  const seen = new Set(); // de-dupe by name+unit
 
-  const k = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
+  const keyOf = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
   const pushMapped = (raw, fallbackUnit) => {
     const mapped = mapChildFromFlat(raw, fallbackUnit);
-    const key = k(mapped);
-    if (!seen.has(key) && mapped.name) {
-      seen.add(key);
+    const k = keyOf(mapped);
+    if (mapped.name && !seen.has(k)) {
+      seen.add(k);
       out.push(mapped);
     }
   };
@@ -325,43 +332,51 @@ const getChildrenFor = useCallback((parent) => {
     for (const ch of parent.children) pushMapped(ch, parent.unit);
   }
 
-  // B) explicit flat links (rows that reference this parent via parent_uid / childOf / etc.)
+  // B) explicit flat links (rows with parent reference)
   for (const row of priceCatalog) {
     if (!isChildItem(row)) continue;
     if (!linkMatchesParent(row, parent)) continue;
     pushMapped(row, parent.unit);
   }
 
-  // C) name-based hints — ALWAYS try to add them (merge)
-  const hints = childHints[norm(parent.name)];
-  if (Array.isArray(hints)) {
-    for (const hint of hints) {
-      const hintName = typeof hint === "string" ? hint : hint?.name;
-      if (!hintName) continue;
-      const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
-      const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
+  // C) adjacency fallback (children immediately after parent in same cat/subcat)
+  const adj = adjChildrenByParent?.get?.(parent.uid) || [];
+  for (const ch of adj) pushMapped(ch, parent.unit);
 
-      // Prefer a real catalog row so we keep its labor/materials/mechanisms split
-      let match =
-        priceCatalog.find(it => norm(it.name) === norm(hintName) && it.category === parent.category) ||
-        priceCatalog.find(it => norm(it.name) === norm(hintName)) ||
-        priceCatalog.find(it => it.category === parent.category && norm(it.name).includes(norm(hintName)));
+  // D) name-based hints — use ONLY if we still found nothing
+  if (out.length === 0) {
+    const hints = childHints?.[norm(parent.name)];
+    if (Array.isArray(hints)) {
+      const findByName = (nm) => {
+        const lower = norm(nm);
+        // prefer same category; fallback to any
+        return (
+          priceCatalog.find(it => norm(it.name) === lower && it.category === parent.category) ||
+          priceCatalog.find(it => norm(it.name) === lower)
+        );
+      };
 
-      if (match) {
-        pushMapped({ ...match, unit: unitHint || match.unit, coeff }, parent.unit);
-      } else {
-        // Last-resort synthetic child (no price)
-        pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
+      for (const hint of hints) {
+        const hintName = typeof hint === "string" ? hint : hint?.name;
+        if (!hintName) continue;
+        const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
+        const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
+
+        const match = findByName(hintName);
+        if (match) {
+          // prefer real catalog row (keeps labor/materials/mechanisms split or unit_price)
+          pushMapped({ ...match, unit: unitHint || match.unit, coeff }, parent.unit);
+        } else {
+          // last-resort synthetic (no price)
+          pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0, unit_price: 0 }, parent.unit);
+        }
       }
     }
   }
 
-  // D) adjacency fallback (use as the very last source)
-  const adj = adjChildrenByParent?.get?.(parent.uid) || [];
-  for (const ch of adj) pushMapped(ch, parent.unit);
-
   return out;
 }, [priceCatalog, adjChildrenByParent, childHints]);
+
 
 
   const categories = useMemo(() => {
