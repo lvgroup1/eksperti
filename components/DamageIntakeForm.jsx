@@ -23,12 +23,6 @@ function prettyDate(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
 }
 
-function parseDec(x) {
-  if (x === null || x === undefined || x === "") return 0;
-  const n = parseFloat(String(x).replace(/\s+/g, "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-}
-
 function normalizeUnit(u) {
   if (!u) return "";
   const x = String(u).trim().toLowerCase().replace("²", "2").replace("\u00A0", " ").replace(/\s{2,}/g, " ");
@@ -44,7 +38,12 @@ function normalizeUnit(u) {
   return x;
 }
 
-// helper placed with other helpers:
+function parseDec(x) {
+  if (x === null || x === undefined || x === "") return 0;
+  const n = parseFloat(String(x).replace(/\s+/g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
 function pickNum(obj, keys) {
   if (!obj || typeof obj !== "object") return 0;
   const entries = Object.entries(obj);
@@ -58,6 +57,7 @@ function pickNum(obj, keys) {
   }
   return 0;
 }
+
 
 
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
@@ -246,9 +246,9 @@ const base = {
   category,
   subcategory: subcat,
   unit: normalizeUnit(it.unit),
-  // keep catalog’s unit price as-is (used only when split is zero)
-  unit_price: pickNum(it, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
-  // real split (prefer these in export)
+  unit_price: pickNum(it, [
+    "unit_price","unitprice","vienības cena","vienibas cena","cena"
+  ]),
   labor:      pickNum(it, ["labor","darbs"]),
   materials:  pickNum(it, ["materials","materiāli","materiali","materjali"]),
   mechanisms: pickNum(it, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
@@ -279,24 +279,25 @@ if (childFlag) {
       const chName = (ch.name || ch.title || "").trim();
       if (!chName) return;
 
-      const chEntry = {
-        id: `${idStr}-c${idxCh}`,
-        uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-        name: chName,
-        category,
-        subcategory: subcat,
-        unit: normalizeUnit(ch.unit || it.unit),
-        unit_price: pickNum(ch, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
+const chEntry = {
+  id: `${idStr}-c${idxCh}`,
+  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+  name: chName,
+  category,
+  subcategory: subcat,
+  unit: normalizeUnit(ch.unit || it.unit),
 
-        // split straight from child row (no synthetic fallback to unit_price)
-        labor:      pickNum(ch, ["labor","darbs"]),
-        materials:  pickNum(ch, ["materials","materiāli","materiali","materjali"]),
-        mechanisms: pickNum(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+  unit_price: pickNum(ch, [
+    "unit_price","unitprice","vienības cena","vienibas cena","cena"
+  ]),
+  labor:      pickNum(ch, ["labor","darbs"]),
+  materials:  pickNum(ch, ["materials","materiāli","materiali","materjali"]),
+  mechanisms: pickNum(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
 
-        is_child: true,
-        parent_uid: uid,
-        coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-      };
+  is_child: true,
+  parent_uid: uid,
+  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+};
 
       childrenFlat.push(chEntry);
       ordered.push(chEntry);
@@ -332,6 +333,27 @@ if (childFlag) {
         }
 
         setPriceCatalog([...parents, ...childrenFlat]);
+        // TEMP DEBUG
+const debugNames = [
+  "impregnēta koka brusa",
+  "montāžas elementi",
+  "Kokmateriāla apstrāde ar antipirēnu"
+];
+for (const nm of debugNames) {
+  const row = [...parents, ...childrenFlat].find(it => it && it.name && it.name.toLowerCase() === nm.toLowerCase());
+  if (row) {
+    console.log("DEBUG row:", row.name, {
+      labor: row.labor,
+      materials: row.materials,
+      mechanisms: row.mechanisms,
+      unit_price: row.unit_price,
+      unit: row.unit,
+    });
+  } else {
+    console.warn("DEBUG missing row for", nm);
+  }
+}
+
         setAdjChildrenByParent(adj);
       } catch (e) {
         setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
