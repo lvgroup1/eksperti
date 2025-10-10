@@ -43,6 +43,23 @@ function normalizeUnit(u) {
   if (/^\d+\s*gb\.$/.test(x)) return "gab";
   return x;
 }
+
+// helper placed with other helpers:
+function pickNum(obj, keys) {
+  if (!obj || typeof obj !== "object") return 0;
+  const entries = Object.entries(obj);
+  for (const want of keys) {
+    const w = String(want).toLowerCase();
+    const hit = entries.find(([k]) => String(k).toLowerCase() === w);
+    if (hit) {
+      const v = parseDec(hit[1]);
+      if (Number.isFinite(v)) return v;
+    }
+  }
+  return 0;
+}
+
+
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
 const parseBool = (v) =>
@@ -77,7 +94,7 @@ function mapChildFromFlat(x, fallbackUnit) {
   const mech  = Number(x?.mechanisms ?? 0) || 0;
   const unitPriceRaw = Number(x?.unit_price ?? 0) || 0;
 
-  // If no split provided but unit_price exists, treat it as materials.
+  // If no split but there is a unit_price, treat it as materials (BALTA style)
   const materials =
     Number(
       x?.materials ??
@@ -91,10 +108,9 @@ function mapChildFromFlat(x, fallbackUnit) {
     labor,
     materials,
     mechanisms: mech,
-    unit_price_raw: unitPriceRaw,   // <— keep it
+    unit_price_raw: unitPriceRaw, // <— keep raw price for fallback
   };
 }
-
 
 
 /* ---------- LocalStorage helpers ---------- */
@@ -223,69 +239,81 @@ export default function DamageIntakeForm() {
             it.parent || it.parent_name || it.parentName || it.childOf || null;
           const childFlag = parseBool(it.is_child) || !!parent_uid;
 
-          const base = {
-            id: idStr,
-            uid,
-            name,
-            category,
-            subcategory: subcat,
-            unit: normalizeUnit(it.unit),
-            unit_price: parseDec(it.unit_price),
-            labor: parseDec(it.labor ?? it.darbs),
-            materials: parseDec(it.materials ?? it.materiāli ?? it.materiali),
-            mechanisms: parseDec(it.mechanisms ?? it.mehānismi ?? it.mehanismi),
-            is_child: childFlag,
-            parent_uid: parent_uid || null,
-          };
+const base = {
+  id: idStr,
+  uid,
+  name,
+  category,
+  subcategory: subcat,
+  unit: normalizeUnit(it.unit),
+  // keep catalog’s unit price as-is (used only when split is zero)
+  unit_price: pickNum(it, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
+  // real split (prefer these in export)
+  labor:      pickNum(it, ["labor","darbs"]),
+  materials:  pickNum(it, ["materials","materiāli","materiali","materjali"]),
+  mechanisms: pickNum(it, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+  is_child: childFlag,
+  parent_uid: parent_uid || null,
+};
 
-          if (childFlag) {
-            const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
-            childrenFlat.push(childRow);
-            ordered.push(childRow);
-          } else {
-            const parent = { ...base, is_child: false, parent_uid: null };
-            parents.push(parent);
-            ordered.push(parent);
+if (childFlag) {
+  const childRow = {
+    ...base,
+    coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1,
+  };
+  childrenFlat.push(childRow);
+  ordered.push(childRow);
+} else {
+  const parent = { ...base, is_child: false, parent_uid: null };
+  parents.push(parent);
+  ordered.push(parent);
 
-            // optional embedded children
-            const kidsArr =
-              (Array.isArray(it.children) && it.children) ||
-              (Array.isArray(it.komponentes) && it.komponentes) ||
-              (Array.isArray(it.apaks) && it.apaks) || [];
+  const kidsArr =
+    (Array.isArray(it.children) && it.children) ||
+    (Array.isArray(it.komponentes) && it.komponentes) ||
+    (Array.isArray(it.apaks) && it.apaks) || [];
 
-            if (kidsArr.length) {
-              parent.children = [];
-              kidsArr.forEach((ch, idxCh) => {
-                const chName = (ch.name || ch.title || "").trim();
-                if (!chName) return;
-                const chEntry = {
-                  id: `${idStr}-c${idxCh}`,
-                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                  name: chName,
-                  category,
-                  subcategory: subcat,
-                  unit: normalizeUnit(ch.unit || it.unit),
-                  unit_price: parseDec(ch.unit_price),
-                  labor: parseDec(ch.labor),
-                  materials: parseDec(ch.materials ?? (ch.labor || ch.mechanisms ? 0 : ch.unit_price)),
-                  mechanisms: parseDec(ch.mechanisms),
-                  is_child: true,
-                  parent_uid: uid,
-                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-                };
-                childrenFlat.push(chEntry);
-                ordered.push(chEntry);
-                parent.children.push({
-                  name: chEntry.name,
-                  unit: chEntry.unit,
-                  coeff: chEntry.coeff || 1,
-                  labor: chEntry.labor || 0,
-                  materials: chEntry.materials || 0,
-                  mechanisms: chEntry.mechanisms || 0,
-                });
-              });
-            }
-          }
+  if (kidsArr.length) {
+    parent.children = [];
+    kidsArr.forEach((ch, idxCh) => {
+      const chName = (ch.name || ch.title || "").trim();
+      if (!chName) return;
+
+      const chEntry = {
+        id: `${idStr}-c${idxCh}`,
+        uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+        name: chName,
+        category,
+        subcategory: subcat,
+        unit: normalizeUnit(ch.unit || it.unit),
+        unit_price: pickNum(ch, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
+
+        // split straight from child row (no synthetic fallback to unit_price)
+        labor:      pickNum(ch, ["labor","darbs"]),
+        materials:  pickNum(ch, ["materials","materiāli","materiali","materjali"]),
+        mechanisms: pickNum(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+
+        is_child: true,
+        parent_uid: uid,
+        coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+      };
+
+      childrenFlat.push(chEntry);
+      ordered.push(chEntry);
+
+      // compact version stored on parent for quick access
+      parent.children.push({
+        name: chEntry.name,
+        unit: chEntry.unit,
+        coeff: chEntry.coeff || 1,
+        labor: chEntry.labor || 0,
+        materials: chEntry.materials || 0,
+        mechanisms: chEntry.mechanisms || 0,
+      });
+    });
+  }
+}
+
         });
 
         // Build adjacency fallback map (children that immediately follow a parent in same category/subcategory)
