@@ -12,6 +12,10 @@ const LOCATION_TYPES = ["Komerctelpa", "Dzīvojamā ēka"];
 const DWELLING_SUBTYPES = ["Privātmāja", "Daudzdzīvokļu māja", "Rindu māja", "Cits"];
 const INCIDENT_TYPES = ["CTA", "Plūdi", "Uguns", "Koks", "Cits"];
 const YES_NO = ["Jā", "Nē"];
+const LABOR_KEYS      = ["labor","darbs"];
+const MATERIAL_KEYS   = ["materials","materiāli","materiali","materjali","materiālu izmaksas","materialu izmaksas"];
+const MECHANISM_KEYS  = ["mechanisms","mehānismi","mehanismi","mehānismu","meh","mehānismu izmaksas","meh izmaksas","mehizmaksas"];
+const UNIT_PRICE_KEYS = ["unit_price","unitprice","vienības cena","vienibas cena","cena"];
 
 const ROOM_TYPES = [
   "Virtuve","Guļamistaba","Koridors","Katla telpa","Dzīvojamā istaba",
@@ -175,7 +179,7 @@ const parseBool = (v) =>
   v === true || v === 1 || v === "1" ||
   (typeof v === "string" && ["true","yes","y","jā"].includes(v.trim().toLowerCase()));
 
-const norm = (x) => deburrLower(x);
+
 
 
 const isChildItem = (it) =>
@@ -356,15 +360,15 @@ const base = {
   subcategory: subcat,
   unit: normalizeUnit(it.unit),
 
-  // keep one source of truth:
-  unit_price: pickNum(it, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
-  labor:      pickNum(it, ["labor","darbs"]),
-  materials:  pickNum(it, ["materials","materiāli","materiali","materjali"]),
-  mechanisms: pickNum(it, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+  unit_price: pickNum(it, UNIT_PRICE_KEYS),
+  labor:      pickNum(it, LABOR_KEYS),
+  materials:  pickNum(it, MATERIAL_KEYS),
+  mechanisms: pickNum(it, MECHANISM_KEYS),
 
   is_child: childFlag,
   parent_uid: parent_uid || null,
 };
+
 
 if (childFlag) {
   const childRow = {
@@ -397,10 +401,10 @@ const chEntry = {
   subcategory: subcat,
   unit: normalizeUnit(ch.unit || it.unit),
 
-  unit_price: pickNum(ch, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
-  labor:      pickNum(ch, ["labor","darbs"]),
-  materials:  pickNum(ch, ["materials","materiāli","materiali","materjali"]),
-  mechanisms: pickNum(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+labor:      pickNum(ch, LABOR_KEYS),
+materials:  pickNum(ch, MATERIAL_KEYS),
+mechanisms: pickNum(ch, MECHANISM_KEYS),
   is_child: true,
   parent_uid: uid,
   coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
@@ -485,11 +489,15 @@ for (const nm of debugNames) {
     })();
   }, [insurer, assetBase]);
 
-  // children resolver used by Excel export
+// put near other small helpers
+const normKey = (s) => normTxt(s);
+
+// children resolver used by Excel export
 const getChildrenFor = useCallback((parent) => {
   if (!parent) return [];
+
   const out = [];
-  const seen = new Set();
+  const seen = new Set(); // de-dupe by name+unit
   const keyOf = (x) => `${normTxt(x?.name)}::${normalizeUnit(x?.unit || "")}`;
 
   const pushMapped = (raw, fallbackUnit) => {
@@ -501,52 +509,67 @@ const getChildrenFor = useCallback((parent) => {
     }
   };
 
-  // A) embedded
-  if (Array.isArray(parent.children)) {
+  // A) embedded children already attached to parent
+  if (Array.isArray(parent.children) && parent.children.length) {
     for (const ch of parent.children) pushMapped(ch, parent.unit);
   }
 
-  // B) explicit links
+  // B) explicit flat links (rows that reference this parent)
   for (const row of priceCatalog) {
     if (!isChildItem(row)) continue;
     if (!linkMatchesParent(row, parent)) continue;
     pushMapped(row, parent.unit);
   }
 
-  // C) name-based hints — merge in with fuzzy matching so we keep price splits
-  const hints = childHints[normTxt(parent.name)];
+  // C) adjacency fallback (children that followed parent in raw order)
+  const adj = adjChildrenByParent.get(parent.uid);
+  if (Array.isArray(adj) && adj.length) {
+    for (const ch of adj) pushMapped(ch, parent.unit);
+  }
+
+  // D) name-based hints (merge by *catalog* row to keep split/unit_price)
+  const hints = childHints[normKey(parent.name)];
   if (Array.isArray(hints)) {
     for (const hint of hints) {
       const hintName = typeof hint === "string" ? hint : hint?.name;
       if (!hintName) continue;
-      const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
+      const coeff = Number(typeof hint === "object" && hint?.coeff ? hint.coeff : 1) || 1;
       const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
 
-      const match = findRowByNameFuzzy(hintName, parent.category, priceCatalog);
+      // Prefer same category; fall back to any
+      const match =
+        findRowByName(hintName, parent.category) ||
+        findRowByNameFuzzy(hintName, parent.category, priceCatalog);
+
       if (match) {
         pushMapped(
           {
             ...match,
             unit: unitHint || match.unit || parent.unit,
             coeff,
-            // ensure split present even if match fields carry alternates
+            // ensure we carry the split from the catalog:
             labor:      pickNum(match, ["labor","darbs"]),
             materials:  pickNum(match, ["materials","materiāli","materiali","materjali"]),
             mechanisms: pickNum(match, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+            unit_price: pickNum(match, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
           },
           parent.unit
         );
       } else {
-        // last resort synthetic child (no prices known)
-        pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
+        // synthetic child if we don't have a real catalog row
+        pushMapped({
+          name: hintName,
+          unit: unitHint || parent.unit,
+          coeff,
+          labor: 0, materials: 0, mechanisms: 0,
+          unit_price: 0
+        }, parent.unit);
       }
     }
   }
 
   return out;
-}, [priceCatalog, childHints]);
-
-
+}, [priceCatalog, childHints, adjChildrenByParent, findRowByName]);
 
   const categories = useMemo(() => {
     const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
@@ -630,19 +653,19 @@ const getChildrenFor = useCallback((parent) => {
     setRoomActions((ra) => {
       const list = [...(ra[roomId] || [])];
       if (item) {
-        list[idx] = {
-          ...list[idx],
-          category: item.category || list[idx].category || "",
-          itemUid: item.uid,
-          itemId: item.id,
-          itemName: item.name,
-          unit: item.unit || "",
-          unit_price: item.unit_price ?? null,
-  labor:      pickNum(item, ["labor","darbs"]),
-  materials:  pickNum(item, ["materials","materiāli","materiali","materjali"]),
-  mechanisms: pickNum(item, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+list[idx] = {
+  ...list[idx],
+  category: item.category || list[idx].category || "",
+  itemUid: item.uid,
+  itemId: item.id,
+  itemName: item.name,
+  unit: item.unit || "",
+  unit_price: pickNum(item, UNIT_PRICE_KEYS),
+  labor:      pickNum(item, LABOR_KEYS),
+  materials:  pickNum(item, MATERIAL_KEYS),
+  mechanisms: pickNum(item, MECHANISM_KEYS),
+};
 
-        };
       } else {
         list[idx] = { ...list[idx], itemUid: "", itemId: "", itemName: "", unit: "", unit_price: null, labor: 0, materials: 0, mechanisms: 0 };
       }
