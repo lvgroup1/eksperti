@@ -44,14 +44,14 @@ function parseDec(x) {
   return Number.isFinite(n) ? n : 0;
 }
 
-// tolerant number picker (keeps zeros if present)
+// diacritic-insensitive, preserves real 0 values
 function pickNum(obj, keys) {
   if (!obj || typeof obj !== "object") return 0;
   const normKey = (s) =>
     String(s ?? "")
       .toLowerCase()
       .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "") // strip accents (ā -> a)
+      .replace(/[\u0300-\u036f]/g, "") // ā→a, ē→e etc.
       .replace(/\s+/g, "")
       .trim();
 
@@ -62,22 +62,44 @@ function pickNum(obj, keys) {
     const hit = entries.find(([k]) => k === w);
     if (hit) {
       const n = parseDec(hit[1]);
-      return Number.isFinite(n) ? n : 0; // keep 0 if it's a real zero
+      return Number.isFinite(n) ? n : 0;
     }
   }
   return 0;
 }
 
+
 // strong string normalizer for matching names/categories
-function normTxt(s) {
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, " ") // collapse punctuation
-    .replace(/\s+/g, " ")
-    .trim();
+// helpers
+const normTxt = (s) => String(s ?? "")
+  .toLowerCase()
+  .normalize("NFKD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^\p{L}\p{N}]+/gu, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+function findRowByNameFuzzy(rawName, rawCategory, catalog) {
+  const nName = normTxt(rawName);
+  const nCat  = normTxt(rawCategory);
+
+  // 1) exact name within same category
+  let hit = catalog.find(it => normTxt(it.name) === nName && normTxt(it.category) === nCat);
+  if (hit) return hit;
+
+  // 2) exact name anywhere
+  hit = catalog.find(it => normTxt(it.name) === nName);
+  if (hit) return hit;
+
+  // 3) contains within same category
+  hit = catalog.find(it => normTxt(it.category) === nCat && normTxt(it.name).includes(nName));
+  if (hit) return hit;
+
+  // 4) loose contains anywhere
+  hit = catalog.find(it => normTxt(it.name).includes(nName));
+  return hit || null;
 }
+
 
 // strip diacritics & normalize punctuation/whitespace for matching
 function deburrLower(s) {
@@ -333,12 +355,13 @@ const base = {
   category,
   subcategory: subcat,
   unit: normalizeUnit(it.unit),
-  unit_price: pickNum(it, [
-    "unit_price","unitprice","vienības cena","vienibas cena","cena"
-  ]),
+
+  // keep one source of truth:
+  unit_price: pickNum(it, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
   labor:      pickNum(it, ["labor","darbs"]),
   materials:  pickNum(it, ["materials","materiāli","materiali","materjali"]),
   mechanisms: pickNum(it, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+
   is_child: childFlag,
   parent_uid: parent_uid || null,
 };
@@ -374,13 +397,10 @@ const chEntry = {
   subcategory: subcat,
   unit: normalizeUnit(ch.unit || it.unit),
 
-  unit_price: pickNum(ch, [
-    "unit_price","unitprice","vienības cena","vienibas cena","cena"
-  ]),
+  unit_price: pickNum(ch, ["unit_price","unitprice","vienības cena","vienibas cena","cena"]),
   labor:      pickNum(ch, ["labor","darbs"]),
   materials:  pickNum(ch, ["materials","materiāli","materiali","materjali"]),
   mechanisms: pickNum(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
-
   is_child: true,
   parent_uid: uid,
   coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
@@ -468,11 +488,10 @@ for (const nm of debugNames) {
   // children resolver used by Excel export
 const getChildrenFor = useCallback((parent) => {
   if (!parent) return [];
-
   const out = [];
-  const seen = new Set(); // de-dupe by name+unit
+  const seen = new Set();
+  const keyOf = (x) => `${normTxt(x?.name)}::${normalizeUnit(x?.unit || "")}`;
 
-  const keyOf = (x) => `${norm(x?.name)}::${norm(normalizeUnit(x?.unit))}`;
   const pushMapped = (raw, fallbackUnit) => {
     const mapped = mapChildFromFlat(raw, fallbackUnit);
     const k = keyOf(mapped);
@@ -482,83 +501,50 @@ const getChildrenFor = useCallback((parent) => {
     }
   };
 
-  // A) embedded children on parent
-  if (Array.isArray(parent.children) && parent.children.length) {
+  // A) embedded
+  if (Array.isArray(parent.children)) {
     for (const ch of parent.children) pushMapped(ch, parent.unit);
   }
 
-  // B) explicit flat links (rows with parent reference)
+  // B) explicit links
   for (const row of priceCatalog) {
     if (!isChildItem(row)) continue;
     if (!linkMatchesParent(row, parent)) continue;
     pushMapped(row, parent.unit);
   }
 
-// C) name-based hints — merge them in using index so we keep prices
-const hints = childHints[norm(parent.name)];
-if (Array.isArray(hints)) {
-  for (const hint of hints) {
-    const hintName = typeof hint === "string" ? hint : hint?.name;
-    if (!hintName) continue;
-    const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
-    const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
+  // C) name-based hints — merge in with fuzzy matching so we keep price splits
+  const hints = childHints[normTxt(parent.name)];
+  if (Array.isArray(hints)) {
+    for (const hint of hints) {
+      const hintName = typeof hint === "string" ? hint : hint?.name;
+      if (!hintName) continue;
+      const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
+      const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
 
-    const match = findRowByName(hintName, parent.category);
-    if (match) {
-      // copy the split from the catalog row (do not recompute)
-      pushMapped(
-        {
-          ...match,
-          unit: unitHint || match.unit || parent.unit,
-          coeff,
-          labor:      pickNum(match, ["labor","darbs"]),
-          materials:  pickNum(match, ["materials","materiāli","materiali","materjali"]),
-          mechanisms: pickNum(match, ["mechanisms","mehānismi","mehanismi","mehanismu","meh"]),
-        },
-        parent.unit
-      );
-    } else {
-      // last resort synthetic child (no prices known)
-      pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
-    }
-  }
-}
-
-
-
-  // D) name-based hints — use ONLY if we still found nothing
-  if (out.length === 0) {
-    const hints = childHints?.[norm(parent.name)];
-    if (Array.isArray(hints)) {
-      const findByName = (nm) => {
-        const lower = norm(nm);
-        // prefer same category; fallback to any
-        return (
-          priceCatalog.find(it => norm(it.name) === lower && it.category === parent.category) ||
-          priceCatalog.find(it => norm(it.name) === lower)
+      const match = findRowByNameFuzzy(hintName, parent.category, priceCatalog);
+      if (match) {
+        pushMapped(
+          {
+            ...match,
+            unit: unitHint || match.unit || parent.unit,
+            coeff,
+            // ensure split present even if match fields carry alternates
+            labor:      pickNum(match, ["labor","darbs"]),
+            materials:  pickNum(match, ["materials","materiāli","materiali","materjali"]),
+            mechanisms: pickNum(match, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+          },
+          parent.unit
         );
-      };
-
-      for (const hint of hints) {
-        const hintName = typeof hint === "string" ? hint : hint?.name;
-        if (!hintName) continue;
-        const coeff = typeof hint === "object" && hint?.coeff ? Number(hint.coeff) : 1;
-        const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
-
-        const match = findByName(hintName);
-        if (match) {
-          // prefer real catalog row (keeps labor/materials/mechanisms split or unit_price)
-          pushMapped({ ...match, unit: unitHint || match.unit, coeff }, parent.unit);
-        } else {
-          // last-resort synthetic (no price)
-          pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0, unit_price: 0 }, parent.unit);
-        }
+      } else {
+        // last resort synthetic child (no prices known)
+        pushMapped({ name: hintName, unit: unitHint || parent.unit, coeff, labor: 0, materials: 0, mechanisms: 0 }, parent.unit);
       }
     }
   }
 
   return out;
-}, [priceCatalog, adjChildrenByParent, childHints]);
+}, [priceCatalog, childHints]);
 
 
 
@@ -652,9 +638,9 @@ if (Array.isArray(hints)) {
           itemName: item.name,
           unit: item.unit || "",
           unit_price: item.unit_price ?? null,
- labor:      pickNum(item, ["labor","darbs"]),
-materials:  pickNum(item, ["materials","materiāli","materiali","materjali"]),
-mechanisms: pickNum(item, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
+  labor:      pickNum(item, ["labor","darbs"]),
+  materials:  pickNum(item, ["materials","materiāli","materiali","materjali"]),
+  mechanisms: pickNum(item, ["mechanisms","mehānismi","mehanismi","mehānismu","meh"]),
 
         };
       } else {
@@ -907,21 +893,23 @@ mechanisms: pickNum(item, ["mechanisms","mehānismi","mehanismi","mehānismu","m
         row.getCell(4).value = s.qty;
 
         // split (E/F/G) with robust fallback
-        const e = Number(s.labor || 0);
-        const f = Number(s.materials || 0);
-        const g = Number(s.mechanisms || 0);
-        const hasSplit = (e + f + g) > 0;
+const e = Number(s.labor || 0);
+const f = Number(s.materials || 0);
+const g = Number(s.mechanisms || 0);
+const hasSplit = (e + f + g) > 0;
 
-        if (hasSplit) {
-          ws.getCell(r, 5).value = e; // E
-          ws.getCell(r, 6).value = f; // F
-          ws.getCell(r, 7).value = g; // G
-        } else {
-          const fallback = Number(s.unitPrice || 0);
-          ws.getCell(r, 5).value = 0;         // E
-          ws.getCell(r, 6).value = fallback;  // F (materials-only fallback)
-          ws.getCell(r, 7).value = 0;         // G
-        }
+if (hasSplit) {
+  ws.getCell(r, 5).value = e; // E Darbs
+  ws.getCell(r, 6).value = f; // F Materiāli
+  ws.getCell(r, 7).value = g; // G Mehānismi
+} else {
+  // BALTA fallback: no split -> treat unitPrice as materials
+  const fallback = Number(s.unitPrice || 0);
+  ws.getCell(r, 5).value = 0;
+  ws.getCell(r, 6).value = fallback;
+  ws.getCell(r, 7).value = 0;
+}
+
 
         // H = E+F+G ; I..L = per split * qty ; L = H * qty
         ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
