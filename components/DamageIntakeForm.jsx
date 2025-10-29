@@ -797,28 +797,29 @@ const getChildrenFor = useCallback((parent) => {
           unitPrice: pUnitPrice,
         });
 
-        // Children from resolver
-        const kids = getChildrenFor(parent);
-        for (const ch of kids) {
-          const cQty = parseDec(ch.coeff ?? 1) * qty;
-          const cLabor = parseDec(ch.labor ?? 0);
-          const cMat   = parseDec(ch.materials ?? 0);
-          const cMech  = parseDec(ch.mechanisms ?? 0);
-          const cSplit = cLabor + cMat + cMech;
-          const cUnitPrice = cSplit ? cSplit : parseDec(ch.unit_price ?? 0);
 
-          selections.push({
-            isChild: true,
-            room: `${ri.type} ${ri.index}`,
-            name: ch.name || "",
-            unit: normalizeUnit(ch.unit || unit),
-            qty: cQty,
-            labor: cLabor,
-            materials: cMat,
-            mechanisms: cMech,
-            unitPrice: cUnitPrice,
-          });
-        }
+// auto-append children (indented, no numbering)
+const kids = getChildrenFor(parent);
+for (const ch of kids) {
+  const cQty    = parseDec(ch.coeff ?? 1) * qty;
+  const cLabor  = parseDec(ch.labor ?? 0);
+  const cMat    = parseDec(ch.materials ?? 0);
+  const cMech   = parseDec(ch.mechanisms ?? 0);
+  const cSplit  = cLabor + cMat + cMech;
+  const cUprice = cSplit ? cSplit : parseDec(ch.unit_price ?? ch.unit_price_raw ?? 0); // ✅ use unit_price if no split
+
+  selections.push({
+    isChild: true,
+    room: `${ri.type} ${ri.index}`,
+    name: ch.name || "",
+    unit: normalizeUnit(ch.unit || unit),
+    qty: cQty,
+    labor: cLabor,
+    materials: cMat,
+    mechanisms: cMech,
+    unitPrice: cUprice, // ✅ carry through
+  });
+}
       });
     });
 
