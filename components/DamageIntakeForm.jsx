@@ -241,9 +241,33 @@ export default function DamageIntakeForm() {
   const [adjChildrenByParent, setAdjChildrenByParent] = useState(new Map());
 
   // Name indexes (for fast findRowByName)
-  const [nameIndex, setNameIndex] = useState(new Map());       // normName -> rows[]
-  const [catNameIndex, setCatNameIndex] = useState(new Map()); // normCat|normName -> row
+    const [nameIndex, setNameIndex] = useState(new Map());
+  const [catNameIndex, setCatNameIndex] = useState(new Map());
 
+  const byId = useMemo(() => {
+    const m = new Map();
+    for (const it of priceCatalog) m.set(String(it.id), it);
+    return m;
+  }, [priceCatalog]);
+
+  const byName = useMemo(() => {
+    const m = new Map();
+    for (const it of priceCatalog) {
+      const key = normTxt(it.name);
+      if (key) m.set(key, it);
+    }
+    return m;
+  }, [priceCatalog]);
+
+  const byCatAndName = useMemo(() => {
+    const m = new Map();
+    for (const it of priceCatalog) {
+      const key = `${normTxt(it.category)}||${normTxt(it.name)}`;
+      if (key) m.set(key, it);
+    }
+    return m;
+  }, [priceCatalog]);
+  
   // Optional name-based child hints from /prices/child_hints.json
   const [childHints, setChildHints] = useState({});
   useEffect(() => {
