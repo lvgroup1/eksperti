@@ -208,7 +208,7 @@ export default function DamageIntakeForm() {
 
   // Profile
   const [estimatorName, setEstimatorName] = useState("");
-  the [estimatorEmail, setEstimatorEmail] = useState("");
+  const [estimatorEmail, setEstimatorEmail] = useState("");
   const [claimNumber, setClaimNumber] = useState("");
 
   // Core fields
