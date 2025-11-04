@@ -55,14 +55,17 @@ function parseDec(x) {
 }
 
 // diacritic-insensitive, preserves real 0 values
+// diacritic-insensitive, preserves real 0 values
 function pickNum(obj, keys) {
   if (!obj || typeof obj !== "object") return 0;
+
+  // normalize: lowercase, strip diacritics, remove ALL non letters/digits
   const normKey = (s) =>
     String(s ?? "")
       .toLowerCase()
       .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "")
+      .replace(/[\u0300-\u036f]/g, "")     // remove accents
+      .replace(/[^\p{L}\p{N}]+/gu, "")     // <-- remove punctuation & spaces
       .trim();
 
   const entries = Object.entries(obj).map(([k, v]) => [normKey(k), v]);
@@ -77,6 +80,10 @@ function pickNum(obj, keys) {
   }
   return 0;
 }
+const withSplit = full.filter(x => (parseDec(x.labor)+parseDec(x.materials)+parseDec(x.mechanisms)) > 0).length;
+console.log("BALTA rows:", full.length, "with split:", withSplit);
+
+
 
 // strong string normalizer for matching names/categories
 const normTxt = (s) => String(s ?? "")
