@@ -290,7 +290,7 @@ export default function DamageIntakeForm() {
   /* ---------- Load pricing ---------- */
   useEffect(() => {
     if (insurer !== "Balta") {
-      setPriceCatalog([]);
+      // setPriceCatalog([]);
       setAdjChildrenByParent(new Map());
       setNameIndex(new Map());
       setCatNameIndex(new Map());
