@@ -80,8 +80,6 @@ function pickNum(obj, keys) {
   }
   return 0;
 }
-const withSplit = full.filter(x => (parseDec(x.labor)+parseDec(x.materials)+parseDec(x.mechanisms)) > 0).length;
-console.log("BALTA rows:", full.length, "with split:", withSplit);
 
 
 
