@@ -56,28 +56,48 @@ function parseDec(x) {
 
 // diacritic-insensitive, preserves real 0 values
 // diacritic-insensitive, preserves real 0 values
+// drop-in replacement
 function pickNum(obj, keys) {
   if (!obj || typeof obj !== "object") return 0;
 
-  // normalize: lowercase, strip diacritics, remove ALL non letters/digits
-  const normKey = (s) =>
+  // normalize: lowercase, strip accents, remove all non letters/digits
+  const norm = (s) =>
     String(s ?? "")
       .toLowerCase()
       .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")     // remove accents
-      .replace(/[^\p{L}\p{N}]+/gu, "")     // <-- remove punctuation & spaces
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\p{L}\p{N}]+/gu, "")
       .trim();
 
-  const entries = Object.entries(obj).map(([k, v]) => [normKey(k), v]);
+  // build normalized map of keys -> raw value
+  const entries = Object.entries(obj).map(([k, v]) => [norm(k), v]);
+  const wantExact = keys.map(norm);
 
-  for (const want of keys) {
-    const w = normKey(want);
-    const hit = entries.find(([k]) => k === w);
-    if (hit) {
-      const n = parseDec(hit[1]);
-      return Number.isFinite(n) ? n : 0;
+  // 1) exact key match (most precise)
+  for (const [k, v] of entries) {
+    if (wantExact.includes(k)) {
+      const n = parseDec(v);
+      if (Number.isFinite(n)) return n;
     }
   }
+
+  // 2) substring fallback (handles weird abbreviations/punctuation)
+  // derive substrings to search for from the keys you passed in
+  const wants = wantExact.flatMap((w) => {
+    if (w.includes("labor") || w.includes("darbs")) return ["labor", "darbs"];
+    if (w.includes("material")) return ["material", "materiali", "mater"];
+    if (w.includes("mechanism") || w.includes("meh")) return ["mechanism", "meh"];
+    if (w.includes("cena") || w.includes("unitprice")) return ["cena", "unitprice"];
+    return [w];
+  });
+
+  for (const [k, v] of entries) {
+    if (wants.some((w) => k.includes(w))) {
+      const n = parseDec(v);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+
   return 0;
 }
 
@@ -153,6 +173,24 @@ function mapChildFromFlat(x, fallbackUnit) {
     unit_price_raw: unitPriceRaw,
   };
 }
+
+// tries to find any array of objects with a "name" inside the raw item
+function findAnyChildrenArray(rawItem) {
+  const candidates = [
+    "children","komponentes","apaks","apakspozicijas","apakšpozīcijas",
+    "components","componentes","subitems","sub_items","items","pozicijas","pozīcijas"
+  ];
+  for (const key of candidates) {
+    if (Array.isArray(rawItem[key])) return rawItem[key];
+  }
+  for (const [k, v] of Object.entries(rawItem)) {
+    if (Array.isArray(v) && v.some(o => o && typeof o === "object" && (o.name || o.title))) {
+      return v;
+    }
+  }
+  return [];
+}
+
 
 function findRowByNameFuzzy(rawName, rawCategory, catalog) {
   const nName = normTxt(rawName);
@@ -359,10 +397,7 @@ export default function DamageIntakeForm() {
             parents.push(parent);
             ordered.push(parent);
 
-            const kidsArr =
-              (Array.isArray(it.children) && it.children) ||
-              (Array.isArray(it.komponentes) && it.komponentes) ||
-              (Array.isArray(it.apaks) && it.apaks) || [];
+            const kidsArr = findAnyChildrenArray(it);
 
             if (kidsArr.length) {
               parent.children = [];
