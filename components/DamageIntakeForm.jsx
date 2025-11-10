@@ -20,9 +20,22 @@ const ROOM_TYPES = [
 
 // numeric key sets for robust parsing
 const LABOR_KEYS      = ["labor","darbs"];
-const MATERIAL_KEYS   = ["materials","materiāli","materiali","materjali","materiālu izmaksas","materialu izmaksas"];
-const MECHANISM_KEYS  = ["mechanisms","mehānismi","mehanismi","mehānismu","meh","mehānismu izmaksas","meh izmaksas","mehizmaksas"];
-const UNIT_PRICE_KEYS = ["unit_price","unitprice","vienības cena","vienibas cena","cena"];
+const MATERIAL_KEYS = [
+  "materials","materiāli","materiali","materjali",
+  "materiālu izmaksas","materialu izmaksas",
+  "mater.","mater", "materiāli (eur)", "materiāli eur" // <- add if you saw these
+];
+
+const MECHANISM_KEYS = [
+  "mechanisms","mehānismi","mehanismi","mehānismu","meh",
+  "meh izmaksas","mehizmaksas","mehānismu izmaksas",
+  "mehānismi (eur)", "mehānismi eur" // <- add if you saw these
+];
+
+const UNIT_PRICE_KEYS = [
+  "unit_price","unitprice","vienības cena","vienibas cena","cena",
+  "vienc","vienības cena eur" // <- add if present
+];
 
 // default units shown in the UI
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
@@ -177,12 +190,14 @@ function mapChildFromFlat(x, fallbackUnit) {
 // tries to find any array of objects with a "name" inside the raw item
 function findAnyChildrenArray(rawItem) {
   const candidates = [
-    "children","komponentes","apaks","apakspozicijas","apakšpozīcijas",
-    "components","componentes","subitems","sub_items","items","pozicijas","pozīcijas"
+    "children","komponentes","apaks","apakšpozīcijas",
+    "components","componentes","subitems","sub_items","items",
+    "pozicijas","pozīcijas"
   ];
   for (const key of candidates) {
     if (Array.isArray(rawItem[key])) return rawItem[key];
   }
+  // heuristic fallback:
   for (const [k, v] of Object.entries(rawItem)) {
     if (Array.isArray(v) && v.some(o => o && typeof o === "object" && (o.name || o.title))) {
       return v;
@@ -331,151 +346,169 @@ export default function DamageIntakeForm() {
   }, [assetBase]);
 
   /* ---------- Load pricing ---------- */
-  useEffect(() => {
-    if (insurer !== "Balta") {
-      // setPriceCatalog([]);
-      setAdjChildrenByParent(new Map());
-      setNameIndex(new Map());
-      setCatNameIndex(new Map());
-      return;
-    }
-    setCatalogError("");
+useEffect(() => {
+  if (insurer !== "Balta") {
+    // leave catalog as-is; just clear the helper maps/indexes
+    setAdjChildrenByParent(new Map());
+    setNameIndex(new Map());
+    setCatNameIndex(new Map());
+    return;
+  }
+  setCatalogError("");
 
-    (async () => {
-      try {
-        const load = async (url) => {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-          const json = await res.json();
-          return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+  (async () => {
+    try {
+      const load = async (url) => {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const json = await res.json();
+        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+      };
+
+      let raw;
+      try { raw = await load(`${assetBase}/prices/balta.v2.json`); }
+      catch { raw = await load(`${assetBase}/prices/balta.json`); }
+
+      const parents = [];
+      const childrenFlat = [];
+      const ordered = [];
+
+      raw.forEach((it, i) => {
+        const category = (it.category || "").trim();
+        const subcat =
+          (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
+        const idStr = String(it.id ?? i);
+        const name = (it.name || "").trim();
+        const uid = [category, subcat, idStr, name].join("::");
+
+        const parent_uid =
+          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+          it.parent || it.parent_name || it.parentName || it.childOf || null;
+        const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+        const base = {
+          id: idStr,
+          uid,
+          name,
+          category,
+          subcategory: subcat,
+          unit: normalizeUnit(it.unit),
+
+          unit_price: pickNum(it, UNIT_PRICE_KEYS),
+          labor:      pickNum(it, LABOR_KEYS),
+          materials:  pickNum(it, MATERIAL_KEYS),
+          mechanisms: pickNum(it, MECHANISM_KEYS),
+
+          is_child: childFlag,
+          parent_uid: parent_uid || null,
         };
 
-        let raw;
-        try { raw = await load(`${assetBase}/prices/balta.v2.json`); }
-        catch { raw = await load(`${assetBase}/prices/balta.json`); }
+        if (childFlag) {
+          const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
+          childrenFlat.push(childRow);
+          ordered.push(childRow);
+        } else {
+          const parent = { ...base, is_child: false, parent_uid: null };
+          parents.push(parent);
+          ordered.push(parent);
 
-        const parents = [];
-        const childrenFlat = [];
-        const ordered = [];
+          // pick the actual children array key if present
+          const kidsArr =
+            (Array.isArray(it.children) && it.children) ||
+            (Array.isArray(it.komponentes) && it.komponentes) ||
+            (Array.isArray(it.apaks) && it.apaks) ||
+            (Array.isArray(it["apakšpozīcijas"]) && it["apakšpozīcijas"]) ||
+            [];
 
-        raw.forEach((it, i) => {
-          const category = (it.category || "").trim();
-          const subcat =
-            (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-          const idStr = String(it.id ?? i);
-          const name = (it.name || "").trim();
-          const uid = [category, subcat, idStr, name].join("::");
+          if (kidsArr.length) {
+            parent.children = [];
+            kidsArr.forEach((ch, idxCh) => {
+              const chName = (ch.name || ch.title || "").trim();
+              if (!chName) return;
 
-          const parent_uid =
-            it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
-            it.parent || it.parent_name || it.parentName || it.childOf || null;
-          const childFlag = parseBool(it.is_child) || !!parent_uid;
+              const chEntry = {
+                id: `${idStr}-c${idxCh}`,
+                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                name: chName,
+                category,
+                subcategory: subcat,
+                unit: normalizeUnit(ch.unit || it.unit),
 
-          const base = {
-            id: idStr,
-            uid,
-            name,
-            category,
-            subcategory: subcat,
-            unit: normalizeUnit(it.unit),
+                unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+                labor:      pickNum(ch, LABOR_KEYS),
+                materials:  pickNum(ch, MATERIAL_KEYS),
+                mechanisms: pickNum(ch, MECHANISM_KEYS),
 
-            unit_price: pickNum(it, UNIT_PRICE_KEYS),
-            labor:      pickNum(it, LABOR_KEYS),
-            materials:  pickNum(it, MATERIAL_KEYS),
-            mechanisms: pickNum(it, MECHANISM_KEYS),
+                is_child: true,
+                parent_uid: uid,
+                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+              };
 
-            is_child: childFlag,
-            parent_uid: parent_uid || null,
-          };
+              childrenFlat.push(chEntry);
+              ordered.push(chEntry);
 
-          if (childFlag) {
-            const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
-            childrenFlat.push(childRow);
-            ordered.push(childRow);
-          } else {
-            const parent = { ...base, is_child: false, parent_uid: null };
-            parents.push(parent);
-            ordered.push(parent);
-
-            const kidsArr = findAnyChildrenArray(it);
-
-            if (kidsArr.length) {
-              parent.children = [];
-              kidsArr.forEach((ch, idxCh) => {
-                const chName = (ch.name || ch.title || "").trim();
-                if (!chName) return;
-
-                const chEntry = {
-                  id: `${idStr}-c${idxCh}`,
-                  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                  name: chName,
-                  category,
-                  subcategory: subcat,
-                  unit: normalizeUnit(ch.unit || it.unit),
-
-                  unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-                  labor:      pickNum(ch, LABOR_KEYS),
-                  materials:  pickNum(ch, MATERIAL_KEYS),
-                  mechanisms: pickNum(ch, MECHANISM_KEYS),
-
-                  is_child: true,
-                  parent_uid: uid,
-                  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-                };
-
-                childrenFlat.push(chEntry);
-                ordered.push(chEntry);
-
-                // compact version stored on parent for quick access
-                parent.children.push({
-                  name: chEntry.name,
-                  unit: chEntry.unit,
-                  coeff: chEntry.coeff || 1,
-                  labor: chEntry.labor || 0,
-                  materials: chEntry.materials || 0,
-                  mechanisms: chEntry.mechanisms || 0,
-                });
+              // compact child kept on parent for quick access
+              parent.children.push({
+                name: chEntry.name,
+                unit: chEntry.unit,
+                coeff: chEntry.coeff || 1,
+                labor: chEntry.labor || 0,
+                materials: chEntry.materials || 0,
+                mechanisms: chEntry.mechanisms || 0,
               });
-            }
-          }
-        });
-
-        // Build adjacency fallback map (children that immediately follow a parent in same category/subcategory)
-        const adj = new Map();
-        let currentParent = null;
-        for (const row of ordered) {
-          if (!row.is_child) { currentParent = row; continue; }
-          if (currentParent && row.category === currentParent.category && row.subcategory === currentParent.subcategory) {
-            const arr = adj.get(currentParent.uid) || [];
-            const ch = mapChildFromFlat(row, currentParent.unit);
-            const already = arr.some(a => deburrLower(a.name) === deburrLower(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit));
-            if (!already) arr.push(ch);
-            adj.set(currentParent.uid, arr);
+            });
           }
         }
+      });
 
-        const full = [...parents, ...childrenFlat];
-
-        // build indexes for fast lookups
-        const nmIdx = new Map();
-        const cnIdx = new Map();
-        for (const row of full) {
-          const nName = normTxt(row.name);
-          const nCat  = normTxt(row.category);
-          if (!nmIdx.has(nName)) nmIdx.set(nName, []);
-          nmIdx.get(nName).push(row);
-          cnIdx.set(`${nCat}|${nName}`, row);
+      // adjacency fallback: children that follow a parent in same category/subcategory
+      const adj = new Map();
+      let currentParent = null;
+      for (const row of ordered) {
+        if (!row.is_child) { currentParent = row; continue; }
+        if (currentParent && row.category === currentParent.category && row.subcategory === currentParent.subcategory) {
+          const arr = adj.get(currentParent.uid) || [];
+          const ch = mapChildFromFlat(row, currentParent.unit);
+          const dupe = arr.some(a =>
+            normTxt(a.name) === normTxt(ch.name) &&
+            normalizeUnit(a.unit) === normalizeUnit(ch.unit)
+          );
+          if (!dupe) arr.push(ch);
+          adj.set(currentParent.uid, arr);
         }
-
-        setPriceCatalog(full);
-        setNameIndex(nmIdx);
-        setCatNameIndex(cnIdx);
-        setAdjChildrenByParent(adj);
-      } catch (e) {
-        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
       }
-    })();
-  }, [insurer, assetBase]);
+
+      const full = [...parents, ...childrenFlat];
+
+      // indexes for fast name/category lookups
+      const nmIdx = new Map();
+      const cnIdx = new Map();
+      for (const row of full) {
+        const nName = normTxt(row.name);
+        const nCat  = normTxt(row.category);
+        if (!nmIdx.has(nName)) nmIdx.set(nName, []);
+        nmIdx.get(nName).push(row);
+        cnIdx.set(`${nCat}|${nName}`, row);
+      }
+
+      // minimal sanity log so you can see if splits/children exist
+      const splitParents = parents.filter(p => (p.labor + p.materials + p.mechanisms) > 0).length;
+      const splitChildren = childrenFlat.filter(c => (c.labor + c.materials + c.mechanisms) > 0).length;
+      console.log("[BALTA] loaded:", {
+        full: full.length, parents: parents.length, children: childrenFlat.length,
+        splitParents, splitChildren, adjParents: adj.size
+      });
+
+      setPriceCatalog(full);
+      setNameIndex(nmIdx);
+      setCatNameIndex(cnIdx);
+      setAdjChildrenByParent(adj);
+    } catch (e) {
+      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+    }
+  })();
+}, [insurer, assetBase]);
+
 
   // fast exact-ish name finder using the indexes above
   const findRowByName = useCallback((rawName, rawCategory) => {
