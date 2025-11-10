@@ -111,27 +111,15 @@ function pickNumSmart(obj, exactKeys = [], type = "unknown") {
 
 // --- Robust finder for any embedded children array ---
 function findAnyChildrenArray(it) {
-  if (!it || typeof it !== "object") return [];
-  const candidates = [
-    "children", "komponentes", "apaks", "apakspozicijas", "apakšpozīcijas",
-    "childs", "components", "items", "pozicijas", "pozīcijas", "subitems", "sub", "sastavs", "sastāvs"
-  ];
-  for (const key of Object.keys(it)) {
-    const k = deburr(key);
-    if (candidates.includes(k)) {
-      const arr = it[key];
-      if (Array.isArray(arr)) return arr;
-    }
-  }
-  // fallback: first array-valued property with objects that look like {name|title}
-  for (const key of Object.keys(it)) {
-    const arr = it[key];
-    if (Array.isArray(arr) && arr.some(x => x && typeof x === "object" && ("name" in x || "title" in x))) {
-      return arr;
-    }
-  }
-  return [];
+  return (
+    (Array.isArray(it.children) && it.children) ||
+    (Array.isArray(it.komponentes) && it.komponentes) ||
+    (Array.isArray(it.apaks) && it.apaks) ||
+    (Array.isArray(it["apakšpozīcijas"]) && it["apakšpozīcijas"]) ||
+    []
+  );
 }
+
 
 /* ---------- generic helpers (pure; safe at top-level) ---------- */
 function prettyDate(d = new Date()) {
