@@ -114,20 +114,11 @@ function pickNumSmart(obj, exactKeys = [], type = "unknown") {
 function findAnyChildrenArray(it) {
   if (!it || typeof it !== "object") return [];
   const candidates = [
-    it.children,
-    it.komponentes,
-    it.apaks,
-    it["apakšpozīcijas"],
-    it["apakspozicijas"],
+    "children", "komponentes", "apaks", "apakšpozīcijas", "apakspozicijas"
   ];
-  for (const arr of candidates) if (Array.isArray(arr) && arr.length) return arr;
-
-  // ultra-defensive: any array-valued property with items that look like child rows
-  for (const [k, v] of Object.entries(it)) {
-    if (Array.isArray(v) && v.length && typeof v[0] === "object") {
-      const hasName = v.some(x => x && (x.name || x.title));
-      if (hasName) return v;
-    }
+  for (const key of candidates) {
+    const arr = it[key];
+    if (Array.isArray(arr) && arr.length) return arr;
   }
   return [];
 }
@@ -485,45 +476,52 @@ export default function DamageIntakeForm() {
   /* ---------- Load pricing ---------- */
 useEffect(() => {
   if (insurer !== "Balta") {
+    // keep catalog until user changes company again (don’t blank UI)
     setAdjChildrenByParent(new Map());
     setNameIndex(new Map());
     setCatNameIndex(new Map());
-    setPriceCatalog([]);        // clear when switching away from Balta
     return;
   }
   setCatalogError("");
 
   (async () => {
+    const loadArrayish = async (url) => {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const json = await res.json();
+      return Array.isArray(json) ? json : (Array.isArray(json.items) ? json.items : []);
+    };
+
+    // we try balta.json first (has nested children), then v2 (flat)
+    let raw = [];
+    let source = "";
     try {
-      const load = async (url) => {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const json = await res.json();
-        return Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
-      };
-
-      // 1) Load BOTH files
-      const baseUrl = `${assetBase}/prices`;
-      const [rawV2, rawLegacy] = await Promise.allSettled([
-        load(`${baseUrl}/balta.v2.json`),
-        load(`${baseUrl}/balta.json`),
-      ]);
-
-      const v2 = rawV2.status === "fulfilled" ? rawV2.value : [];
-      const legacy = rawLegacy.status === "fulfilled" ? rawLegacy.value : [];
-
-      if (!v2.length && !legacy.length) {
-        throw new Error("Nav ielādējams ne balta.v2.json, ne balta.json");
+      const res = await fetch(`${assetBase}/prices/balta.json`, { cache: "no-store" });
+      if (res.ok) {
+        const j = await res.json();
+        raw = Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
+        source = "balta.json";
       }
+    } catch {}
 
-      // 2) Start from v2 (parents only)
+    if (!raw.length) {
+      // fallback to v2
+      try {
+        raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`);
+        source = "balta.v2.json";
+      } catch (e) {
+        setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+        return;
+      }
+    }
+
+    try {
       const parents = [];
       const childrenFlat = [];
       const ordered = [];
 
-      const srcParents = v2.length ? v2 : legacy; // if v2 missing, fall back to legacy
-
-      srcParents.forEach((it, i) => {
+      for (let i = 0; i < raw.length; i++) {
+        const it = raw[i] || {};
         const category = (it.category || "").trim();
         const subcat =
           (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
@@ -531,7 +529,12 @@ useEffect(() => {
         const name = (it.name || "").trim();
         const uid = [category, subcat, idStr, name].join("::");
 
-        const parent = {
+        const parent_uid =
+          it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
+          it.parent || it.parent_name || it.parentName || it.childOf || null;
+        const childFlag = parseBool(it.is_child) || !!parent_uid;
+
+        const base = {
           id: idStr,
           uid,
           name,
@@ -544,104 +547,119 @@ useEffect(() => {
           materials:  pickNum(it, MATERIAL_KEYS),
           mechanisms: pickNum(it, MECHANISM_KEYS),
 
-          is_child: false,
-          parent_uid: null,
+          is_child: childFlag,
+          parent_uid: parent_uid || null,
         };
 
-        parents.push(parent);
-        ordered.push(parent);
-      });
-
-      // 3) If v2 has no children embedded, attach children from legacy file
-      let attached = 0;
-      if (legacy.length) {
-        attached = attachChildrenFromLegacy(parents, legacy);
-      }
-
-      // 4) Expand attached parent.children into childrenFlat + adjacency map
-      const adj = new Map();
-      for (const p of parents) {
-        if (!Array.isArray(p.children) || !p.children.length) continue;
-        p.children.forEach((ch, idxCh) => {
-          const id = `${p.id}-c${idxCh}`;
-          const uid = [p.category, p.subcategory, id, ch.name].join("::");
-          const row = {
-            id,
-            uid,
-            name: ch.name,
-            category: p.category,
-            subcategory: p.subcategory,
-            unit: normalizeUnit(ch.unit || p.unit),
-            unit_price: parseDec(ch.unit_price),
-            labor:      parseDec(ch.labor),
-            materials:  parseDec(ch.materials),
-            mechanisms: parseDec(ch.mechanisms),
-            is_child: true,
-            parent_uid: p.uid,
-            coeff: parseDec(ch.coeff ?? 1) || 1,
-          };
+        if (childFlag) {
+          const row = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
           childrenFlat.push(row);
           ordered.push(row);
-        });
-        // adjacency cache for quick fallback
-        const compact = p.children.map(ch => ({
-          name: ch.name,
-          unit: normalizeUnit(ch.unit || p.unit),
-          coeff: parseDec(ch.coeff ?? 1) || 1,
-          labor:      parseDec(ch.labor),
-          materials:  parseDec(ch.materials),
-          mechanisms: parseDec(ch.mechanisms),
-          unit_price: parseDec(ch.unit_price),
-        }));
-        adj.set(p.uid, compact);
+        } else {
+          const parent = { ...base, is_child: false, parent_uid: null };
+          parents.push(parent);
+          ordered.push(parent);
+
+          // nested under-positions if present
+          const kidsArr = findAnyChildrenArray(it); // <— key change
+          if (kidsArr.length) {
+            parent.children = [];
+            kidsArr.forEach((ch, idxCh) => {
+              const chName = (ch.name || ch.title || "").trim();
+              if (!chName) return;
+
+              const chEntry = {
+                id: `${idStr}-c${idxCh}`,
+                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+                name: chName,
+                category,
+                subcategory: subcat,
+                unit: normalizeUnit(ch.unit || it.unit),
+
+                unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+                labor:      pickNum(ch, LABOR_KEYS),
+                materials:  pickNum(ch, MATERIAL_KEYS),
+                mechanisms: pickNum(ch, MECHANISM_KEYS),
+
+                is_child: true,
+                parent_uid: uid,
+                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+              };
+
+              childrenFlat.push(chEntry);
+              ordered.push(chEntry);
+
+              // compact on parent for quick export
+              parent.children.push({
+                name: chEntry.name,
+                unit: chEntry.unit,
+                coeff: chEntry.coeff || 1,
+                labor: chEntry.labor || 0,
+                materials: chEntry.materials || 0,
+                mechanisms: chEntry.mechanisms || 0,
+              });
+            });
+          }
+        }
+      }
+
+      // adjacency fallback (in case some children were only implied by order)
+      const adj = new Map();
+      let currentParent = null;
+      for (const row of ordered) {
+        if (!row.is_child) { currentParent = row; continue; }
+        if (currentParent &&
+            row.category === currentParent.category &&
+            row.subcategory === currentParent.subcategory) {
+          const arr = adj.get(currentParent.uid) || [];
+          const ch = mapChildFromFlat(row, currentParent.unit);
+          const dup = arr.some(a =>
+            normTxt(a.name) === normTxt(ch.name) &&
+            normalizeUnit(a.unit) === normalizeUnit(ch.unit)
+          );
+          if (!dup) arr.push(ch);
+          adj.set(currentParent.uid, arr);
+        }
       }
 
       const full = [...parents, ...childrenFlat];
 
-      // 5) Build fast indexes
+      // indexes for quick lookup
       const nmIdx = new Map();
       const cnIdx = new Map();
-      const nKey = s => String(s ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").trim();
       for (const row of full) {
-        const nName = nKey(row.name);
-        const nCat  = nKey(row.category);
-        if (nName) {
-          if (!nmIdx.has(nName)) nmIdx.set(nName, []);
-          nmIdx.get(nName).push(row);
-          cnIdx.set(`${nCat}|${nName}`, row);
-        }
+        const nName = normTxt(row.name);
+        const nCat  = normTxt(row.category);
+        if (!nmIdx.has(nName)) nmIdx.set(nName, []);
+        nmIdx.get(nName).push(row);
+        cnIdx.set(`${nCat}|${nName}`, row);
       }
 
-      // 6) Commit
       setPriceCatalog(full);
       setNameIndex(nmIdx);
       setCatNameIndex(cnIdx);
       setAdjChildrenByParent(adj);
 
-      // 7) Debug
+      // quick visibility in console:
       const splitParents = parents.filter(p => (p.labor||0)+(p.materials||0)+(p.mechanisms||0) > 0).length;
       const splitChildren = childrenFlat.filter(p => (p.labor||0)+(p.materials||0)+(p.mechanisms||0) > 0).length;
-      const adjParents = Array.from(adj.values()).filter(a => a && a.length).length;
+      const adjParents = [...adj.keys()].length;
+
       console.log("[BALTA] loaded:", {
+        source,
         full: full.length,
         parents: parents.length,
         children: childrenFlat.length,
         splitParents,
         splitChildren,
-        adjParents,
-        attachedFromLegacy: attached,
+        adjParents
       });
+
     } catch (e) {
-      console.error(e);
-      setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
-      setPriceCatalog([]);
-      setNameIndex(new Map());
-      setCatNameIndex(new Map());
-      setAdjChildrenByParent(new Map());
+      setCatalogError(`Neizdevās apstrādāt BALTA cenas: ${e.message}`);
     }
   })();
 }, [insurer, assetBase]);
-
 
   // fast exact-ish name finder using the indexes above
   const findRowByName = useCallback((rawName, rawCategory) => {
