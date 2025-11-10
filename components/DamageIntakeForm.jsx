@@ -480,40 +480,44 @@ useEffect(() => {
     setAdjChildrenByParent(new Map());
     setNameIndex(new Map());
     setCatNameIndex(new Map());
+    setPriceCatalog([]);                  // keep catalog in a clean state when not Balta
     return;
   }
   setCatalogError("");
 
   (async () => {
     try {
-      // 1) Load JSON the way you already do
+      const loadArrayish = async (url) => {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const j = await res.json();
+        return Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
+      };
+
+      // ✅ Prefer v2 first; fallback to legacy
       let raw = [];
       let source = "";
-
       try {
-        const res = await fetch(`${assetBase}/prices/balta.json`, { cache: "no-store" });
-        if (res.ok) {
-          const j = await res.json();
-          raw = Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
-          source = "balta.json";
-        }
-      } catch {}
-
+        raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`);
+        source = "balta.v2.json";
+      } catch (e) {
+        // ignore, we'll try legacy next
+      }
       if (!raw.length) {
         try {
-          raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`);
-          source = "balta.v2.json";
+          raw = await loadArrayish(`${assetBase}/prices/balta.json`);
+          source = "balta.json";
         } catch (e) {
           setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
           return;
         }
       }
 
-      // 2) Parse into parents/children as before
       const parents = [];
       const childrenFlat = [];
       const ordered = [];
 
+      // helper: detect any embedded child array shape
       const findAnyChildrenArray = (it) =>
         (Array.isArray(it.children) && it.children) ||
         (Array.isArray(it.komponentes) && it.komponentes) ||
@@ -532,7 +536,7 @@ useEffect(() => {
         const parent_uid =
           it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
           it.parent || it.parent_name || it.parentName || it.childOf || null;
-        const childFlag = parseBool(it.is_child) || !!parent_uid;
+        const childFlag = /* row itself is a child in flat files? */ false || !!parent_uid;
 
         const base = {
           id: idStr,
@@ -551,6 +555,7 @@ useEffect(() => {
           parent_uid: parent_uid || null,
         };
 
+        // We treat input rows as parents unless they explicitly carry a parent link
         if (childFlag) {
           const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
           childrenFlat.push(childRow);
@@ -560,6 +565,7 @@ useEffect(() => {
           parents.push(parent);
           ordered.push(parent);
 
+          // Embedded children (if any)
           const kidsArr = findAnyChildrenArray(it);
           if (kidsArr.length) {
             parent.children = [];
@@ -588,6 +594,7 @@ useEffect(() => {
               childrenFlat.push(chEntry);
               ordered.push(chEntry);
 
+              // compact version on parent
               parent.children.push({
                 name: chEntry.name,
                 unit: chEntry.unit,
@@ -601,22 +608,25 @@ useEffect(() => {
         }
       });
 
-      // 3) Build adjacency fallback
+      // Adjacency fallback map (if v2 had grouped rows)
       const adj = new Map();
       let currentParent = null;
       for (const row of ordered) {
         if (!row.is_child) { currentParent = row; continue; }
-        if (currentParent && row.category === currentParent.category && row.subcategory === currentParent.subcategory) {
+        if (currentParent &&
+            row.category === currentParent.category &&
+            row.subcategory === currentParent.subcategory) {
           const arr = adj.get(currentParent.uid) || [];
           const ch = mapChildFromFlat(row, currentParent.unit);
-          const dup = arr.some(a => normTxt(a.name) === normTxt(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit));
-          if (!dup) arr.push(ch);
+          const dupe = arr.some(a => normTxt(a.name) === normTxt(ch.name) && normalizeUnit(a.unit) === normalizeUnit(ch.unit));
+          if (!dupe) arr.push(ch);
           adj.set(currentParent.uid, arr);
         }
       }
 
-      // 4) Build full & indexes
       const full = [...parents, ...childrenFlat];
+
+      // Indexes
       const nmIdx = new Map();
       const cnIdx = new Map();
       for (const row of full) {
@@ -627,29 +637,35 @@ useEffect(() => {
         cnIdx.set(`${nCat}|${nName}`, row);
       }
 
-      // 5) 🔎 DIAGNOSTIC LOGS — place them here, BEFORE setState
-      console.log("[BALTA] loaded:", {
-        source,
-        full: full.length,
-        parents: parents.length,
-        children: childrenFlat.length,
-        splitParents: parents.filter(p => (p.labor||0) + (p.materials||0) + (p.mechanisms||0) > 0).length,
-        splitChildren: childrenFlat.filter(p => (p.labor||0) + (p.materials||0) + (p.mechanisms||0) > 0).length,
-        adjParents: [...adj.keys()].length,
-      });
-
-      if (!childrenFlat.length) {
-        console.warn("[BALTA] No embedded children found in JSON. If you expect underpositions, check your balta.json/balta.v2.json keys: children/komponentes/apaks/“apakšpozīcijas”.");
-      }
-
-      // 6) Finally set state
       setPriceCatalog(full);
       setNameIndex(nmIdx);
       setCatNameIndex(cnIdx);
       setAdjChildrenByParent(adj);
 
+      // ⬇️ DEBUG: expose catalog to DevTools
+if (typeof window !== "undefined") {
+  window.__PC = full;
+  console.log("[BALTA] exposed __PC:", {
+    rows: full.length,
+    withMaterials: full.filter(r => (r.materials||0) > 0).length,
+    withMechanisms: full.filter(r => (r.mechanisms||0) > 0).length,
+    children: childrenFlat.length,
+    adjParents: [...adj.keys()].length
+  });
+}
+
+      // 🔎 Debug summary in console
+      console.log("[BALTA] loaded:", {
+        source,
+        full: full.length,
+        parents: parents.length,
+        children: childrenFlat.length,
+        splitParents: parents.filter(p => (p.labor||0)+(p.materials||0)+(p.mechanisms||0) > 0).length,
+        splitChildren: childrenFlat.filter(p => (p.labor||0)+(p.materials||0)+(p.mechanisms||0) > 0).length,
+        adjParents: [...adj.keys()].length
+      });
+
     } catch (e) {
-      console.error("BALTA load error:", e);
       setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
     }
   })();
