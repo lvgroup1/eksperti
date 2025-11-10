@@ -40,6 +40,99 @@ const UNIT_PRICE_KEYS = [
 // default units shown in the UI
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 
+// --- Strong normalizers ---
+const _raw = (s) => String(s ?? "");
+
+const deburr = (s) =>
+  _raw(s)
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+
+const squish = (s) =>
+  _raw(s)
+    .replace(/\s+/g, " ")
+    .trim();
+
+const cleanKey = (k) =>
+  deburr(k)
+    .replace(/[^a-z0-9]+/g, "")        // keep only a-z0-9
+    .replace(/(izmaksas|izdevumi|summa|cena|eur|bezpvn|pvn|kopā|kopa)+/g, ""); // strip suffixes often appended
+
+const parseDec = (x) => {
+  if (x === null || x === undefined || x === "") return 0;
+  const n = parseFloat(String(x).replace(/\s+/g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
+// --- Smart number picker: first try exact provided keys; if not found, fuzzy match by regex buckets ---
+function pickNumSmart(obj, exactKeys = [], type = "unknown") {
+  if (!obj || typeof obj !== "object") return 0;
+
+  // 1) Exact keys (your previous behavior)
+  for (const k of exactKeys) {
+    for (const key of Object.keys(obj)) {
+      if (deburr(key) === deburr(k)) {
+        const v = parseDec(obj[key]);
+        if (Number.isFinite(v)) return v;
+      }
+    }
+  }
+
+  // 2) Fuzzy: detect by typical stems
+  //    - labor: darb… (darbs, darba, darba izmaksas, …)
+  //    - materials: mater… (materiāli, materialu izmaksas, …)
+  //    - mechanisms: meh… (mehānismi, meh izmaksas, mehānismu izdevumi, …)
+  //    - unit price: unit, vienibas, cena (but avoid totals)
+  const want = type; // "labor"|"materials"|"mechanisms"|"unit"
+  const stems = {
+    labor:      [/^darb/, /^darba/, /^darbi/, /^darbin/i],
+    materials:  [/^mater/, /^mat\b/],
+    mechanisms: [/^meh/, /^mekh/],
+    unit:       [/^unit/, /^vienib/, /^vienības/, /^cena$/, /^cenas?$/],
+  }[want] || [];
+
+  // Exclude words that look like totals/subtotals to avoid grabbing wrong fields
+  const blacklist = /kop|kopa|total|sum|visa|visa?m|pavisam|pvn|bezpvn|ar pvn|transport|virsizdev|pelna/i;
+
+  let bestKey = null;
+  for (const key of Object.keys(obj)) {
+    const ck = cleanKey(key); // aggressive cleaner
+    if (!ck || blacklist.test(key)) continue;
+    if (stems.some((re) => re.test(ck))) { bestKey = key; break; }
+  }
+  if (bestKey) {
+    const v = parseDec(obj[bestKey]);
+    if (Number.isFinite(v)) return v;
+  }
+
+  return 0;
+}
+
+// --- Robust finder for any embedded children array ---
+function findAnyChildrenArray(it) {
+  if (!it || typeof it !== "object") return [];
+  const candidates = [
+    "children", "komponentes", "apaks", "apakspozicijas", "apakšpozīcijas",
+    "childs", "components", "items", "pozicijas", "pozīcijas", "subitems", "sub", "sastavs", "sastāvs"
+  ];
+  for (const key of Object.keys(it)) {
+    const k = deburr(key);
+    if (candidates.includes(k)) {
+      const arr = it[key];
+      if (Array.isArray(arr)) return arr;
+    }
+  }
+  // fallback: first array-valued property with objects that look like {name|title}
+  for (const key of Object.keys(it)) {
+    const arr = it[key];
+    if (Array.isArray(arr) && arr.some(x => x && typeof x === "object" && ("name" in x || "title" in x))) {
+      return arr;
+    }
+  }
+  return [];
+}
+
 /* ---------- generic helpers (pure; safe at top-level) ---------- */
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
@@ -386,22 +479,23 @@ useEffect(() => {
           it.parent || it.parent_name || it.parentName || it.childOf || null;
         const childFlag = parseBool(it.is_child) || !!parent_uid;
 
-        const base = {
-          id: idStr,
-          uid,
-          name,
-          category,
-          subcategory: subcat,
-          unit: normalizeUnit(it.unit),
+const base = {
+  id: idStr,
+  uid,
+  name,
+  category,
+  subcategory: subcat,
+  unit: normalizeUnit(it.unit),
 
-          unit_price: pickNum(it, UNIT_PRICE_KEYS),
-          labor:      pickNum(it, LABOR_KEYS),
-          materials:  pickNum(it, MATERIAL_KEYS),
-          mechanisms: pickNum(it, MECHANISM_KEYS),
+  // 🔁 Use SMART pickers (exact lists + fuzzy)
+  unit_price: pickNumSmart(it, ["unit_price","unitprice","vienības cena","vienibas cena","cena"], "unit"),
+  labor:      pickNumSmart(it, ["labor","darbs"], "labor"),
+  materials:  pickNumSmart(it, ["materials","materiāli","materiali","materjali","materiālu izmaksas","materialu izmaksas"], "materials"),
+  mechanisms: pickNumSmart(it, ["mechanisms","mehānismi","mehanismi","mehānismu","meh","mehānismu izmaksas","meh izmaksas","mehizmaksas"], "mechanisms"),
 
-          is_child: childFlag,
-          parent_uid: parent_uid || null,
-        };
+  is_child: childFlag,
+  parent_uid: parent_uid || null,
+};
 
         if (childFlag) {
           const childRow = { ...base, coeff: parseDec(it.coeff ?? it.multiplier ?? 1) || 1 };
@@ -413,51 +507,54 @@ useEffect(() => {
           ordered.push(parent);
 
           // pick the actual children array key if present
-          const kidsArr =
-            (Array.isArray(it.children) && it.children) ||
-            (Array.isArray(it.komponentes) && it.komponentes) ||
-            (Array.isArray(it.apaks) && it.apaks) ||
-            (Array.isArray(it["apakšpozīcijas"]) && it["apakšpozīcijas"]) ||
-            [];
+          const kidsArr = findAnyChildrenArray(it);
 
-          if (kidsArr.length) {
-            parent.children = [];
-            kidsArr.forEach((ch, idxCh) => {
-              const chName = (ch.name || ch.title || "").trim();
-              if (!chName) return;
+if (kidsArr.length) {
+  parent.children = [];
+  kidsArr.forEach((ch, idxCh) => {
+    const chName = (ch.name || ch.title || "").trim();
+    if (!chName) return;
 
-              const chEntry = {
-                id: `${idStr}-c${idxCh}`,
-                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                name: chName,
-                category,
-                subcategory: subcat,
-                unit: normalizeUnit(ch.unit || it.unit),
+    const chEntry = {
+      id: `${idStr}-c${idxCh}`,
+      uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+      name: chName,
+      category,
+      subcategory: subcat,
+      unit: normalizeUnit(ch.unit || it.unit),
 
-                unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-                labor:      pickNum(ch, LABOR_KEYS),
-                materials:  pickNum(ch, MATERIAL_KEYS),
-                mechanisms: pickNum(ch, MECHANISM_KEYS),
+      // 🔁 Smart picks for child rows too
+      unit_price: pickNumSmart(ch, ["unit_price","unitprice","vienības cena","vienibas cena","cena"], "unit"),
+      labor:      pickNumSmart(ch, ["labor","darbs"], "labor"),
+      materials:  pickNumSmart(ch, ["materials","materiāli","materiali","materjali","materiālu izmaksas","materialu izmaksas"], "materials"),
+      mechanisms: pickNumSmart(ch, ["mechanisms","mehānismi","mehanismi","mehānismu","meh","mehānismu izmaksas","meh izmaksas","mehizmaksas"], "mechanisms"),
 
-                is_child: true,
-                parent_uid: uid,
-                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-              };
+      is_child: true,
+      parent_uid: uid,
+      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+    };
 
-              childrenFlat.push(chEntry);
-              ordered.push(chEntry);
+    childrenFlat.push(chEntry);
+    ordered.push(chEntry);
 
-              // compact child kept on parent for quick access
-              parent.children.push({
-                name: chEntry.name,
-                unit: chEntry.unit,
-                coeff: chEntry.coeff || 1,
-                labor: chEntry.labor || 0,
-                materials: chEntry.materials || 0,
-                mechanisms: chEntry.mechanisms || 0,
-              });
-            });
-          }
+    // compact version stored on parent for quick access
+    parent.children.push({
+      name: chEntry.name,
+      unit: chEntry.unit,
+      coeff: chEntry.coeff || 1,
+      labor: chEntry.labor || 0,
+      materials: chEntry.materials || 0,
+      mechanisms: chEntry.mechanisms || 0,
+    });
+  });
+}
+if ((base.labor || base.materials || base.mechanisms) === 0 && base.unit_price > 0) {
+  console.warn("[PARSE] Split missing, falling back to unit_price →", base.name, { keys: Object.keys(it) });
+}
+if (kidsArr.length === 0 && /balta/i.test(insurer)) {
+  console.warn("[PARSE] No children array found for parent:", name, "Available keys:", Object.keys(it));
+}
+
         }
       });
 
