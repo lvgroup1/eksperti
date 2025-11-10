@@ -59,11 +59,6 @@ const cleanKey = (k) =>
     .replace(/[^a-z0-9]+/g, "")        // keep only a-z0-9
     .replace(/(izmaksas|izdevumi|summa|cena|eur|bezpvn|pvn|kopā|kopa)+/g, ""); // strip suffixes often appended
 
-const parseDec = (x) => {
-  if (x === null || x === undefined || x === "") return 0;
-  const n = parseFloat(String(x).replace(/\s+/g, "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-};
 
 // --- Smart number picker: first try exact provided keys; if not found, fuzzy match by regex buckets ---
 function pickNumSmart(obj, exactKeys = [], type = "unknown") {
