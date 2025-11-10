@@ -473,6 +473,25 @@ export default function DamageIntakeForm() {
     })();
     return () => { cancelled = true; };
   }, [assetBase]);
+// Expose current catalog for DevTools debugging
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    window.__PC = priceCatalog;
+  }
+}, [priceCatalog]);
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    window.dumpPC = () => {
+      const pc = window.__PC || [];
+      return {
+        rows: pc.length,
+        withMaterials: pc.filter(r => (r.materials||0)>0).length,
+        withMechanisms: pc.filter(r => (r.mechanisms||0)>0).length,
+        sample: pc.slice(0,3)
+      };
+    };
+  }
+}, []);
 
   /* ---------- Load pricing ---------- */
 useEffect(() => {
