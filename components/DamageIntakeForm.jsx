@@ -605,7 +605,7 @@ useEffect(() => {
   }
   setCatalogError("");
 
-  (async () => {
+(async () => {
     try {
       const loadArrayish = async (url) => {
         const res = await fetch(url, { cache: "no-store" });
@@ -614,42 +614,76 @@ useEffect(() => {
         return Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
       };
 
-       let raw = [];
-let source = "";
- if (insurer === "Balta") {
-   // Prefer v2; fall back to balta.json
-   try { raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`); source = "balta.v2.json"; } catch {}
-   if (!raw.length) {
-     try { raw = await loadArrayish(`${assetBase}/prices/balta.json`); source = "balta.json"; }
-     catch (e) { setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`); return; }
-   }
- } else if (insurer === "Gjensidige") {
-   try { raw = await loadArrayish(`${assetBase}/prices/gjensidige.json`); source = "gjensidige.json"; }
-   catch (e) { setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenas: ${e.message}`); return; }
- }
-        // ===== GJENSIDIGE =====
-        // Try a few filename variants; keep yours as first candidate
-        const candidates = [
-          `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar transportu 7%.xls`,
-          `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar%20transportu%207%25.xls`,
-          `${assetBase}/prices/gjensidige.xls`,
-          `${assetBase}/prices/gjensidige.xlsx`,
-        ];
-        let parsed = [];
-        let hit = "";
-        for (const u of candidates) {
+      // ---- choose source by insurer (BALTA or GJENSIDIGE) ----
+      let raw = [];
+      let source = "";
+
+      if (insurer === "Balta") {
+        // Prefer v2 -> fallback to legacy
+        try {
+          raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`);
+          source = "balta.v2.json";
+        } catch (e) {}
+        if (!raw.length) {
           try {
-            parsed = await loadGjensidigeExcel(u);
-            hit = u;
-            break;
-          } catch {}
+            raw = await loadArrayish(`${assetBase}/prices/balta.json`);
+            source = "balta.json";
+          } catch (e2) {
+            setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e2.message}`);
+            return;
+          }
         }
-        if (!parsed.length) {
-          setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (.xls/.xlsx). Pārbaudi faila nosaukumu mapē /public/prices/");
+      } else if (insurer === "Gjensidige") {
+        // Try both spellings in case of filename typo
+        const candidates = [
+          `${assetBase}/prices/gjensidige.json`,
+          `${assetBase}/prices/gjensidieg.json`,
+        ];
+        for (const url of candidates) {
+          try {
+            const tmp = await loadArrayish(url);
+            if (Array.isArray(tmp) && tmp.length) {
+              raw = tmp;
+              source = url.split("/").pop() || "gjensidige.json";
+              break;
+            }
+          } catch (e) {}
+        }
+        if (!raw.length) {
+          setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (meklēju gjensidige.json / gjensidieg.json).");
           return;
         }
-        raw = parsed;
-        source = "gjensidige.xls(x)";
+
+        // Sanitize rows so NaN/empty values don’t explode later
+        const num = (v) => {
+          const n = parseDec(v);
+          return Number.isFinite(n) ? n : 0;
+        };
+        raw = raw
+          .filter((r) => r && (r.name || r.Nosaukums))
+          .map((r, i) => {
+            const name = String(r.name ?? r.Nosaukums ?? "").trim();
+            const category = String(r.category ?? r.Kategorija ?? "").trim();
+            const subcategory = String(r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? "").trim();
+            const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
+            const id = String(r.id ?? i);
+            const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
+            return {
+              id,
+              uid,
+              name,
+              category,
+              subcategory,
+              unit,
+              unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
+              labor:      num(r.labor ?? r.Darbs),
+              materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
+              mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
+              is_child: !!(r.is_child || r.parent_uid),
+              parent_uid: r.parent_uid || null,
+              coeff: num(r.coeff ?? 1) || 1,
+            };
+          });
       }
 
       const parents = [];
