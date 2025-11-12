@@ -133,7 +133,7 @@ function attachChildrenFromLegacy(baseParents, rawLegacy) {
     `${String(cat||"").trim().toLowerCase()}|${String(name||"").trim().toLowerCase()}`;
 
   for (const leg of rawLegacy) {
-    const kids = findAnyChildrenArray(leg);
+    const kids = findAnyChildrenArrayDeep(leg);
     if (!kids.length) continue;
     const id = String(leg.id ?? "");
     if (id) byId.set(id, leg);
@@ -148,7 +148,7 @@ function attachChildrenFromLegacy(baseParents, rawLegacy) {
     const donor = fromId || fromCN;
     if (!donor) continue;
 
-    const kids = findAnyChildrenArray(donor);
+    const kids = findAnyChildrenArrayDeep(donor);
     if (!kids.length) continue;
 
     p.children = kids.map(ch => ({
@@ -317,7 +317,7 @@ function mapChildFromFlat(x, fallbackUnit) {
 }
 
 // tries to find any array of objects with a "name" inside the raw item
-function findAnyChildrenArray(rawItem) {
+function findAnyChildrenArrayDeep(rawItem) {
   const candidates = [
     "children","komponentes","apaks","apakšpozīcijas",
     "components","componentes","subitems","sub_items","items",
