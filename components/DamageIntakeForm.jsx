@@ -455,9 +455,9 @@ export default function DamageIntakeForm() {
     return m;
   }, [priceCatalog]);
   
-  // Optional name-based child hints from /prices/child_hints.json
-  const [childHints, setChildHints] = useState({});
-  useEffect(() => {
+// Optional name-based child hints from /prices/child_hints.json
+const [childHints, setChildHints] = useState({});
+useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -466,7 +466,8 @@ export default function DamageIntakeForm() {
         const json = await res.json();
         if (cancelled || !json || typeof json !== "object") return;
         const m = {};
-        const nk = (s) => String(s ?? "").trim().toLowerCase();
+        // Use EXACTLY the same normalizer as lookups (diacritics, punctuation, spacing)
+        const nk = (s) => normTxt(s);
         for (const [k, v] of Object.entries(json)) m[nk(k)] = Array.isArray(v) ? v : [];
         setChildHints(m);
       } catch { /* ignore */ }
@@ -626,7 +627,39 @@ useEffect(() => {
           }
         }
       });
-
+if (source === "balta.v2.json" && childrenFlat.length === 0) {
+  try {
+    const legacyRaw = await loadArrayish(`${assetBase}/prices/balta.json`);
+    const attachedCount = attachChildrenFromLegacy(parents, legacyRaw);
+    if (attachedCount > 0) {
+      // Mirror compact children back into the flattened arrays
+      for (const p of parents) {
+        if (!Array.isArray(p.children) || !p.children.length) continue;
+        p.children.forEach((ch, idxCh) => {
+          const chEntry = {
+            id: `${p.id}-c${idxCh}`,
+            uid: [p.category, p.subcategory, `${p.id}-c${idxCh}`, ch.name].join("::"),
+            name: ch.name,
+            category: p.category,
+            subcategory: p.subcategory,
+            unit: normalizeUnit(ch.unit || p.unit),
+            unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+            labor:      pickNum(ch, LABOR_KEYS),
+            materials:  pickNum(ch, MATERIAL_KEYS),
+            mechanisms: pickNum(ch, MECHANISM_KEYS),
+            is_child: true,
+            parent_uid: p.uid,
+            coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+          };
+          childrenFlat.push(chEntry);
+          ordered.push(chEntry);
+        });
+      }
+    }
+  } catch {
+    // legacy is optional; ignore if missing
+  }
+}
       // Adjacency fallback map (if v2 had grouped rows)
       const adj = new Map();
       let currentParent = null;
@@ -642,7 +675,17 @@ useEffect(() => {
           adj.set(currentParent.uid, arr);
         }
       }
-
+      // If parent has embedded children (from legacy attach), ensure adj map has them too
+      for (const p of parents) {
+        if (!Array.isArray(p.children) || !p.children.length) continue;
+        const arr = adj.get(p.uid) || [];
+        for (const ch of p.children) {
+          const mapped = mapChildFromFlat(ch, p.unit);
+          const dupe = arr.some(a => normTxt(a.name) === normTxt(mapped.name) && normalizeUnit(a.unit) === normalizeUnit(mapped.unit));
+          if (!dupe) arr.push(mapped);
+        }
+        if (arr.length) adj.set(p.uid, arr);
+      }
       const full = [...parents, ...childrenFlat];
 
       // Indexes
