@@ -170,6 +170,106 @@ function attachChildrenFromLegacy(baseParents, rawLegacy) {
 
 
 /* ---------- generic helpers (pure; safe at top-level) ---------- */
+// ---- GJENSIDIGE Excel parsing (client-side; supports .xls & .xlsx via SheetJS) ----
+
+// header normalizer like normTxt but for columns
+function normHeader(s) {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// pick the first matching value by trying multiple header names
+function pickCol(obj, candidates = []) {
+  const map = new Map(Object.entries(obj).map(([k, v]) => [normHeader(k), v]));
+  for (const c of candidates) {
+    const key = normHeader(c);
+    if (map.has(key)) {
+      const v = map.get(key);
+      // numeric columns go through parseDec downstream; return raw here
+      return v;
+    }
+  }
+  return undefined;
+}
+
+// Parse a SheetJS workbook into our unified row shape
+function parseGjensidigeWorkbook(XLSX, wb) {
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  // get JSON rows with header row inferred
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+  // candidate header labels (extend if your sheet uses other words)
+  const H = {
+    category:   ["Kategorija", "Category", "Darbu grupa"],
+    subcat:     ["Apakškategorija", "Subcategory", "Grupa", "Apakšgrupa"],
+    name:       ["Nosaukums", "Darba nosaukums", "Pozīcija", "Darbs"],
+    unit:       ["Mērv.", "Merv.", "Mērvienība", "Unit"],
+    labor:      ["Darbs", "Darba izmaksas", "Work"],
+    materials:  ["Materiāli", "Mater.", "Materiālu izmaksas", "Materials"],
+    mechanisms: ["Mehānismi", "Meh.", "Mehānismu izmaksas", "Mechanisms"],
+    unitPrice:  ["Vienības cena", "Cena", "Unit price", "EUR/vien"],
+    parent:     ["Vecāks", "Parent", "Parent ID", "Piesaistīts pie"],
+    coeff:      ["Koef.", "Coeff", "Daudzuma koef.", "Qty coef"],
+    id:         ["ID", "Kods", "Pozīcijas kods"],
+  };
+
+  const out = [];
+  rows.forEach((r, i) => {
+    const category   = squish(pickCol(r, H.category) ?? "");
+    const subcat     = squish(pickCol(r, H.subcat) ?? "");
+    const name       = squish(pickCol(r, H.name) ?? "");
+    const unit       = normalizeUnit(pickCol(r, H.unit) ?? "");
+    const labor      = parseDec(pickCol(r, H.labor));
+    const materials  = parseDec(pickCol(r, H.materials));
+    const mechanisms = parseDec(pickCol(r, H.mechanisms));
+    const unit_price = parseDec(pickCol(r, H.unitPrice));
+    const parentRaw  = squish(pickCol(r, H.parent) ?? "");
+    const coeff      = parseDec(pickCol(r, H.coeff) ?? 1) || 1;
+    const idStr      = String(pickCol(r, H.id) ?? i + 1);
+
+    if (!name) return; // skip empty
+
+    const base = {
+      id: idStr,
+      uid: [category, subcat, idStr, name].join("::"),
+      name,
+      category,
+      subcategory: subcat,
+      unit,
+      unit_price,
+      labor,
+      materials,
+      mechanisms,
+      is_child: !!parentRaw,
+      parent_uid: parentRaw || null,
+      coeff,
+    };
+    out.push(base);
+  });
+
+  return out;
+}
+
+// Fetch + parse client-side Excel (xls/xlsx) using SheetJS
+async function loadGjensidigeExcel(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const ab = await res.arrayBuffer();
+
+  // dynamic import SheetJS only when needed
+  const XLSXmod = await import(/* webpackChunkName: "xlsx" */ "xlsx");
+  const XLSX = XLSXmod?.default || XLSXmod;
+
+  const wb = XLSX.read(ab, { type: "array" });
+  return parseGjensidigeWorkbook(XLSX, wb);
+}
+
 function prettyDate(d = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
@@ -496,7 +596,7 @@ useEffect(() => {
 
   /* ---------- Load pricing ---------- */
 useEffect(() => {
-  if (insurer !== "Balta") {
+  if (insurer !== "Balta" && insurer !== "Gjensidige") {
     setAdjChildrenByParent(new Map());
     setNameIndex(new Map());
     setCatNameIndex(new Map());
@@ -514,23 +614,42 @@ useEffect(() => {
         return Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
       };
 
-      // ✅ Prefer v2 first; fallback to legacy
-      let raw = [];
-      let source = "";
-      try {
-        raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`);
-        source = "balta.v2.json";
-      } catch (e) {
-        // ignore, we'll try legacy next
-      }
-      if (!raw.length) {
-        try {
-          raw = await loadArrayish(`${assetBase}/prices/balta.json`);
-          source = "balta.json";
-        } catch (e) {
-          setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`);
+       let raw = [];
+let source = "";
+ if (insurer === "Balta") {
+   // Prefer v2; fall back to balta.json
+   try { raw = await loadArrayish(`${assetBase}/prices/balta.v2.json`); source = "balta.v2.json"; } catch {}
+   if (!raw.length) {
+     try { raw = await loadArrayish(`${assetBase}/prices/balta.json`); source = "balta.json"; }
+     catch (e) { setCatalogError(`Neizdevās ielādēt BALTA cenas: ${e.message}`); return; }
+   }
+ } else if (insurer === "Gjensidige") {
+   try { raw = await loadArrayish(`${assetBase}/prices/gjensidige.json`); source = "gjensidige.json"; }
+   catch (e) { setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenas: ${e.message}`); return; }
+ }
+        // ===== GJENSIDIGE =====
+        // Try a few filename variants; keep yours as first candidate
+        const candidates = [
+          `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar transportu 7%.xls`,
+          `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar%20transportu%207%25.xls`,
+          `${assetBase}/prices/gjensidige.xls`,
+          `${assetBase}/prices/gjensidige.xlsx`,
+        ];
+        let parsed = [];
+        let hit = "";
+        for (const u of candidates) {
+          try {
+            parsed = await loadGjensidigeExcel(u);
+            hit = u;
+            break;
+          } catch {}
+        }
+        if (!parsed.length) {
+          setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (.xls/.xlsx). Pārbaudi faila nosaukumu mapē /public/prices/");
           return;
         }
+        raw = parsed;
+        source = "gjensidige.xls(x)";
       }
 
       const parents = [];
@@ -1474,6 +1593,13 @@ if (typeof window !== "undefined") {
                   : "Notiek BALTA cenrāža ielāde..."}
               </div>
             )}
+            {insurer === "Gjensidige" && (
+  <div style={{ fontSize: 12, color: catalogError ? "#b91c1c" : "#065f46" }}>
+    {catalogError ? catalogError
+      : priceCatalog.length ? `Ielādēts GJENSIDIGE cenrādis (${priceCatalog.length} pozīcijas)`
+      : "Notiek GJENSIDIGE cenrāža ielāde..."}
+  </div>
+)}
           </StepShell>
         )}
 
