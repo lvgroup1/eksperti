@@ -788,56 +788,53 @@ useEffect(() => {
           }
         }
 } else if (insurer === "Gjensidige") {
-  // 1) Try parsing XLSX (keeps alignment -> knows underpositions)
-  let gj = null;
+  // Just load JSON, like Balta uses balta.json
   try {
-    gj = await loadGjensidigeFromXlsx(assetBase);
-  } catch {}
-
-  if (gj && Array.isArray(gj.rows) && gj.rows.length) {
-    raw = gj.rows;
-    source = gj.source || "gjensidige.xlsx";
-  } else {
-    // 2) Fallback to JSON if XLSX missing (still works; no alignment)
-    const candidates = [
-      `${assetBase}/prices/gjensidige.json`,
-      `${assetBase}/prices/gjensidieg.json`,
-    ];
-    for (const url of candidates) {
-      try {
-        const tmp = await loadArrayish(url);
-        if (Array.isArray(tmp) && tmp.length) {
-          raw = tmp;
-          source = url.split("/").pop();
-          break;
-        }
-      } catch {}
-    }
-    if (!raw.length) {
-      setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (XLSX vai JSON).");
+    const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
+    if (!Array.isArray(gjRaw) || !gjRaw.length) {
+      setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
       return;
     }
 
-    // If JSON fallback lacks flags, ensure default shape
-    const num = (v) => (Number.isFinite(parseDec(v)) ? parseDec(v) : 0);
-    raw = raw.map((r, i) => ({
-      id: String(r.id ?? i),
-      uid: String(r.uid ?? `GJ::${r.category||""}::${i}::${r.name||""}`),
-      name: String(r.name ?? "").trim(),
-      category: String(r.category ?? "").trim(),
-      subcategory: String(r.subcategory ?? "").trim(),
-      unit: normalizeUnit(r.unit ?? ""),
-      unit_price: num(r.unit_price),
-      labor:      num(r.labor),
-      materials:  num(r.materials),
-      mechanisms: num(r.mechanisms),
-      is_child: !!r.is_child,
-      parent_uid: r.parent_uid || null,
-      coeff: Number(r.coeff ?? 1) || 1,
-      is_section: !!r.is_section,
-    }));
+    const num = (v) => {
+      const n = parseDec(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    raw = gjRaw
+      .filter((r) => r && (r.name || r.Nosaukums))
+      .map((r, i) => {
+        const name = String(r.name ?? r.Nosaukums ?? "").trim();
+        const category = String(r.category ?? r.Kategorija ?? "").trim();
+        const subcategory = String(r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? "").trim();
+        const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
+        const id = String(r.id ?? i);
+        const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
+        return {
+          id,
+          uid,
+          name,
+          category,
+          subcategory,
+          unit,
+          unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
+          labor:      num(r.labor ?? r.Darbs),
+          materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
+          mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
+          is_child: !!(r.is_child || r.parent_uid),
+          parent_uid: r.parent_uid || null,
+          coeff: num(r.coeff ?? 1) || 1,
+          is_section: !!r.is_section,
+        };
+      });
+
+    source = "gjensidige.json";
+  } catch (e) {
+    setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json): ${e.message}`);
+    return;
   }
 }
+
 
       const parents = [];
       const childrenFlat = [];
