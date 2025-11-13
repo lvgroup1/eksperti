@@ -810,7 +810,7 @@ useEffect(() => {
       return Number.isFinite(n) ? n : 0;
     };
 
-    // 2) pirmā mapa – normalizē laukus, bet kategoriju pagaidām nepieskaras
+    // 2) pirmais maps – normalizē laukus, bet kategoriju pagaidām neaiztiekam
     let base = gjRaw
       .filter((r) => r && (r.name || r.Nosaukums))
       .map((r, i) => {
@@ -825,7 +825,7 @@ useEffect(() => {
           id,
           uid,
           name,
-          category,       // būs tukšs lielākajai daļai rindu
+          category,       // šobrīd bieži tukšs
           subcategory,
           unit,
           unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
@@ -835,34 +835,35 @@ useEffect(() => {
           is_child: !!(r.is_child || r.parent_uid),
           parent_uid: r.parent_uid || null,
           coeff: num(r.coeff ?? 1) || 1,
-          is_section: !!r.is_section, // default false, ja nebija
+          is_section: !!r.is_section, // default false, ja nav
         };
       });
 
-    // 3) otrā mapa – atrod "virsraksta rindas" un izmanto kā kategorijas
+    // 3) otrais maps – atrod "virsraksta rindas" un izmanto kā kategorijas
     let currentCat = "";
     base = base.map((row) => {
-      const sum = (Number(row.labor || 0) +
-                   Number(row.materials || 0) +
-                   Number(row.mechanisms || 0) +
-                   Number(row.unit_price || 0));
+      const sum =
+        Number(row.labor || 0) +
+        Number(row.materials || 0) +
+        Number(row.mechanisms || 0) +
+        Number(row.unit_price || 0);
 
       const isHeader =
         (!row.unit || row.unit === "") && // nav mērvienības
         sum === 0 &&                      // nav cenas
-        row.name && row.name.length < 80; // kaut kāds normāls virsraksts
+        row.name && row.name.length < 80; // normāls virsraksta teksts
 
       if (isHeader) {
-        // Šī rinda būs, piem., "Griesti", "Sienas", "Grīdas" utt.
+        // piem., "Griesti", "Sienas", "Grīdas", ...
         currentCat = row.name.trim();
         return {
           ...row,
           category: currentCat,
-          is_section: true,   // atzīmējam kā kategoriju virsrakstu
+          is_section: true,
         };
       }
 
-      // Parastajām pozīcijām: pārmanto pēdējo currentCat
+      // Parastajām pozīcijām → pārmantot pēdējo currentCat
       const cat = String(row.category || currentCat || "").trim();
 
       return {
@@ -879,7 +880,6 @@ useEffect(() => {
     return;
   }
 }
-
 
       const parents = [];
       const childrenFlat = [];
@@ -1181,19 +1181,19 @@ if (typeof window !== "undefined") {
   }, [priceCatalog, childHints, adjChildrenByParent, findRowByName]);
 
 const categories = useMemo(() => {
-   if (!priceCatalog.length) return [];
+  if (!priceCatalog.length) return [];
 
-   // Ja ir virsraksta rindas (Gjensidige), ņemam tās kā kategoriju sarakstu
-   const sections = priceCatalog.filter((r) => r.is_section && r.name);
-   if (sections.length) {
-     const set = new Set(sections.map((r) => r.name.trim()).filter(Boolean));
-     return Array.from(set);
-   }
+  // Ja ir virsraksta rindas (Gjensidige), izmanto tās kā kategoriju sarakstu
+  const sections = priceCatalog.filter((r) => r.is_section && r.name);
+  if (sections.length) {
+    const set = new Set(sections.map((r) => r.name.trim()).filter(Boolean));
+    return Array.from(set);
+  }
 
-   // Pretējā gadījumā (Balta) – kā līdz šim
-   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
-   return Array.from(set);
- }, [priceCatalog]);
+  // Pretējā gadījumā (Balta) – kā līdz šim
+  const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
+  return Array.from(set);
+}, [priceCatalog]);
 
   const allUnits = useMemo(() => {
     const set = new Set(DEFAULT_UNITS);
