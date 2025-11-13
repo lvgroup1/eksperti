@@ -171,6 +171,160 @@ function attachChildrenFromLegacy(baseParents, rawLegacy) {
 
 /* ---------- generic helpers (pure; safe at top-level) ---------- */
 // ---- GJENSIDIGE Excel parsing (client-side; supports .xls & .xlsx via SheetJS) ----
+// ==== GJENSIDIGE: parse XLSX and detect categories + underpositions (right aligned) ====
+
+// Find the header row in sheet "Objekts"
+function gjFindHeaderRow(ws, XLSX) {
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let r = range.s.r; r <= Math.min(range.e.r, range.s.r + 200); r++) {
+    const cName = XLSX.utils.encode_cell({ r, c: 1 }); // column B (Darba nosaukums)
+    const cUnit = XLSX.utils.encode_cell({ r, c: 2 }); // column C (Mērv.)
+    const v1 = (ws[cName]?.v || "").toString().toLowerCase();
+    const v2 = (ws[cUnit]?.v || "").toString().toLowerCase();
+    if (v1.includes("darba") && v1.includes("nosauk") && (v2.includes("mērv") || v2.includes("merv"))) {
+      return r;
+    }
+  }
+  return null;
+}
+
+function gjNormalizeUnit(u) {
+  const x = String(u||"").trim().toLowerCase().replace("²","2").replace("\u00A0"," ");
+  if (["gb.","gab.","gab"].includes(x)) return "gab";
+  if (["m2","m 2","m^2","m²"].includes(x)) return "m2";
+  if (["m3","m 3","m^3","m³"].includes(x)) return "m3";
+  if (x === "m") return "m";
+  if (["kpl","kpl."].includes(x)) return "kpl";
+  if (x === "diena") return "diena";
+  if (x === "c/h") return "c/h";
+  if (["obj.","obj"].includes(x)) return "obj";
+  return x;
+}
+const gjNum = (v) => {
+  const n = parseFloat(String(v ?? "").replace(/\s+/g,"").replace(",","."));
+  return Number.isFinite(n) ? n : 0;
+};
+
+/**
+ * Load /prices/GJENSIDIGE_*.xlsx with cell styles. We rely on horizontal alignment:
+ * - main position: left (or general)
+ * - underposition: right
+ * We also infer categories from header rows (no unit + zero prices) like "Griesti", "Sienas", ...
+ */
+async function loadGjensidigeFromXlsx(assetBase) {
+  const candidates = [
+    `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar transportu 7%.xlsx`,
+    `${assetBase}/prices/GJENSIDIGE_01.03.2024_ar%20transportu%207%25.xlsx`,
+    `${assetBase}/prices/gjensidige.xlsx`,
+  ];
+  // dynamic import (client)
+  const XLSXmod = await import(/* webpackChunkName: "xlsx" */ "xlsx");
+  const XLSX = XLSXmod?.default || XLSXmod;
+
+  let ab = null, urlUsed = "";
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) continue;
+      ab = await res.arrayBuffer();
+      urlUsed = url;
+      break;
+    } catch {}
+  }
+  if (!ab) throw new Error("Gjensidige XLSX nav atrodams");
+
+  const wb = XLSX.read(ab, { type: "array", cellStyles: true }); // << keep styles
+  const ws = wb.Sheets["Objekts"] || wb.Sheets[wb.SheetNames[0]];
+  if (!ws) throw new Error("Gjensidige XLSX: trūkst lapa 'Objekts'");
+
+  const headerR = gjFindHeaderRow(ws, XLSX);
+  if (headerR == null) throw new Error("Gjensidige XLSX: nav atrasta virsraksta rinda");
+
+  // Column indices relative to header row
+  const C = {
+    nr: 0, name: 1, unit: 2, qty: 3,
+    uLabor: 4, uMat: 5, uMech: 6, uPrice: 7,
+    tLabor: 8, tMat: 9, tMech: 10, tSum: 11
+  };
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const out = [];
+  let currentCategory = "";
+  let lastMain = null;
+
+  for (let r = headerR + 1; r <= range.e.r; r++) {
+    const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v;
+    const style = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.s;
+
+    const name = String(cell(C.name) ?? "").trim();
+    if (!name) continue;
+
+    const unit = gjNormalizeUnit(cell(C.unit) ?? "");
+    const uLabor = gjNum(cell(C.uLabor));
+    const uMat   = gjNum(cell(C.uMat));
+    const uMech  = gjNum(cell(C.uMech));
+    const uPrice = gjNum(cell(C.uPrice));
+
+    const isZero = (uLabor + uMat + uMech + uPrice) === 0;
+    const nameStyle = style(C.name);
+    const hAlign = nameStyle?.alignment?.horizontal || ""; // "left" | "right" | "center" | ""
+    const rightAligned = hAlign.toLowerCase() === "right";
+
+    // Section header (category): no unit + no prices
+    if ((!unit || unit === "") && isZero) {
+      currentCategory = name;
+      lastMain = null;
+      // we also emit the section (will be hidden in UI via is_section)
+      out.push({
+        id: `sec-${r}`,
+        uid: `GJ::section::${r}::${name}`,
+        name, category: currentCategory, subcategory: "",
+        unit: "", unit_price: 0, labor: 0, materials: 0, mechanisms: 0,
+        is_child: false, parent_uid: null, coeff: 1,
+        is_section: true
+      });
+      continue;
+    }
+
+    // Build row
+    const id = `r${r}`;
+    const base = {
+      id,
+      uid: `GJ::${currentCategory}::${id}::${name}`,
+      name,
+      category: currentCategory || "",
+      subcategory: "",
+      unit,
+      unit_price: uPrice,
+      labor: uLabor,
+      materials: uMat,
+      mechanisms: uMech,
+      coeff: 1,
+    };
+
+    if (rightAligned && lastMain) {
+      // Underposition: hide in UI, link to last main
+      out.push({
+        ...base,
+        is_child: true,
+        parent_uid: lastMain.uid,
+        is_section: false,
+      });
+    } else {
+      // Main position (left or general align)
+      const row = {
+        ...base,
+        is_child: false,
+        parent_uid: null,
+        is_section: false,
+      };
+      out.push(row);
+      lastMain = row; // anchor for following right-aligned children
+    }
+  }
+
+  return { rows: out, source: urlUsed.split("/").pop() };
+}
 
 // header normalizer like normTxt but for columns
 function normHeader(s) {
@@ -633,73 +787,57 @@ useEffect(() => {
             return;
           }
         }
-      } else if (insurer === "Gjensidige") {
-        // Try both spellings in case of filename typo
-        const candidates = [
-          `${assetBase}/prices/gjensidige.json`,
-          `${assetBase}/prices/gjensidieg.json`,
-        ];
-        for (const url of candidates) {
-          try {
-            const tmp = await loadArrayish(url);
-            if (Array.isArray(tmp) && tmp.length) {
-              raw = tmp;
-              source = url.split("/").pop() || "gjensidige.json";
-              break;
-            }
-          } catch (e) {}
-        }
-        if (!raw.length) {
-          setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (meklēju gjensidige.json / gjensidieg.json).");
-          return;
-        }
+} else if (insurer === "Gjensidige") {
+  // 1) Try parsing XLSX (keeps alignment -> knows underpositions)
+  let gj = null;
+  try {
+    gj = await loadGjensidigeFromXlsx(assetBase);
+  } catch {}
 
-        // Sanitize rows so NaN/empty values don’t explode later
-        const num = (v) => {
-          const n = parseDec(v);
-          return Number.isFinite(n) ? n : 0;
-        };
-        raw = raw
-          .filter((r) => r && (r.name || r.Nosaukums))
-          .map((r, i) => {
-            const name = String(r.name ?? r.Nosaukums ?? "").trim();
-            const category = String(r.category ?? r.Kategorija ?? "").trim();
-            const subcategory = String(r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? "").trim();
-            const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
-            const id = String(r.id ?? i);
-            const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
-            return {
-              id,
-              uid,
-              name,
-              category,
-              subcategory,
-              unit,
-              unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
-              labor:      num(r.labor ?? r.Darbs),
-              materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
-              mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
-              is_child: !!(r.is_child || r.parent_uid),
-              parent_uid: r.parent_uid || null,
-              coeff: num(r.coeff ?? 1) || 1,
-            };
-          });
+  if (gj && Array.isArray(gj.rows) && gj.rows.length) {
+    raw = gj.rows;
+    source = gj.source || "gjensidige.xlsx";
+  } else {
+    // 2) Fallback to JSON if XLSX missing (still works; no alignment)
+    const candidates = [
+      `${assetBase}/prices/gjensidige.json`,
+      `${assetBase}/prices/gjensidieg.json`,
+    ];
+    for (const url of candidates) {
+      try {
+        const tmp = await loadArrayish(url);
+        if (Array.isArray(tmp) && tmp.length) {
+          raw = tmp;
+          source = url.split("/").pop();
+          break;
+        }
+      } catch {}
+    }
+    if (!raw.length) {
+      setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (XLSX vai JSON).");
+      return;
+    }
 
-               // Infer categories from section headers (rows with no unit & no prices)
-       // Typical headers in the sheet are like: "Griesti", "Sienas", "Logi", utt.
-       let currentCat = "";
-       raw = raw.map((r) => {
-         const isZero = (Number(r.labor||0) + Number(r.materials||0) + Number(r.mechanisms||0) + Number(r.unit_price||0)) === 0;
-         const isHeader = (!r.unit || r.unit === "") && isZero && r.name && r.name.length < 80;
-         if (isHeader) {
-           currentCat = r.name.trim();
-           return { ...r, category: currentCat, is_section: true };
-         }
-         // inherit last seen header as category if category is empty
-         const cat = String(r.category || currentCat || "").trim();
-         return { ...r, category: cat, is_section: false };
-       });
-      }
+    // If JSON fallback lacks flags, ensure default shape
+    const num = (v) => (Number.isFinite(parseDec(v)) ? parseDec(v) : 0);
+    raw = raw.map((r, i) => ({
+      id: String(r.id ?? i),
+      uid: String(r.uid ?? `GJ::${r.category||""}::${i}::${r.name||""}`),
+      name: String(r.name ?? "").trim(),
+      category: String(r.category ?? "").trim(),
+      subcategory: String(r.subcategory ?? "").trim(),
+      unit: normalizeUnit(r.unit ?? ""),
+      unit_price: num(r.unit_price),
+      labor:      num(r.labor),
+      materials:  num(r.materials),
+      mechanisms: num(r.mechanisms),
+      is_child: !!r.is_child,
+      parent_uid: r.parent_uid || null,
+      coeff: Number(r.coeff ?? 1) || 1,
+      is_section: !!r.is_section,
+    }));
+  }
+}
 
       const parents = [];
       const childrenFlat = [];
@@ -1936,7 +2074,11 @@ if (typeof window !== "undefined") {
                     >
                       <option value="">— izvēlies pozīciju —</option>
                       {priceCatalog
-                        .filter((it) => (!row.category || it.category === row.category) && !isChildItem(it))
+                        .filter((it) =>
+    (!row.category || it.category === row.category) &&
+    !isChildItem(it) &&            // hide underpositions
+    !it.is_section                 // hide category header rows
+  )
                         .map((it) => (
                           <option key={it.uid} value={it.uid}>
                             {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
