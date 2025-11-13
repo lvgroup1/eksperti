@@ -684,6 +684,21 @@ useEffect(() => {
               coeff: num(r.coeff ?? 1) || 1,
             };
           });
+
+               // Infer categories from section headers (rows with no unit & no prices)
+       // Typical headers in the sheet are like: "Griesti", "Sienas", "Logi", utt.
+       let currentCat = "";
+       raw = raw.map((r) => {
+         const isZero = (Number(r.labor||0) + Number(r.materials||0) + Number(r.mechanisms||0) + Number(r.unit_price||0)) === 0;
+         const isHeader = (!r.unit || r.unit === "") && isZero && r.name && r.name.length < 80;
+         if (isHeader) {
+           currentCat = r.name.trim();
+           return { ...r, category: currentCat, is_section: true };
+         }
+         // inherit last seen header as category if category is empty
+         const cat = String(r.category || currentCat || "").trim();
+         return { ...r, category: cat, is_section: false };
+       });
       }
 
       const parents = [];
