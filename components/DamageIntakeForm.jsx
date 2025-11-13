@@ -712,22 +712,31 @@ export default function DamageIntakeForm() {
 // Optional name-based child hints from /prices/child_hints.json
 const [childHints, setChildHints] = useState({});
 useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${assetBase}/prices/child_hints.json`, { cache: "no-store" });
-        if (!res.ok) return; // hints are optional
-        const json = await res.json();
-        if (cancelled || !json || typeof json !== "object") return;
-        const m = {};
-        // Use EXACTLY the same normalizer as lookups (diacritics, punctuation, spacing)
-        const nk = (s) => normTxt(s);
-        for (const [k, v] of Object.entries(json)) m[nk(k)] = Array.isArray(v) ? v : [];
-        setChildHints(m);
+  let cancelled = false;
+  (async () => {
+    try {
+      // Choose correct hints file depending on insurer
+      let url = `${assetBase}/prices/child_hints.json`; // default → Balta
+      if (insurer === "Gjensidige") {
+        url = `${assetBase}/prices/gjensidige_child_hints.json`;
+      }
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        // Hints are optional, so just return silently
+        return;
+      }
+      const json = await res.json();
+      if (cancelled || !json || typeof json !== "object") return;
+      const m = {};
+      const nk = (s) => normTxt(s); // same normalizer used in getChildrenFor()
+      for (const [k, v] of Object.entries(json)) {
+        m[nk(k)] = Array.isArray(v) ? v : [];
+      }
+      setChildHints(m);
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [assetBase]);
+  }, [assetBase, insurer]);
 // Expose current catalog for DevTools debugging
 useEffect(() => {
   if (typeof window !== "undefined") {
@@ -788,8 +797,8 @@ useEffect(() => {
           }
         }
 } else if (insurer === "Gjensidige") {
-  // Just load JSON, like Balta uses balta.json
   try {
+    // 1) ielādē tikai JSON
     const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
     if (!Array.isArray(gjRaw) || !gjRaw.length) {
       setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
@@ -801,7 +810,8 @@ useEffect(() => {
       return Number.isFinite(n) ? n : 0;
     };
 
-    raw = gjRaw
+    // 2) pirmā mapa – normalizē laukus, bet kategoriju pagaidām nepieskaras
+    let base = gjRaw
       .filter((r) => r && (r.name || r.Nosaukums))
       .map((r, i) => {
         const name = String(r.name ?? r.Nosaukums ?? "").trim();
@@ -810,11 +820,12 @@ useEffect(() => {
         const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
         const id = String(r.id ?? i);
         const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
+
         return {
           id,
           uid,
           name,
-          category,
+          category,       // būs tukšs lielākajai daļai rindu
           subcategory,
           unit,
           unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
@@ -824,16 +835,51 @@ useEffect(() => {
           is_child: !!(r.is_child || r.parent_uid),
           parent_uid: r.parent_uid || null,
           coeff: num(r.coeff ?? 1) || 1,
-          is_section: !!r.is_section,
+          is_section: !!r.is_section, // default false, ja nebija
         };
       });
 
+    // 3) otrā mapa – atrod "virsraksta rindas" un izmanto kā kategorijas
+    let currentCat = "";
+    base = base.map((row) => {
+      const sum = (Number(row.labor || 0) +
+                   Number(row.materials || 0) +
+                   Number(row.mechanisms || 0) +
+                   Number(row.unit_price || 0));
+
+      const isHeader =
+        (!row.unit || row.unit === "") && // nav mērvienības
+        sum === 0 &&                      // nav cenas
+        row.name && row.name.length < 80; // kaut kāds normāls virsraksts
+
+      if (isHeader) {
+        // Šī rinda būs, piem., "Griesti", "Sienas", "Grīdas" utt.
+        currentCat = row.name.trim();
+        return {
+          ...row,
+          category: currentCat,
+          is_section: true,   // atzīmējam kā kategoriju virsrakstu
+        };
+      }
+
+      // Parastajām pozīcijām: pārmanto pēdējo currentCat
+      const cat = String(row.category || currentCat || "").trim();
+
+      return {
+        ...row,
+        category: cat,
+        is_section: false,
+      };
+    });
+
+    raw = base;
     source = "gjensidige.json";
   } catch (e) {
-    setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json): ${e.message}`);
+    setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
     return;
   }
 }
+
 
       const parents = [];
       const childrenFlat = [];
@@ -1134,10 +1180,20 @@ if (typeof window !== "undefined") {
     return out;
   }, [priceCatalog, childHints, adjChildrenByParent, findRowByName]);
 
-  const categories = useMemo(() => {
-    const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
-    return Array.from(set);
-  }, [priceCatalog]);
+const categories = useMemo(() => {
+   if (!priceCatalog.length) return [];
+
+   // Ja ir virsraksta rindas (Gjensidige), ņemam tās kā kategoriju sarakstu
+   const sections = priceCatalog.filter((r) => r.is_section && r.name);
+   if (sections.length) {
+     const set = new Set(sections.map((r) => r.name.trim()).filter(Boolean));
+     return Array.from(set);
+   }
+
+   // Pretējā gadījumā (Balta) – kā līdz šim
+   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
+   return Array.from(set);
+ }, [priceCatalog]);
 
   const allUnits = useMemo(() => {
     const set = new Set(DEFAULT_UNITS);
