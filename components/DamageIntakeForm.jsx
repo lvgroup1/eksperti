@@ -840,91 +840,73 @@ useEffect(() => {
             return;
           }
         }
-      } else if (insurer === "Gjensidige") {
-        try {
-          // 1) Load GJENSIDIGE JSON
-          const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
-          if (!Array.isArray(gjRaw) || !gjRaw.length) {
-            setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
-            return;
-          }
+} else if (insurer === "Gjensidige") {
+  try {
+    const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
+    if (!Array.isArray(gjRaw) || !gjRaw.length) {
+      setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
+      return;
+    }
 
-          const num = (v) => {
-            const n = parseDec(v);
-            return Number.isFinite(n) ? n : 0;
-          };
+    const num = (v) => {
+      const n = parseDec(v);
+      return Number.isFinite(n) ? n : 0;
+    };
 
-          // 2) First pass – normalize fields
-          let base = gjRaw
-            .filter((r) => r && (r.name || r.Nosaukums))
-            .map((r, i) => {
-              const name = String(r.name ?? r.Nosaukums ?? "").trim();
-              const category = String(r.category ?? r.Kategorija ?? "").trim();
-              const subcategory = String(
-                r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? ""
-              ).trim();
-              const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
-              const id = String(r.id ?? i);
-              const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
+    let base = gjRaw
+      .filter((r) => r && (r.name || r.Nosaukums))
+      .map((r, i) => {
+        const name = String(r.name ?? r.Nosaukums ?? "").trim();
+        const category = String(r.category ?? r.Kategorija ?? "").trim();
+        const subcategory = String(
+          r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? ""
+        ).trim();
+        const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
+        const id = String(r.id ?? i);
+        const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
 
-              return {
-                id,
-                uid,
-                name,
-                category, // will be filled from headers in second pass
-                subcategory,
-                unit,
-                unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
-                labor:      num(r.labor ?? r.Darbs),
-                materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
-                mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
-                is_child: !!(r.is_child || r.parent_uid),
-                parent_uid: r.parent_uid || null,
-                coeff: num(r.coeff ?? 1) || 1,
-                is_section: !!r.is_section, // default false
-              };
-            });
+        return {
+          id,
+          uid,
+          name,
+          category,   // will be overridden by header logic below
+          subcategory,
+          unit,
+          unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
+          labor:      num(r.labor ?? r.Darbs),
+          materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
+          mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
+          is_child: !!(r.is_child || r.parent_uid),
+          parent_uid: r.parent_uid || null,
+          coeff: num(r.coeff ?? 1) || 1,
+        };
+      });
 
-          // 3) Second pass – detect header rows and turn them into categories
-          let currentCat = "";
-          base = base.map((row) => {
-            const sum =
-              Number(row.labor || 0) +
-              Number(row.materials || 0) +
-              Number(row.mechanisms || 0) +
-              Number(row.unit_price || 0);
-
-            const isHeader =
-              (!row.unit || row.unit === "") && // no unit
-              sum === 0 &&                      // no prices
-              row.name && row.name.length < 80; // plausible heading text
-
-            if (isHeader) {
-              // e.g. "Griesti", "Sienas", "Grīdas", "Logi", ...
-              currentCat = row.name.trim();
-              return {
-                ...row,
-                category: currentCat,
-                is_section: true,
-              };
-            }
-
-            // real positions inherit current category if they don't have one
-            const cat = String(row.category || currentCat || "").trim();
-            return {
-              ...row,
-              category: cat,
-              is_section: false,
-            };
-          });
-
-          raw = base;
-          source = "gjensidige.json";
-        } catch (e) {
-          setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
-          return;
-        }
+    // 🔧 FIX: propagate header name as category
+    let currentCat = "";
+    base = base.map((row) => {
+      if (isSectionRow(row)) {
+        currentCat = (row.name || "").trim();
+        return {
+          ...row,
+          category: currentCat,
+        };
       }
+      const cat = (row.category || currentCat || "").trim();
+      return {
+        ...row,
+        category: cat,
+      };
+    });
+
+    raw = base;
+    source = "gjensidige.json";
+  } catch (e) {
+    setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
+    return;
+  }
+}
+
 
 
        const parents = [];
@@ -2183,31 +2165,25 @@ const categories = useMemo(() => {
                   {/* Pozīcija (parents only) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
-                    <select
-                      value={row.itemUid ?? ""}
-                      onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
-                      style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
-                    >
-                      <option value="">— izvēlies pozīciju —</option>
+ <select
+  value={row.itemUid ?? ""}
+  onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
+  style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
+>
+  <option value="">— izvēlies pozīciju —</option>
   {priceCatalog
-    .filter((it) => {
-      // Gjensidige: neslēdzam klāt virsraksta rindas ("Griesti", "Sienas"...)
-      if (insurer === "Gjensidige" && isSectionRow(it)) return false;
-
-      return (
-        (!row.category || it.category === row.category) &&
-        !isChildItem(it) &&   // apakšpozīcijas neredzam formā
-        !it.is_section        // ja kaut kur tomēr ir flag, arī ignorējam
-      );
-    })
+    .filter((it) =>
+      (!row.category || it.category === row.category) &&
+      !isChildItem(it) &&            // hide underpositions
+      !it.is_section                 // hide category header rows
+    )
     .map((it) => (
       <option key={it.uid} value={it.uid}>
         {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
       </option>
     ))}
+</select>
 
-
-                    </select>
                   </div>
 
                   {/* Mērv. */}
