@@ -205,6 +205,22 @@ const gjNum = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Visi nosaukumi, kas child_hints.json definēti kā apakšpozīcijas (child-only)
+const gjChildOnlyNames = useMemo(() => {
+  if (insurer !== "Gjensidige" || !childHints) return new Set();
+
+  const s = new Set();
+  for (const hints of Object.values(childHints)) {
+    if (!Array.isArray(hints)) continue;
+    for (const h of hints) {
+      const name = typeof h === "string" ? h : h?.name;
+      if (!name) continue;
+      s.add(normTxt(name));
+    }
+  }
+  return s;
+}, [childHints, insurer]);
+
 /**
  * Load /prices/GJENSIDIGE_*.xlsx with cell styles. We rely on horizontal alignment:
  * - main position: left (or general)
@@ -551,6 +567,15 @@ const normTxt = (s) => String(s ?? "")
   .replace(/[^\p{L}\p{N}]+/gu, " ")
   .replace(/\s+/g, " ")
   .trim();
+
+// Gjensidige grupu virsraksti, kurus nevajag rādīt kā pozīcijas
+const GJ_GROUP_BLACKLIST = new Set([
+  normTxt("Ģipškartona konstrukcija"),
+  normTxt("Griestu sagatavošanas darbi"),
+  normTxt("Balsinājums"),
+  normTxt("Balinājums"),
+]);
+
 
 function deburrLower(s) {
   return String(s ?? "")
@@ -2172,16 +2197,31 @@ const categories = useMemo(() => {
 >
   <option value="">— izvēlies pozīciju —</option>
   {priceCatalog
-    .filter((it) =>
-      (!row.category || it.category === row.category) &&
-      !isChildItem(it) &&            // hide underpositions
-      !it.is_section                 // hide category header rows
-    )
+    .filter((it) => {
+      // 1) Ja Gjensidige – paslēpjam grupu virsrakstus un child-only pozīcijas
+      if (insurer === "Gjensidige") {
+        const nName = normTxt(it.name);
+
+        // a) “Ģipškartona konstrukcija”, “Griestu sagatavošanas darbi”, “Balsinājums”, utt.
+        if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+
+        // b) jebkura pozīcija, kas child_hints.json pusē definēta kā apakšpozīcija
+        if (gjChildOnlyNames.has(nName)) return false;
+      }
+
+      // 2) Kopējie filtri – gan Balta, gan Gjensidige
+      return (
+        (!row.category || it.category === row.category) &&
+        !isChildItem(it) &&   // rindiņas, kas jau ir apakšpozīcijas pēc parent_uid
+        !it.is_section        // kategoriju virsraksti (“Griesti”, “Sienas”, ...) nerādās
+      );
+    })
     .map((it) => (
       <option key={it.uid} value={it.uid}>
         {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
       </option>
     ))}
+
 </select>
 
                   </div>
