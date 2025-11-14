@@ -796,92 +796,94 @@ useEffect(() => {
             return;
           }
         }
-} else if (insurer === "Gjensidige") {
-  try {
-    // 1) ielādē tikai JSON
-    const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
-    if (!Array.isArray(gjRaw) || !gjRaw.length) {
-      setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
-      return;
-    }
+      } else if (insurer === "Gjensidige") {
+        try {
+          // 1) Load GJENSIDIGE JSON
+          const gjRaw = await loadArrayish(`${assetBase}/prices/gjensidige.json`);
+          if (!Array.isArray(gjRaw) || !gjRaw.length) {
+            setCatalogError("Neizdevās ielādēt GJENSIDIGE cenrādi (gjensidige.json ir tukšs vai bojāts).");
+            return;
+          }
 
-    const num = (v) => {
-      const n = parseDec(v);
-      return Number.isFinite(n) ? n : 0;
-    };
+          const num = (v) => {
+            const n = parseDec(v);
+            return Number.isFinite(n) ? n : 0;
+          };
 
-    // 2) pirmais maps – normalizē laukus, bet kategoriju pagaidām neaiztiekam
-    let base = gjRaw
-      .filter((r) => r && (r.name || r.Nosaukums))
-      .map((r, i) => {
-        const name = String(r.name ?? r.Nosaukums ?? "").trim();
-        const category = String(r.category ?? r.Kategorija ?? "").trim();
-        const subcategory = String(r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? "").trim();
-        const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
-        const id = String(r.id ?? i);
-        const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
+          // 2) First pass – normalize fields
+          let base = gjRaw
+            .filter((r) => r && (r.name || r.Nosaukums))
+            .map((r, i) => {
+              const name = String(r.name ?? r.Nosaukums ?? "").trim();
+              const category = String(r.category ?? r.Kategorija ?? "").trim();
+              const subcategory = String(
+                r.subcategory ?? r.Apakkategorija ?? r["Apakškategorija"] ?? ""
+              ).trim();
+              const unit = normalizeUnit(r.unit ?? r["Mērv."] ?? r.Merv ?? "");
+              const id = String(r.id ?? i);
+              const uid = String(r.uid ?? [category, subcategory, id, name].join("::"));
 
-        return {
-          id,
-          uid,
-          name,
-          category,       // šobrīd bieži tukšs
-          subcategory,
-          unit,
-          unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
-          labor:      num(r.labor ?? r.Darbs),
-          materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
-          mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
-          is_child: !!(r.is_child || r.parent_uid),
-          parent_uid: r.parent_uid || null,
-          coeff: num(r.coeff ?? 1) || 1,
-          is_section: !!r.is_section, // default false, ja nav
-        };
-      });
+              return {
+                id,
+                uid,
+                name,
+                category, // will be filled from headers in second pass
+                subcategory,
+                unit,
+                unit_price: num(r.unit_price ?? r["Vienības cena"] ?? r.cena),
+                labor:      num(r.labor ?? r.Darbs),
+                materials:  num(r.materials ?? r.Materiāli ?? r["Materiāli.1"]),
+                mechanisms: num(r.mechanisms ?? r["Mehā-nismi"] ?? r.Mehanismi ?? r["Mehā-nismi.1"]),
+                is_child: !!(r.is_child || r.parent_uid),
+                parent_uid: r.parent_uid || null,
+                coeff: num(r.coeff ?? 1) || 1,
+                is_section: !!r.is_section, // default false
+              };
+            });
 
-    // 3) otrais maps – atrod "virsraksta rindas" un izmanto kā kategorijas
-    let currentCat = "";
-    base = base.map((row) => {
-      const sum =
-        Number(row.labor || 0) +
-        Number(row.materials || 0) +
-        Number(row.mechanisms || 0) +
-        Number(row.unit_price || 0);
+          // 3) Second pass – detect header rows and turn them into categories
+          let currentCat = "";
+          base = base.map((row) => {
+            const sum =
+              Number(row.labor || 0) +
+              Number(row.materials || 0) +
+              Number(row.mechanisms || 0) +
+              Number(row.unit_price || 0);
 
-      const isHeader =
-        (!row.unit || row.unit === "") && // nav mērvienības
-        sum === 0 &&                      // nav cenas
-        row.name && row.name.length < 80; // normāls virsraksta teksts
+            const isHeader =
+              (!row.unit || row.unit === "") && // no unit
+              sum === 0 &&                      // no prices
+              row.name && row.name.length < 80; // plausible heading text
 
-      if (isHeader) {
-        // piem., "Griesti", "Sienas", "Grīdas", ...
-        currentCat = row.name.trim();
-        return {
-          ...row,
-          category: currentCat,
-          is_section: true,
-        };
+            if (isHeader) {
+              // e.g. "Griesti", "Sienas", "Grīdas", "Logi", ...
+              currentCat = row.name.trim();
+              return {
+                ...row,
+                category: currentCat,
+                is_section: true,
+              };
+            }
+
+            // real positions inherit current category if they don't have one
+            const cat = String(row.category || currentCat || "").trim();
+            return {
+              ...row,
+              category: cat,
+              is_section: false,
+            };
+          });
+
+          raw = base;
+          source = "gjensidige.json";
+        } catch (e) {
+          setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
+          return;
+        }
       }
 
-      // Parastajām pozīcijām → pārmantot pēdējo currentCat
-      const cat = String(row.category || currentCat || "").trim();
 
-      return {
-        ...row,
-        category: cat,
-        is_section: false,
-      };
-    });
-
-    raw = base;
-    source = "gjensidige.json";
-  } catch (e) {
-    setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
-    return;
-  }
-}
-
-      const parents = [];
+       const parents = [];
       const childrenFlat = [];
       const ordered = [];
 
@@ -921,7 +923,11 @@ useEffect(() => {
 
           is_child: childFlag,
           parent_uid: parent_uid || null,
+
+          // 🔴 ŠIS BIJA PAZUDIS – saglabājam header flagu no Gjensidige loadera
+          is_section: !!it.is_section,
         };
+
 
         // We treat input rows as parents unless they explicitly carry a parent link
         if (childFlag) {
@@ -934,45 +940,46 @@ useEffect(() => {
           ordered.push(parent);
 
           // Embedded children (if any)
-          const kidsArr = findAnyChildrenArray(it);
-          if (kidsArr.length) {
-            parent.children = [];
-            kidsArr.forEach((ch, idxCh) => {
-              const chName = (ch.name || ch.title || "").trim();
-              if (!chName) return;
+// Embedded children (if any)
+const kidsArr = findAnyChildrenArray(it);
+if (kidsArr.length) {
+  parent.children = [];
+  kidsArr.forEach((ch, idxCh) => {
+    const chName = (ch.name || ch.title || "").trim();
+    if (!chName) return;
 
-              const chEntry = {
-                id: `${idStr}-c${idxCh}`,
-                uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-                name: chName,
-                category,
-                subcategory: subcat,
-                unit: normalizeUnit(ch.unit || it.unit),
+    const chEntry = {
+      id: `${idStr}-c${idxCh}`,
+      uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+      name: chName,
+      category,
+      subcategory: subcat,
+      unit: normalizeUnit(ch.unit || it.unit),
 
-                unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-                labor:      pickNum(ch, LABOR_KEYS),
-                materials:  pickNum(ch, MATERIAL_KEYS),
-                mechanisms: pickNum(ch, MECHANISM_KEYS),
+      unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+      labor:      pickNum(ch, LABOR_KEYS),
+      materials:  pickNum(ch, MATERIAL_KEYS),
+      mechanisms: pickNum(ch, MECHANISM_KEYS),
 
-                is_child: true,
-                parent_uid: uid,
-                coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-              };
+      is_child: true,
+      parent_uid: uid,
+      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+    };
 
-              childrenFlat.push(chEntry);
-              ordered.push(chEntry);
+    childrenFlat.push(chEntry);
+    ordered.push(chEntry);
 
-              // compact version on parent
-              parent.children.push({
-                name: chEntry.name,
-                unit: chEntry.unit,
-                coeff: chEntry.coeff || 1,
-                labor: chEntry.labor || 0,
-                materials: chEntry.materials || 0,
-                mechanisms: chEntry.mechanisms || 0,
-              });
-            });
-          }
+    // compact version on parent
+    parent.children.push({
+      name: chEntry.name,
+      unit: chEntry.unit,
+      coeff: chEntry.coeff || 1,
+      labor: chEntry.labor || 0,
+      materials: chEntry.materials || 0,
+      mechanisms: chEntry.mechanisms || 0,
+    });
+  });
+}
         }
       });
 if (source === "balta.v2.json" && childrenFlat.length === 0) {
@@ -984,21 +991,26 @@ if (source === "balta.v2.json" && childrenFlat.length === 0) {
       for (const p of parents) {
         if (!Array.isArray(p.children) || !p.children.length) continue;
         p.children.forEach((ch, idxCh) => {
-          const chEntry = {
-            id: `${p.id}-c${idxCh}`,
-            uid: [p.category, p.subcategory, `${p.id}-c${idxCh}`, ch.name].join("::"),
-            name: ch.name,
-            category: p.category,
-            subcategory: p.subcategory,
-            unit: normalizeUnit(ch.unit || p.unit),
-            unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-            labor:      pickNum(ch, LABOR_KEYS),
-            materials:  pickNum(ch, MATERIAL_KEYS),
-            mechanisms: pickNum(ch, MECHANISM_KEYS),
-            is_child: true,
-            parent_uid: p.uid,
-            coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-          };
+    const chEntry = {
+      id: `${idStr}-c${idxCh}`,
+      uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+      name: chName,
+      category,
+      subcategory: subcat,
+      unit: normalizeUnit(ch.unit || it.unit),
+
+      unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+      labor:      pickNum(ch, LABOR_KEYS),
+      materials:  pickNum(ch, MATERIAL_KEYS),
+      mechanisms: pickNum(ch, MECHANISM_KEYS),
+
+      is_child: true,
+      parent_uid: uid,
+      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+
+      // children are never header rows
+      is_section: false,
+    };
           childrenFlat.push(chEntry);
           ordered.push(chEntry);
         });
@@ -1183,10 +1195,12 @@ if (typeof window !== "undefined") {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
-  // Ja ir virsraksta rindas (Gjensidige), izmanto tās kā kategoriju sarakstu
+  // Datasetiem ar virsraksta rindām (Gjensidige) – ņemam tās kā kategorijas
   const sections = priceCatalog.filter((r) => r.is_section && r.name);
   if (sections.length) {
-    const set = new Set(sections.map((r) => r.name.trim()).filter(Boolean));
+    const set = new Set(
+      sections.map((r) => r.name.trim()).filter(Boolean)
+    );
     return Array.from(set);
   }
 
@@ -1194,6 +1208,7 @@ const categories = useMemo(() => {
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
   return Array.from(set);
 }, [priceCatalog]);
+
 
   const allUnits = useMemo(() => {
     const set = new Set(DEFAULT_UNITS);
