@@ -462,10 +462,35 @@ function isSectionRow(row) {
     parseDec(row.mechanisms ?? 0) +
     parseDec(row.unit_price ?? 0);
 
-  // Gjensidige "Griesti/Sienas/Grīdas" u.c. virsraksti:
-  //  - nav mērvienības
-  //  - visas cenas = 0
-  return (!unit || unit === "nan") && sum === 0;
+  // Jābūt "virsraksta" tipa rindai: nav mērvienības + nav cenu
+  const looksLikeHeader = (!unit || unit === "nan" || unit === "-") && sum === 0;
+  if (!looksLikeHeader) return false;
+
+  // Bet izmetam ārā kopsavilkuma/finanšu rindas no beigām
+  const lower = name.toLowerCase();
+  const blacklist = [
+    "transports",
+    "tiešās izmaksas kopā",
+    "tiesas izmaksas kopa",
+    "virsizdevumi",
+    "virsizdevumi",
+    "peļņa",
+    "pelna",
+    "sociālais nodoklis",
+    "socialais nodoklis",
+    "kopā",           // "KOPĀ:", "PAVISAM KOPĀ" utt.
+    "pvn",
+    "sastādīja",
+    "sastadija",
+    "sia \"lv group\"",
+    "sert."
+  ];
+
+  if (blacklist.some((bad) => lower.includes(bad))) {
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -1218,7 +1243,6 @@ if (typeof window !== "undefined") {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
-  // Gjensidige – mēģinām atpazīt virsraksta rindas ("Griesti", "Sienas"...)
   if (insurer === "Gjensidige") {
     const sectionNames = priceCatalog
       .filter(isSectionRow)
@@ -1230,11 +1254,9 @@ const categories = useMemo(() => {
     }
   }
 
-  // Noklusējums (Balta u.c.) – kā līdz šim, paņemt category lauku
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
   return Array.from(set);
 }, [priceCatalog, insurer]);
-
 
 
   const allUnits = useMemo(() => {
