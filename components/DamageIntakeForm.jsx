@@ -948,23 +948,27 @@ if (kidsArr.length) {
     const chName = (ch.name || ch.title || "").trim();
     if (!chName) return;
 
-    const chEntry = {
-      id: `${idStr}-c${idxCh}`,
-      uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-      name: chName,
-      category,
-      subcategory: subcat,
-      unit: normalizeUnit(ch.unit || it.unit),
+const chEntry = {
+  id: `${idStr}-c${idxCh}`,
+  uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
+  name: chName,
+  category,
+  subcategory: subcat,
+  unit: normalizeUnit(ch.unit || it.unit),
 
-      unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-      labor:      pickNum(ch, LABOR_KEYS),
-      materials:  pickNum(ch, MATERIAL_KEYS),
-      mechanisms: pickNum(ch, MECHANISM_KEYS),
+  unit_price: pickNum(ch, UNIT_PRICE_KEYS),
+  labor:      pickNum(ch, LABOR_KEYS),
+  materials:  pickNum(ch, MATERIAL_KEYS),
+  mechanisms: pickNum(ch, MECHANISM_KEYS),
 
-      is_child: true,
-      parent_uid: uid,
-      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-    };
+  is_child: true,
+  parent_uid: uid,
+  coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
+
+  // bērni nekad nav kategoriju virsraksti
+  is_section: false,
+};
+
 
     childrenFlat.push(chEntry);
     ordered.push(chEntry);
@@ -2140,17 +2144,18 @@ const categories = useMemo(() => {
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">— izvēlies pozīciju —</option>
-                      {priceCatalog
-                        .filter((it) =>
+{priceCatalog
+  .filter((it) =>
     (!row.category || it.category === row.category) &&
-    !isChildItem(it) &&            // hide underpositions
-    !it.is_section                 // hide category header rows
+    !isChildItem(it) &&    // apakšpozīcijas neredzam
+    !it.is_section         // “Griesti”, “Sienas” u.c. neredzam
   )
-                        .map((it) => (
-                          <option key={it.uid} value={it.uid}>
-                            {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-                          </option>
-                        ))}
+  .map((it) => (
+    <option key={it.uid} value={it.uid}>
+      {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+    </option>
+  ))}
+
                     </select>
                   </div>
 
