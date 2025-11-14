@@ -450,6 +450,25 @@ function parseDec(x) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isSectionRow(row) {
+  if (!row) return false;
+  const name = (row.name || "").trim();
+  if (!name) return false;
+
+  const unit = normalizeUnit(row.unit || "");
+  const sum =
+    parseDec(row.labor ?? 0) +
+    parseDec(row.materials ?? 0) +
+    parseDec(row.mechanisms ?? 0) +
+    parseDec(row.unit_price ?? 0);
+
+  // Gjensidige "Griesti/Sienas/Grīdas" u.c. virsraksti:
+  //  - nav mērvienības
+  //  - visas cenas = 0
+  return (!unit || unit === "nan") && sum === 0;
+}
+
+
 // diacritic-insensitive, preserves real 0 values
 // diacritic-insensitive, preserves real 0 values
 // drop-in replacement
@@ -1199,19 +1218,23 @@ if (typeof window !== "undefined") {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
-  // Datasetiem ar virsraksta rindām (Gjensidige) – ņemam tās kā kategorijas
-  const sections = priceCatalog.filter((r) => r.is_section && r.name);
-  if (sections.length) {
-    const set = new Set(
-      sections.map((r) => r.name.trim()).filter(Boolean)
-    );
-    return Array.from(set);
+  // Gjensidige – mēģinām atpazīt virsraksta rindas ("Griesti", "Sienas"...)
+  if (insurer === "Gjensidige") {
+    const sectionNames = priceCatalog
+      .filter(isSectionRow)
+      .map((r) => (r.name || "").trim())
+      .filter(Boolean);
+
+    if (sectionNames.length) {
+      return Array.from(new Set(sectionNames));
+    }
   }
 
-  // Pretējā gadījumā (Balta) – kā līdz šim
+  // Noklusējums (Balta u.c.) – kā līdz šim, paņemt category lauku
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
   return Array.from(set);
-}, [priceCatalog]);
+}, [priceCatalog, insurer]);
+
 
 
   const allUnits = useMemo(() => {
@@ -2144,17 +2167,23 @@ const categories = useMemo(() => {
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">— izvēlies pozīciju —</option>
-{priceCatalog
-  .filter((it) =>
-    (!row.category || it.category === row.category) &&
-    !isChildItem(it) &&    // apakšpozīcijas neredzam
-    !it.is_section         // “Griesti”, “Sienas” u.c. neredzam
-  )
-  .map((it) => (
-    <option key={it.uid} value={it.uid}>
-      {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
-    </option>
-  ))}
+  {priceCatalog
+    .filter((it) => {
+      // Gjensidige: neslēdzam klāt virsraksta rindas ("Griesti", "Sienas"...)
+      if (insurer === "Gjensidige" && isSectionRow(it)) return false;
+
+      return (
+        (!row.category || it.category === row.category) &&
+        !isChildItem(it) &&   // apakšpozīcijas neredzam formā
+        !it.is_section        // ja kaut kur tomēr ir flag, arī ignorējam
+      );
+    })
+    .map((it) => (
+      <option key={it.uid} value={it.uid}>
+        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+      </option>
+    ))}
+
 
                     </select>
                   </div>
