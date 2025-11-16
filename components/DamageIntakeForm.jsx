@@ -1259,12 +1259,7 @@ const gjChildOnlyNames = useMemo(() => {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
-  const catFromBrackets = (name) => {
-    const m = /^\s*\[([^\]]+)\]/.exec(name || "");
-    return m && m[1] ? m[1].trim() : "";
-  };
-
-  // GJENSIDIGE: use section/header rows as categories
+  // Gjensidige: categories = section headers ("Griesti", "Sienas", utt.)
   if (insurer === "Gjensidige") {
     const sectionNames = priceCatalog
       .filter((r) => isSectionRow(r))
@@ -1276,25 +1271,24 @@ const categories = useMemo(() => {
     }
   }
 
-  // SWEDBANK: all bold rows / groups like
-  // "[Krāsojums (ar špaktelējumu)] ..." become categories
+  // Swedbank: categories = VISI BOLD GRUPU NOSAUKUMI,
+  // kuri JSON-ā ir subcategory laukā:
+  // "Ģipškartona konstrukcija (parastais ģipškartons)",
+  // "Krāsojums (ar špaktelējumu)", utt.
   if (insurer === "Swedbank") {
     const set = new Set();
     for (const row of priceCatalog) {
-      if (!row) continue;
-      let cat = (row.category || "").trim();
-      const fromName = catFromBrackets(row.name || "");
-      if (fromName) cat = fromName;
-      if (!cat) continue;
-      set.add(cat);
+      const sub = (row.subcategory || "").trim();
+      if (sub) set.add(sub);
     }
     return Array.from(set);
   }
 
-  // Default (Balta, etc.)
-  const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
+  // Default (Balta, BTA, IF, Compensa...)
+  const set = new Set(priceCatalog.map((i) => (i.category || "").trim()).filter(Boolean));
   return Array.from(set);
 }, [priceCatalog, insurer]);
+
 
 
   const allUnits = useMemo(() => {
@@ -2246,7 +2240,8 @@ const categories = useMemo(() => {
       if (gjChildOnlyNames.has(nName)) return false;
     }
 
-    // 2) Swedbank – arī child-hints rindiņas rādās tikai kā apakšpozīcijas
+    // 2) Swedbank – child-hints rindiņas rādām tikai kā apakšpozīcijas (Excelā),
+    // nevis izvēlnē.
     if (insurer === "Swedbank") {
       if (gjChildOnlyNames.has(nName)) return false;
     }
@@ -2255,11 +2250,10 @@ const categories = useMemo(() => {
     let matchesCategory = true;
     if (row.category) {
       if (insurer === "Swedbank") {
-        // categoria no [ ... ] prefixa
-        const m = /^\s*\[([^\]]+)\]/.exec(name);
-        const catFromName = m && m[1] ? m[1].trim() : "";
-        const itemCat = (it.category || catFromName || "").trim();
-        matchesCategory = itemCat === row.category;
+        // Swedbank gadījumā kategorija = subcategory
+        matchesCategory = ((it.subcategory || "").trim() === row.category);
+      } else if (insurer === "Gjensidige") {
+        matchesCategory = (it.category === row.category);
       } else {
         matchesCategory = (it.category === row.category);
       }
@@ -2271,7 +2265,7 @@ const categories = useMemo(() => {
     return !isChildItem(it) && !it.is_section;
   })
   .map((it) => {
-    // Swedbank: no display name, drop the "[...]" prefix
+    // Swedbank: ja pozīcijas nosaukums sākas ar "[Kategorija]", to noņemam
     let displayName = it.name || "";
     if (insurer === "Swedbank") {
       displayName = displayName.replace(/^\s*\[[^\]]*\]\s*/, "");
