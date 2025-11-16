@@ -1271,21 +1271,12 @@ const categories = useMemo(() => {
     }
   }
 
-  // Swedbank: categories = VISI BOLD GRUPU NOSAUKUMI,
-  // kuri JSON-ā ir subcategory laukā:
-  // "Ģipškartona konstrukcija (parastais ģipškartons)",
-  // "Krāsojums (ar špaktelējumu)", utt.
-  if (insurer === "Swedbank") {
-    const set = new Set();
-    for (const row of priceCatalog) {
-      const sub = (row.subcategory || "").trim();
-      if (sub) set.add(sub);
-    }
-    return Array.from(set);
-  }
-
   // Default (Balta, BTA, IF, Compensa...)
-  const set = new Set(priceCatalog.map((i) => (i.category || "").trim()).filter(Boolean));
+   const set = new Set(
+    priceCatalog
+      .map((i) => (i.category || "").trim())
+      .filter(Boolean)
+  );
   return Array.from(set);
 }, [priceCatalog, insurer]);
 
