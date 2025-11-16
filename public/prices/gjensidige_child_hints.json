@@ -3,11 +3,17 @@
     "metāla karkass",
     "stiprinājumi, palīgmateriāli"
   ],
-  "Karkasa apšūšana ar ģipškartonu 1. kārta": [
-    "mitumizturīgais ģipškartons",
+  "Karkasa apšūšana ar ģipškartonu 1. kārta (parastais)": [
     "parastais ģipškartons",
-    "stiprinājumi, palīgmateriāli",
-    "ugunsdrošais ģipškartons"
+    "stiprinājumi, palīgmateriāli"
+  ],
+  "Karkasa apšūšana ar ģipškartonu 1. kārta (mitrumizturīgs)": [
+    "mitumizturīgais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
+  ],
+  "Karkasa apšūšana ar ģipškartonu 1. kārta (ugunsdrošs)": [
+    "ugunsdrošais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
   ],
   "Ģipškartona šuvju aizpildīšana": [
     "sietiņlenta",
@@ -33,8 +39,8 @@
   ],
   "Starppaneļu šuvju apmetuma remonts": [
     "grunts",
-    "palīgmateriāli",
-    "ģipša apmetums"
+    "ģipša apmetums",
+    "palīgmateriāli"
   ],
   "Tapešu noņemšana no griestiem (1 kārta)": [
     "tapešu noņēmējs"
@@ -64,8 +70,8 @@
     "stiprinājumi, palīgmateriāli"
   ],
   "Tvaika izolācijas ieklāšana": [
-    "līmlentas, palīgmateriāli",
-    "tvaika izolācijas plēve"
+    "tvaika izolācijas plēve",
+    "līmlentas, palīgmateriāli"
   ],
   "Iekārto griestu koka latojuma montāža": [
     "kokmateriāli, stiprinājumi"
@@ -83,12 +89,12 @@
   ],
   "Griestu apmetuma lokāls remonts": [
     "grunts",
-    "palīgmateriāli",
-    "ģipša apmetums"
+    "ģipša apmetums",
+    "palīgmateriāli"
   ],
   "Griestu apmešana līdz 15mm biezumā": [
-    "palīgmateriāli",
-    "ģipša apmetums"
+    "ģipša apmetums",
+    "palīgmateriāli"
   ],
   "Griestu apstrāde ar pretsēnīšu šķidrumu": [
     "antibakteriāls fungicīdu sastāvs"
@@ -104,9 +110,9 @@
     "palīgmateriāli"
   ],
   "PVC apdares paneļu montāža": [
-    "PVC dekoratīvais panelis",
     "PVC dekoratīvie paneļi",
-    "palīgmateriāli"
+    "palīgmateriāli",
+    "PVC dekoratīvais panelis"
   ],
   "Kokšķiedru plākšņu griestu paneļu montāža": [
     "krāsoti kokšķiedru griestu paneļi",
@@ -120,16 +126,16 @@
     "tīrīšanas līdzekļi"
   ],
   "Putuplasta karnīžu montāža, krāsošana": [
-    "palīgmateriāli",
-    "putuplasta karnīzes"
+    "putuplasta karnīzes",
+    "palīgmateriāli"
   ],
   "Koka karnīžu montāža": [
     "koka karnīzes",
     "palīgmateriāli"
   ],
   "Poliuretāna karnīžu montāža": [
-    "palīgmateriāli",
-    "poliuretāna karnīzes"
+    "poliuretāna karnīzes",
+    "palīgmateriāli"
   ],
   "Karnīžu montāžā izmantojot ēsošās": [
     "palīgmateriāli"
@@ -140,14 +146,20 @@
   "Ģipškartona metāla karkasa ierīkošana": [
     "metāla karkass, stiprinājumi"
   ],
-  "Sienu karkasu apšūšana ar ģipškartonu 1. kārta": [
-    "mitumizturīgais ģipškartons",
+  "Sienu karkasu apšūšana ar ģipškartonu 1. kārta (parastais)": [
     "parastais ģipškartons",
     "stiprinājumi, palīgmateriāli"
   ],
-  "Sienu karkasu apšūšana ar ģipškartonu 2. kārtas": [
-    "mitumizturīgais ģipškartons",
+  "Sienu karkasu apšūšana ar ģipškartonu 2. kārtas (parastais)": [
     "parastais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
+  ],
+  "Sienu karkasu apšūšana ar ģipškartonu 1. kārta (mitrumizturīgs)": [
+    "mitumizturīgais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
+  ],
+  "Sienu karkasu apšūšana ar ģipškartonu 2. kārtas (mitrumizturīgs)": [
+    "mitumizturīgais ģipškartons",
     "stiprinājumi, palīgmateriāli"
   ],
   "Sienu virsmas daļēja špaktelēšana": [
@@ -181,26 +193,26 @@
     "akmens vate PAROC EXTRA 100mm"
   ],
   "Montēt reģipša starpsienas b-125mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKB 2 kārtās no abām  pusēm": [
-    "CW-Profils 75, 3m",
-    "GKB  ģipškartona plāksnes  12,5 mm",
     "UW-Profils 75, 4m",
-    "akmens vate plāksnēs 75mm",
+    "CW-Profils 75, 3m",
+    "koka brusa",
     "amortizācijas lenta  70 mm",
     "dībeļnagla 6x50mm",
-    "koka brusa",
-    "reģipša šuvju špaktele UNIFLOTT, 5kg  (pirmai kārtai)",
+    "GKB  ģipškartona plāksnes  12,5 mm",
+    "akmens vate plāksnēs 75mm",
     "skrūves reģipša profiliem LN 3,5x9mm",
     "skrūves, smalka vītne 3,5 x 25 mm",
-    "skrūves, smalka vītne 3,5 x 55 mm"
+    "skrūves, smalka vītne 3,5 x 55 mm",
+    "reģipša šuvju špaktele UNIFLOTT, 5kg  (pirmai kārtai)"
   ],
   "Montēt reģipša starpsienas b-100mm, uz metāla profilu karkasu, ar akmens vates skaņas izolāciju b-75mm, apšūtu ar reģipsi  GKB 1kārtās no abām  pusēm": [
-    "CW-Profils 75, 3m",
-    "GKB   ģipškartona plāksnes  12,5 mm",
     "UW-Profils 75, 4m",
-    "akmens vate plāksnēs  75mm",
+    "CW-Profils 75, 3m",
+    "koka brusa",
     "amortizācijas lenta  70 mm",
     "dībeļnagla 6x50mm",
-    "koka brusa",
+    "GKB   ģipškartona plāksnes  12,5 mm",
+    "akmens vate plāksnēs  75mm",
     "skrūves reģipša profiliem LN 3,5x9mm",
     "skrūves, smalka vītne 3,5 x 25 mm"
   ],
@@ -222,17 +234,25 @@
     "ģipša apmetums (Rotband)"
   ],
   "Sienu apmešana mitrās telpās (10mm)": [
-    "apmetuma java (kaļķa-cementa)",
     "apmetuma vadula",
-    "grunts (BETOKONTAKT)"
+    "grunts (BETOKONTAKT)",
+    "apmetuma java (kaļķa-cementa)"
   ],
   "Sienu apmetuma atjaunošana": [
     "grunts",
-    "palīgmateriāli",
-    "ģipša apmetums (Rotband)"
+    "ģipša apmetums (Rotband)",
+    "palīgmateriāli"
   ],
   "Apstrāde ar pretsēnīšu šķidrumu": [
     "antibakteriāls fungicīdu sastāvs"
+  ],
+  "Sienu karkasu apšūšana ar ģipškartonu 1. kārta": [
+    "mitumizturīgais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
+  ],
+  "Sienu karkasu apšūšana ar ģipškartonu 2. kārtas": [
+    "mitumizturīgais ģipškartons",
+    "stiprinājumi, palīgmateriāli"
   ],
   "Ģipškartona šuvju apstrāde un sagatavošana flīzēšanai": [
     "sietiņlenta",
@@ -240,9 +260,9 @@
   ],
   "Hidroizolācijas ierīkošana": [
     "grunts",
-    "grunts grīdām",
-    "hidroizolācija",
     "hidroizolācija (membrana)",
+    "hidroizolācija",
+    "grunts grīdām",
     "stiklšķiedras siets (mitrās telpās)"
   ],
   "Sienu flīzēšana": [
@@ -287,12 +307,12 @@
     "lamināts"
   ],
   "Esošās grīdas labošana (pamatnes gruntēšana, špaktelēšana līdz 2 mm, slīpēšana)": [
-    "palīgmateriāli",
-    "špaktele"
+    "špaktele",
+    "palīgmateriāli"
   ],
   "Linoleja ieklāšana": [
-    "linoleja līme",
     "linolejs",
+    "linoleja līme",
     "palīgmateriāli"
   ],
   "Mīkstā seguma ieklāšana": [
@@ -303,20 +323,20 @@
     "pašizlīdzinošais maisījums"
   ],
   "Koka parketa grīdas atjaunošana (slīpēšana un lakošana)": [
-    "parketa laka pusmatēta",
     "parketa špaktele",
+    "parketa laka pusmatēta",
     "slīplentas"
   ],
   "Dēlīšu parketa ieklāšana, slīpēšana un lakošana (pamīšus)": [
     "grunts grīdām",
-    "parketa laka pusmatēta",
-    "parketa līme",
     "parkets ozols vai osis Rustic 15mm",
+    "parketa līme",
+    "parketa laka pusmatēta",
     "slīplentas"
   ],
   "Mitrumizturīgā saplākšņa plāksnes līmēšana": [
-    "līme",
     "mitrumizturīgais saplāksnis 15mm",
+    "līme",
     "stiprinājumi, palīgmateriāli"
   ],
   "Trīsslāņu parketa līmēšana": [
@@ -325,13 +345,13 @@
     "trīsslāņu parkets"
   ],
   "Divslāņu parketa līmēšana": [
-    "divslāņu parkets",
     "grunts grīdām",
-    "parketa līme"
+    "parketa līme",
+    "divslāņu parkets"
   ],
   "Trīsslāņu parketa dēļu ieklāšana": [
-    "parketa dēļu apakšklājs",
-    "trīsslāņu parkets"
+    "trīsslāņu parkets",
+    "parketa dēļu apakšklājs"
   ],
   "Betona pamatnes sagatavošana flīžu ieklāšanai - izlīdzināšana ar pašizlīdzinošo sastāvu  līdz 10mm": [
     "grunts grīdām",
@@ -359,8 +379,8 @@
   ],
   "Vinila grīdas flīžu līmēšana": [
     "grunts grīdām",
-    "līme, palīgmateriāļi",
-    "vinila flīzes (vīdēja cena līmējošām flīzēm)"
+    "vinila flīzes (vīdēja cena līmējošām flīzēm)",
+    "līme, palīgmateriāļi"
   ],
   "Grīdas pamatnes sagatavošana vinīla flīžu ieklāšanai - špaktelēšana (līdz 5mm) un slīpēšana": [
     "primer",
@@ -397,8 +417,8 @@
     "grīdas alumīnija profillīste P8"
   ],
   "Loga bloka montāža": [
-    "Koka logs",
     "PVC logs",
+    "Koka logs",
     "palīgmateriāli (stiprinājumi, lentas, putas)"
   ],
   "Logu stikla paketes nomaiņa": [
@@ -433,12 +453,12 @@
     "palīgmateriāli"
   ],
   "Skārda palodzes montāža": [
-    "palīgmateriāli",
-    "skārda palodzes, platums 20cm"
+    "skārda palodzes, platums 20cm",
+    "palīgmateriāli"
   ],
   "Logu un durvju aiļu apmešana (līdz 400mm platumā)": [
-    "apmetums",
     "grunts",
+    "apmetums",
     "palīgmateriāli"
   ],
   "Logu iekšējo aiļu aplīmēšana ar ģipškartona plāksnēm (līdz 400mm platumā)": [
@@ -446,8 +466,8 @@
     "palīgmateriāli (līme, PVC uzgalis...)"
   ],
   "Logu un durvju bloku iekšējo aiļu aizšūšana ar ģipškartona plāksnēm (līdz 400mm platumā)": [
-    "metāla profili",
     "mitrumizturīgās  ģipškartona plāksnes  12,5 mm",
+    "metāla profili",
     "palīgmateriāli (akmens vate, PVC uzgalis, stiprinājumi...)"
   ],
   "Logu un durvju apmaļu  sagatavošana krāsošanai (līdz 400mm platumā)": [
@@ -459,16 +479,16 @@
   ],
   "Fasādes siltināšana ar akmens vati": [
     "akmens vate PAROC Linio 15 (100mm)",
-    "dībelis",
-    "līmjava"
+    "līmjava",
+    "dībelis"
   ],
   "Plastikāta sieta montāža": [
     "armēšanas java",
     "stiklašķiedras siets"
   ],
   "Fasādes plānais dekoratīvais apmetums": [
-    "dekoratīvais apmetums",
-    "grunts"
+    "grunts",
+    "dekoratīvais apmetums"
   ],
   "Fasādes krāsošana ar silikātkrāsu": [
     "grunts",
