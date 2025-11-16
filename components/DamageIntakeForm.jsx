@@ -814,11 +814,11 @@ useEffect(() => {
 
   /* ---------- Load pricing ---------- */
 useEffect(() => {
-  if (insurer !== "Balta" && insurer !== "Gjensidige") {
+  if (!["Balta", "Gjensidige", "Swedbank"].includes(insurer)) {
     setAdjChildrenByParent(new Map());
     setNameIndex(new Map());
     setCatNameIndex(new Map());
-    setPriceCatalog([]);                  // keep catalog in a clean state when not Balta
+    setPriceCatalog([]);
     return;
   }
   setCatalogError("");
@@ -916,7 +916,19 @@ useEffect(() => {
     setCatalogError(`Neizdevās ielādēt GJENSIDIGE cenrādi: ${e.message}`);
     return;
   }
-}
+} else if (insurer === "Swedbank") {
+        try {
+          raw = await loadArrayish(`${assetBase}/prices/swedbank.json`);
+          if (!Array.isArray(raw) || !raw.length) {
+            setCatalogError("Neizdevās ielādēt SWEDBANK cenrādi (swedbank.json ir tukšs vai bojāts).");
+            return;
+          }
+          source = "swedbank.json";
+        } catch (e) {
+          setCatalogError(`Neizdevās ielādēt SWEDBANK cenrādi: ${e.message}`);
+          return;
+        }
+      }
 
 
 
@@ -1907,7 +1919,15 @@ const categories = useMemo(() => {
       : priceCatalog.length ? `Ielādēts GJENSIDIGE cenrādis (${priceCatalog.length} pozīcijas)`
       : "Notiek GJENSIDIGE cenrāža ielāde..."}
   </div>
+            )}
+  {insurer === "Swedbank" && (
+  <div style={{ fontSize: 12, color: catalogError ? "#b91c1c" : "#065f46" }}>
+    {catalogError ? catalogError
+      : priceCatalog.length ? `Ielādēts SWEDBANK cenrādis (${priceCatalog.length} pozīcijas)`
+      : "Notiek SWEDBANK cenrāža ielāde..."}
+  </div>
 )}
+
           </StepShell>
         )}
 
