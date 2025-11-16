@@ -2214,62 +2214,37 @@ const categories = useMemo(() => {
                   {/* Pozīcija (parents only) */}
                   <div>
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
- <select
+<select
   value={row.itemUid ?? ""}
   onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
 >
   <option value="">— izvēlies pozīciju —</option>
-{priceCatalog
-  .filter((it) => {
-    const name = it.name || "";
-    const nName = normTxt(name);
-
-    // 1) Gjensidige – slēpjam grupu virsrakstus un child-only pozīcijas
-    if (insurer === "Gjensidige") {
-      if (GJ_GROUP_BLACKLIST.has(nName)) return false;
-      if (gjChildOnlyNames.has(nName)) return false;
-    }
-
-    // 2) Swedbank – child-hints rindiņas rādām tikai kā apakšpozīcijas (Excelā),
-    // nevis izvēlnē.
-    if (insurer === "Swedbank") {
-      if (gjChildOnlyNames.has(nName)) return false;
-    }
-
-    // 3) Kategorijas filtrs
-    let matchesCategory = true;
-    if (row.category) {
-      if (insurer === "Swedbank") {
-        // Swedbank gadījumā kategorija = subcategory
-        matchesCategory = ((it.subcategory || "").trim() === row.category);
-      } else if (insurer === "Gjensidige") {
-        matchesCategory = (it.category === row.category);
-      } else {
-        matchesCategory = (it.category === row.category);
+  {priceCatalog
+    .filter((it) => {
+      if (insurer === "Gjensidige") {
+        const nName = normTxt(it.name);
+        if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+        if (gjChildOnlyNames.has(nName)) return false;
       }
-    }
 
-    if (!matchesCategory) return false;
+      const categoryMatches =
+        !row.category ||
+        it.category === row.category ||
+        it.subcategory === row.category;
 
-    // 4) Nekad nerādām jau apzīmētas apakšpozīcijas un nodaļu virsrakstus
-    return !isChildItem(it) && !it.is_section;
-  })
-  .map((it) => {
-    // Swedbank: ja pozīcijas nosaukums sākas ar "[Kategorija]", to noņemam
-    let displayName = it.name || "";
-    if (insurer === "Swedbank") {
-      displayName = displayName.replace(/^\s*\[[^\]]*\]\s*/, "");
-    }
-
-    return (
+      return (
+        categoryMatches &&
+        !isChildItem(it) &&
+        !it.is_section
+      );
+    })
+    .map((it) => (
       <option key={it.uid} value={it.uid}>
-        {it.subcategory ? `[${it.subcategory}] ` : ""}
-        {displayName} · {it.unit || "—"}
+        {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
+        {it.name} · {it.unit || "—"}
       </option>
-    );
-  })}
-
+    ))}
 </select>
 
                   </div>
