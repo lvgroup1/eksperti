@@ -1144,20 +1144,19 @@ if (typeof window !== "undefined") {
 }, [insurer, assetBase]);
 
   // Visi nosaukumi, kas child_hints.json definēti kā apakšpozīcijas (child-only)
-  const gjChildOnlyNames = useMemo(() => {
-    if (insurer !== "Gjensidige" || !childHints) return new Set();
-
-    const s = new Set();
-    for (const hints of Object.values(childHints)) {
-      if (!Array.isArray(hints)) continue;
-      for (const h of hints) {
-        const name = typeof h === "string" ? h : h?.name;
-        if (!name) continue;
-        s.add(normTxt(name));
-      }
+const gjChildOnlyNames = useMemo(() => {
+  const s = new Set();
+  if (!childHints || typeof childHints !== "object") return s;
+  for (const hints of Object.values(childHints)) {
+    if (!Array.isArray(hints)) continue;
+    for (const h of hints) {
+      const name = typeof h === "string" ? h : h?.name;
+      if (!name) continue;
+      s.add(normTxt(name));
     }
-    return s;
-  }, [childHints, insurer]);
+  }
+  return s;
+}, [childHints]);
 
   // fast exact-ish name finder using the indexes above
   const findRowByName = useCallback((rawName, rawCategory) => {
@@ -1260,9 +1259,15 @@ if (typeof window !== "undefined") {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
+  const catFromBrackets = (name) => {
+    const m = /^\s*\[([^\]]+)\]/.exec(name || "");
+    return m && m[1] ? m[1].trim() : "";
+  };
+
+  // GJENSIDIGE: use section/header rows as categories
   if (insurer === "Gjensidige") {
     const sectionNames = priceCatalog
-      .filter(isSectionRow)
+      .filter((r) => isSectionRow(r))
       .map((r) => (r.name || "").trim())
       .filter(Boolean);
 
@@ -1271,6 +1276,22 @@ const categories = useMemo(() => {
     }
   }
 
+  // SWEDBANK: all bold rows / groups like
+  // "[Krāsojums (ar špaktelējumu)] ..." become categories
+  if (insurer === "Swedbank") {
+    const set = new Set();
+    for (const row of priceCatalog) {
+      if (!row) continue;
+      let cat = (row.category || "").trim();
+      const fromName = catFromBrackets(row.name || "");
+      if (fromName) cat = fromName;
+      if (!cat) continue;
+      set.add(cat);
+    }
+    return Array.from(set);
+  }
+
+  // Default (Balta, etc.)
   const set = new Set(priceCatalog.map((i) => i.category).filter(Boolean));
   return Array.from(set);
 }, [priceCatalog, insurer]);
@@ -2214,31 +2235,55 @@ const categories = useMemo(() => {
   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
 >
   <option value="">— izvēlies pozīciju —</option>
-  {priceCatalog
-    .filter((it) => {
-      // 1) Ja Gjensidige – paslēpjam grupu virsrakstus un child-only pozīcijas
-      if (insurer === "Gjensidige") {
-        const nName = normTxt(it.name);
+{priceCatalog
+  .filter((it) => {
+    const name = it.name || "";
+    const nName = normTxt(name);
 
-        // a) “Ģipškartona konstrukcija”, “Griestu sagatavošanas darbi”, “Balsinājums”, utt.
-        if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+    // 1) Gjensidige – slēpjam grupu virsrakstus un child-only pozīcijas
+    if (insurer === "Gjensidige") {
+      if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+      if (gjChildOnlyNames.has(nName)) return false;
+    }
 
-        // b) jebkura pozīcija, kas child_hints.json pusē definēta kā apakšpozīcija
-        if (gjChildOnlyNames.has(nName)) return false;
+    // 2) Swedbank – arī child-hints rindiņas rādās tikai kā apakšpozīcijas
+    if (insurer === "Swedbank") {
+      if (gjChildOnlyNames.has(nName)) return false;
+    }
+
+    // 3) Kategorijas filtrs
+    let matchesCategory = true;
+    if (row.category) {
+      if (insurer === "Swedbank") {
+        // categoria no [ ... ] prefixa
+        const m = /^\s*\[([^\]]+)\]/.exec(name);
+        const catFromName = m && m[1] ? m[1].trim() : "";
+        const itemCat = (it.category || catFromName || "").trim();
+        matchesCategory = itemCat === row.category;
+      } else {
+        matchesCategory = (it.category === row.category);
       }
+    }
 
-      // 2) Kopējie filtri – gan Balta, gan Gjensidige
-      return (
-        (!row.category || it.category === row.category) &&
-        !isChildItem(it) &&   // rindiņas, kas jau ir apakšpozīcijas pēc parent_uid
-        !it.is_section        // kategoriju virsraksti (“Griesti”, “Sienas”, ...) nerādās
-      );
-    })
-    .map((it) => (
+    if (!matchesCategory) return false;
+
+    // 4) Nekad nerādām jau apzīmētas apakšpozīcijas un nodaļu virsrakstus
+    return !isChildItem(it) && !it.is_section;
+  })
+  .map((it) => {
+    // Swedbank: no display name, drop the "[...]" prefix
+    let displayName = it.name || "";
+    if (insurer === "Swedbank") {
+      displayName = displayName.replace(/^\s*\[[^\]]*\]\s*/, "");
+    }
+
+    return (
       <option key={it.uid} value={it.uid}>
-        {it.subcategory ? `[${it.subcategory}] ` : ""}{it.name} · {it.unit || "—"}
+        {it.subcategory ? `[${it.subcategory}] ` : ""}
+        {displayName} · {it.unit || "—"}
       </option>
-    ))}
+    );
+  })}
 
 </select>
 
