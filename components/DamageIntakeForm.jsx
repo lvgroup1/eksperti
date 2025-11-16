@@ -206,20 +206,6 @@ const gjNum = (v) => {
 };
 
 // Visi nosaukumi, kas child_hints.json definēti kā apakšpozīcijas (child-only)
-const gjChildOnlyNames = useMemo(() => {
-  if (insurer !== "Gjensidige" || !childHints) return new Set();
-
-  const s = new Set();
-  for (const hints of Object.values(childHints)) {
-    if (!Array.isArray(hints)) continue;
-    for (const h of hints) {
-      const name = typeof h === "string" ? h : h?.name;
-      if (!name) continue;
-      s.add(normTxt(name));
-    }
-  }
-  return s;
-}, [childHints, insurer]);
 
 /**
  * Load /prices/GJENSIDIGE_*.xlsx with cell styles. We rely on horizontal alignment:
@@ -1042,30 +1028,27 @@ if (source === "balta.v2.json" && childrenFlat.length === 0) {
     const legacyRaw = await loadArrayish(`${assetBase}/prices/balta.json`);
     const attachedCount = attachChildrenFromLegacy(parents, legacyRaw);
     if (attachedCount > 0) {
-      // Mirror compact children back into the flattened arrays
       for (const p of parents) {
         if (!Array.isArray(p.children) || !p.children.length) continue;
         p.children.forEach((ch, idxCh) => {
-    const chEntry = {
-      id: `${idStr}-c${idxCh}`,
-      uid: [category, subcat, `${idStr}-c${idxCh}`, chName].join("::"),
-      name: chName,
-      category,
-      subcategory: subcat,
-      unit: normalizeUnit(ch.unit || it.unit),
+          const chEntry = {
+            id: `${p.id}-c${idxCh}`,
+            uid: [p.category || "", p.subcategory || "", `${p.id}-c${idxCh}`, ch.name].join("::"),
+            name: ch.name,
+            category: p.category || "",
+            subcategory: p.subcategory || "",
+            unit: normalizeUnit(ch.unit || p.unit),
 
-      unit_price: pickNum(ch, UNIT_PRICE_KEYS),
-      labor:      pickNum(ch, LABOR_KEYS),
-      materials:  pickNum(ch, MATERIAL_KEYS),
-      mechanisms: pickNum(ch, MECHANISM_KEYS),
+            unit_price: Number(ch.unit_price || 0),
+            labor:      Number(ch.labor || 0),
+            materials:  Number(ch.materials || 0),
+            mechanisms: Number(ch.mechanisms || 0),
 
-      is_child: true,
-      parent_uid: uid,
-      coeff: parseDec(ch.coeff ?? ch.multiplier ?? 1) || 1,
-
-      // children are never header rows
-      is_section: false,
-    };
+            is_child: true,
+            parent_uid: p.uid,
+            coeff: Number(ch.coeff || 1) || 1,
+            is_section: false,
+          };
           childrenFlat.push(chEntry);
           ordered.push(chEntry);
         });
@@ -1148,6 +1131,21 @@ if (typeof window !== "undefined") {
   })();
 }, [insurer, assetBase]);
 
+  // Visi nosaukumi, kas child_hints.json definēti kā apakšpozīcijas (child-only)
+  const gjChildOnlyNames = useMemo(() => {
+    if (insurer !== "Gjensidige" || !childHints) return new Set();
+
+    const s = new Set();
+    for (const hints of Object.values(childHints)) {
+      if (!Array.isArray(hints)) continue;
+      for (const h of hints) {
+        const name = typeof h === "string" ? h : h?.name;
+        if (!name) continue;
+        s.add(normTxt(name));
+      }
+    }
+    return s;
+  }, [childHints, insurer]);
 
   // fast exact-ish name finder using the indexes above
   const findRowByName = useCallback((rawName, rawCategory) => {
