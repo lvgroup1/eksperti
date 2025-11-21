@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   // ⚠️ DEMO ONLY! In production use a DB + hashed passwords.
   const USERS = [
-    { email: "gabriella@test", password: "test" },
+    { email: "gabriella@test.com", password: "test" },
     { email: "edgars@example.com", password: "lvgroup123" },
   ];
 
