@@ -703,8 +703,6 @@ export default function DamageIntakeForm() {
   }, []);
 
   // Profile
-  const [estimatorName, setEstimatorName] = useState("");
-  const [estimatorEmail, setEstimatorEmail] = useState("");
   const [claimNumber, setClaimNumber] = useState("");
 
   // Core fields
@@ -1852,32 +1850,15 @@ const categories = useMemo(() => {
           </LabeledRow>
         </div>
 
-        <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
-            <div style={{ fontSize: 13, color: "#4b5563" }}>
-              Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.
-            </div>
-          </div>
+    <header style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+  <div>
+    <div style={{ fontSize: 22, fontWeight: 800 }}>Apskates forma – solis {step}/{totalSteps}</div>
+    <div style={{ fontSize: 13, color: "#4b5563" }}>
+      Tāmētājs ievada tikai daudzumu. Cenas netiek rādītas formā un parādīsies tikai gala tāmē.
+    </div>
+  </div>
+</header>
 
-          <div style={{ background: "white", padding: 12, borderRadius: 12, width: 360 }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Tāmētāja profils (neobligāti)</div>
-            <input
-              value={estimatorName ?? ""}
-              onChange={onText(setEstimatorName)}
-              placeholder="Vārds, Uzvārds"
-              autoComplete="off"
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, marginBottom: 6 }}
-            />
-            <input
-              value={estimatorEmail ?? ""}
-              onChange={onText(setEstimatorEmail)}
-              placeholder="E-pasts"
-              autoComplete="off"
-              style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-            />
-          </div>
-        </header>
 
         {/* Progress bar */}
         <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, marginBottom: 16 }}>
