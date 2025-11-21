@@ -705,6 +705,8 @@ export default function DamageIntakeForm() {
 
   // Profile
   const [claimNumber, setClaimNumber] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+
 
   // Core fields
   const [address, setAddress] = useState("");
@@ -765,6 +767,18 @@ export default function DamageIntakeForm() {
   
 // Optional name-based child hints from /prices/child_hints.json
 const [childHints, setChildHints] = useState({});
+useEffect(() => {
+  try {
+    const raw = localStorage.getItem("eksperti_user");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      setCurrentUser(parsed);
+    }
+  } catch (e) {
+    console.warn("Neizdevās nolasīt ielogoto lietotāju:", e);
+  }
+}, []);
+
 useEffect(() => {
   let cancelled = false;
   (async () => {
@@ -1812,6 +1826,16 @@ const categories = useMemo(() => {
       ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
       ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
       ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
+
+      const buvNr   = currentUser?.buvkomersantaNr || "";
+      const fullStr = currentUser?.fullName || "";
+      const sertStr = currentUser?.sertNr || "";
+
+      // ieliekam trešajā kolonnā (C kolonna), rindiņās zem labels
+      ws.getCell(blockStart + 1, 3).value = buvNr;
+      ws.getCell(blockStart + 2, 3).value = fullStr;
+      ws.getCell(blockStart + 3, 3).value = sertStr;
+
 
       const rightOrg = insurer === "Balta" ? "AAS BALTA" : insurer || "";
       ws.mergeCells(blockStart, 9, blockStart, 12);

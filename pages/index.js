@@ -8,7 +8,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const USERS = [
-    { email: "gabriella@test.com", password: "test" },
+    {
+    email: "gabriella@test.com",
+    password: "test",
+    fullName: "Gabriella Test",
+    buvkomersantaNr: "BV-1234",
+    sertNr: "A-00123",
+  },
     { email: "edgars@example.com", password: "lvgroup123" },
   ];
 
@@ -22,14 +28,25 @@ export default function LoginPage() {
         u.password === password
     );
 
-    if (!user) {
-      setError("Nepareizs e-pasts vai parole.");
-      return;
-    }
+if (!user) {
+  setError("Nepareizs e-pasts vai parole.");
+  return;
+}
 
-    localStorage.setItem("wizard_logged_in", "1");
-    router.push("/wizard");
-  }
+// saglabājam pilnu profilu pārlūkā
+localStorage.setItem(
+  "eksperti_user",
+  JSON.stringify({
+    email: user.email,
+    fullName: user.fullName,
+    buvkomersantaNr: user.buvkomersantaNr,
+    sertNr: user.sertNr,
+  })
+);
+
+// redirect uz /wizard
+window.location.href = "/eksperti/wizard/";
+
 
   return (
     <div
