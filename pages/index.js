@@ -1,11 +1,10 @@
-// pages/index.js  -> LOGIN PAGE (no API call)
-import { useState, useEffect } from "react";
+// pages/index.js  — LOGIN PAGE (no API needed)
+import { useState } from "react";
 import { useRouter } from "next/router";
 
-// 🔐 Only you edit this list in code
 const USERS = [
-  { email: "gabriella@example.com", password: "supersecret" },
-  { email: "edgars@example.com",   password: "lvgroup123" },
+  { email: "gabriella@test.com", password: "test" },
+  { email: "edgars@example.com", password: "lvgroup123" },
 ];
 
 export default function LoginPage() {
@@ -14,15 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // If already logged in, go straight to wizard
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem("wizard_logged_in") === "1") {
-      router.replace("/wizard");
-    }
-  }, [router]);
-
-  function handleSubmit(e) {
+  function handleLogin(e) {
     e.preventDefault();
     setError("");
 
@@ -37,129 +28,33 @@ export default function LoginPage() {
       return;
     }
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("wizard_logged_in", "1");
-    }
+    localStorage.setItem("wizard_logged_in", "1");
     router.push("/wizard");
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f3f4f6",
-        fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          background: "white",
-          borderRadius: 16,
-          padding: 24,
-          boxShadow: "0 20px 40px rgba(15,23,42,0.12)",
-        }}
-      >
-        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
-          Ekspertu portāls
-        </h1>
-        <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
-          Pieraksties ar savu LV GROUP kontu.
-        </p>
+    <div style={{ padding: 40 }}>
+      <h1>Pierakstīšanās</h1>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 12 }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              E-pasts
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                borderRadius: 10,
-                border: "1px solid #e5e7eb",
-                padding: "8px 10px",
-              }}
-            />
-          </div>
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          placeholder="E-pasts"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-          <div style={{ marginBottom: 8 }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Parole
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                borderRadius: 10,
-                border: "1px solid #e5e7eb",
-                padding: "8px 10px",
-              }}
-            />
-          </div>
+        <input
+          type="password"
+          placeholder="Parole"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-          {error && (
-            <div
-              style={{
-                margin: "8px 0",
-                fontSize: 13,
-                color: "#b91c1c",
-                background: "#fee2e2",
-                borderRadius: 8,
-                padding: "6px 8px",
-              }}
-            >
-              {error}
-            </div>
-          )}
+        <button type="submit">Ienākt</button>
 
-          <button
-            type="submit"
-            style={{
-              marginTop: 10,
-              width: "100%",
-              borderRadius: 10,
-              border: "none",
-              padding: "10px 14px",
-              fontWeight: 600,
-              background: "#111827",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            Pierakstīties
-          </button>
-        </form>
-
-        <p style={{ marginTop: 16, fontSize: 12, color: "#9ca3af" }}>
-          Lietotājus var pievienot tikai administrators, rediģējot kodu.
-        </p>
-      </div>
+        {error && <p style={{ color: "red" }}>{error}</p>}
+      </form>
     </div>
   );
 }
