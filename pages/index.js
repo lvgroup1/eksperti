@@ -122,4 +122,5 @@ window.location.href = "/eksperti/wizard/";
       </div>
     </div>
   );
+  }
 }
