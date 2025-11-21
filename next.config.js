@@ -1,23 +1,18 @@
 /** @type {import('next').NextConfig} */
-const isGH = process.env.NODE_ENV === 'production'; // on Pages
-const base = '/eksperti';
-
-module.exports = {
-  // ensure purely static output for GitHub Pages
-  output: 'export',
-  trailingSlash: true,
-
-  // make assets resolve under /eksperti
-  basePath: isGH ? base : '',
-  assetPrefix: isGH ? base : '',
-
-  // optional but nice for static export
-  images: { unoptimized: true },
-};
+const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig = {
-  output: 'export',
-  distDir: 'out',
+  // GitHub Pages static export
+  output: "export",
+  distDir: "out",
+  trailingSlash: true,
+
+  // Required for GitHub Pages project site
+  basePath: isProd ? "/eksperti" : "",
+  assetPrefix: isProd ? "/eksperti" : "",
+
+  // Disable Next Image optimizer
+  images: { unoptimized: true },
 };
 
 module.exports = nextConfig;

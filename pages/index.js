@@ -1,11 +1,5 @@
-// pages/index.js  — LOGIN PAGE (no API needed)
 import { useState } from "react";
 import { useRouter } from "next/router";
-
-const USERS = [
-  { email: "gabriella@test.com", password: "test" },
-  { email: "edgars@example.com", password: "lvgroup123" },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,7 +7,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleLogin(e) {
+  const USERS = [
+    { email: "gabriella@test.com", password: "test" },
+    { email: "edgars@example.com", password: "lvgroup123" },
+  ];
+
+  function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
@@ -33,28 +32,77 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Pierakstīšanās</h1>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#f3f4f6",
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          padding: "40px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          width: "100%",
+          maxWidth: "360px",
+        }}
+      >
+        <h2 style={{ marginBottom: "20px" }}>Pieslēgties</h2>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="E-pasts"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="E-pasts"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+            }}
+          />
 
-        <input
-          type="password"
-          placeholder="Parole"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <input
+            type="password"
+            placeholder="Parole"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+            }}
+          />
 
-        <button type="submit">Ienākt</button>
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              background: "#2563eb",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              marginTop: "5px",
+            }}
+          >
+            Ienākt
+          </button>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-      </form>
+          {error && (
+            <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }
