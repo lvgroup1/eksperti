@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 
 /* ==========================
    Damage Intake – STEP WIZARD (1..12)
@@ -2313,35 +2314,25 @@ const categories = useMemo(() => {
         )}
 
         {/* Saved estimates */}
+        {/* Link uz saglabāto tāmju lapu */}
         <div style={{ background: "white", padding: 16, borderRadius: 12, marginTop: 20 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Saglabātās tāmēs (šajā pārlūkā)</div>
-          {saved.length === 0 ? (
-            <div style={{ color: "#6b7280" }}>Vēl nav saglabātu tāmju.</div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", fontSize: 14 }}>
-                <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
-                    <th style={{ padding: "8px 12px" }}>Fails</th>
-                    <th style={{ padding: "8px 12px" }}>Tāmētājs</th>
-                    <th style={{ padding: "8px 12px" }}>Datums</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {saved.map((e) => (
-                    <tr key={e.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                      <td style={{ padding: "8px 12px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
-                        {e.filename}
-                      </td>
-                      <td style={{ padding: "8px 12px" }}>{e.estimator}</td>
-                      <td style={{ padding: "8px 12px" }}>{new Date(e.createdAtISO).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <Link
+            href="/tames"
+            style={{
+              display: "inline-block",
+              padding: "10px 16px",
+              borderRadius: 999,
+              background: "#111827",
+              color: "white",
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            Apskatīt izveidotās tāmes
+          </Link>
         </div>
+
 
         <footer style={{ paddingBottom: 40, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
           Piezīme: forma nerāda apakšpozīcijas; Excel tās pievieno automātiski (saites, iebūvētie vai blakus esošie).
