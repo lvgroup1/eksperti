@@ -15,31 +15,61 @@ export default function WizardPage() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    // run only in browser
     if (typeof window === "undefined") return;
 
     const loggedIn = localStorage.getItem("wizard_logged_in") === "1";
     if (!loggedIn) {
-      router.replace("/"); // back to login
+      router.replace("/");
     } else {
       setAllowed(true);
     }
     setChecked(true);
   }, [router]);
 
-  // While checking login status
-  if (!checked) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div>Notiek ielāde...</div>
-      </div>
-    );
+  function logout() {
+    localStorage.removeItem("wizard_logged_in");
+    router.replace("/");
   }
 
-  // If not allowed, we already redirected → show nothing
+  if (!checked) return null;
   if (!allowed) return null;
 
-  // Logged in → show the wizard
-  return <DamageIntakeForm />;
-}
+return (
+  <div>
+    {/* Floating logout button */}
+    <button
+      onClick={logout}
+      style={{
+        position: "fixed",
+        top: "20px",
+        right: "20px",
+        zIndex: 9999,
 
+        background: "#dc2626", // red
+        color: "white",        // white text
+        border: "none",
+        padding: "12px 20px",
+        fontSize: "15px",
+        fontWeight: "600",
+
+        borderRadius: "50px",    // round pill shape
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+      }}
+
+      onMouseOver={(e) => {
+        e.target.style.background = "#b91c1c"; // darker red on hover
+      }}
+      onMouseOut={(e) => {
+        e.target.style.background = "#dc2626"; // normal red
+      }}
+    >
+      Iziet
+    </button>
+
+    <DamageIntakeForm />
+  </div>
+);
+}
