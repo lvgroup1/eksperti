@@ -1473,6 +1473,25 @@ const categories = useMemo(() => {
       const tameId    = insurer === "Balta" ? `B-${dateStamp}` : dateStamp;
       const tameTitle = insurer === "Balta" ? `LOKĀLĀ TĀME NR.${tameId}` : `TĀMES NR.: ${tameId}`;
       const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
+      // Ļaujam ekspertam nosaukt tāmi, kā vēlas
+      const defaultFileName = `${insurer || "Tame"}_${prettyDate()}`; // piem., "Balta_2025-09-26_11-00"
+      let tameName = window.prompt(
+        "Norādi tāmes nosaukumu (piemēram, 'Virtuve griesti 3. stāvs'):",
+        defaultFileName
+      );
+
+      // Ja nospiež “Cancel” – netaisām failu
+      if (tameName === null) {
+        return;
+      }
+
+      tameName = tameName.trim() || defaultFileName;
+
+      // Faila vārdu padarām drošu (bez dīvainiem simboliem)
+      const safeFileName = tameName
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_\-]+/g, "_");
 
       ws.getCell("A1").value = `Pasūtītājs: ${insurer || "Balta"}`;
       ws.getCell("A2").value = `Objekts: ${locationType || ""}${dwellingSubtype ? " – " + dwellingSubtype : ""}`;
@@ -1817,7 +1836,7 @@ const categories = useMemo(() => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Tame_Balta_${prettyDate()}.xlsx`;
+      a.download = `${safeFileName}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
