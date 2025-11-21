@@ -14,3 +14,10 @@ module.exports = {
   // optional but nice for static export
   images: { unoptimized: true },
 };
+
+const nextConfig = {
+  output: 'export',
+  distDir: 'out',
+};
+
+module.exports = nextConfig;
