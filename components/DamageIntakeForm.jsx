@@ -1839,23 +1839,21 @@ const categories = useMemo(() => {
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
       ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
 
-      ws.getCell(blockStart + 1, 2).value = `Būvkomersanta Nr.: ${companyNr}`;
+ // read from logged-in user
+const buvNr   = currentUser?.buvkomersantaNr || "";
+const fullStr = currentUser?.fullName || "";
+const sertStr = currentUser?.sertNr || "";
+
+// write into Excel
+ws.getCell(blockStart + 1, 2).value = `Būvkomersanta Nr.: ${buvNr}`;
 ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
 
-ws.getCell(blockStart + 2, 2).value = `Vārds, uzvārds: ${fullName}`;
+ws.getCell(blockStart + 2, 2).value = `Vārds, uzvārds: ${fullStr}`;
 ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
 
-ws.getCell(blockStart + 3, 2).value = `sert. nr.: ${sertNr}`;
+ws.getCell(blockStart + 3, 2).value = `sert. nr.: ${sertStr}`;
 ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
 
-      const buvNr   = currentUser?.buvkomersantaNr || "";
-      const fullStr = currentUser?.fullName || "";
-      const sertStr = currentUser?.sertNr || "";
-
-      // ieliekam trešajā kolonnā (C kolonna), rindiņās zem labels
-      ws.getCell(blockStart + 1, 3).value = buvNr;
-      ws.getCell(blockStart + 2, 3).value = fullStr;
-      ws.getCell(blockStart + 3, 3).value = sertStr;
 
 
       const rightOrg = insurer === "Balta" ? "AAS BALTA" : insurer || "";
