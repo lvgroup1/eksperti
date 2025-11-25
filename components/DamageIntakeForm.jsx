@@ -1481,6 +1481,12 @@ const categories = useMemo(() => {
       const headerFill  = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
       const ZEBRA = true;
 
+      // 👉 palīdzība: kopsavilkuma rindām noņemam daudzumu, lai tās nav "pozīcijas"
+      const clearQty = (rowIndex) => {
+        ws.getCell(rowIndex, 4).value = 0;      // D kolonna – Daudz.
+        ws.getCell(rowIndex, 4).numFmt = QTY;
+      };
+
       // Header
       const d = new Date();
       const dateStamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
@@ -1765,6 +1771,19 @@ const categories = useMemo(() => {
       ws.getCell(`L${rowGrand}`).value = { formula: `ROUND(L${rowTotal}+L${rowPVN},2)` };
       ws.getCell(`L${rowGrand}`).numFmt = MONEY;
       boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
+
+            // 👉 šīm rindām daudzums nedrīkst būt > 0
+      [
+        rowKopa,
+        rowTrans,
+        rowDirect,
+        rowOver,
+        rowProfit,
+        rowDDSN,
+        rowTotal,
+        rowPVN,
+        rowGrand,
+      ].forEach(clearQty);
 
       ws.getCell("J9").value = "Tāmes summa euro :";
       ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
