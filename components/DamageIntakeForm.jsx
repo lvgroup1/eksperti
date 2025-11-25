@@ -1839,12 +1839,14 @@ const categories = useMemo(() => {
       ws.getCell(blockStart, 2).value = "SASTĀDĪJA:";
       ws.getCell(blockStart, 2).font = { ...FONT, bold: true };
 
-      ws.getCell(blockStart + 1, 2).value = "Būvkomersanta Nr.:";
-      ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
-      ws.getCell(blockStart + 2, 2).value = "Vārds, uzvārds:";
-      ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
-      ws.getCell(blockStart + 3, 2).value = "sert. nr.:";
-      ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
+      ws.getCell(blockStart + 1, 2).value = `Būvkomersanta Nr.: ${companyNr}`;
+ws.mergeCells(blockStart + 1, 3, blockStart + 1, 6);
+
+ws.getCell(blockStart + 2, 2).value = `Vārds, uzvārds: ${fullName}`;
+ws.mergeCells(blockStart + 2, 3, blockStart + 2, 6);
+
+ws.getCell(blockStart + 3, 2).value = `sert. nr.: ${sertNr}`;
+ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
 
       const buvNr   = currentUser?.buvkomersantaNr || "";
       const fullStr = currentUser?.fullName || "";
