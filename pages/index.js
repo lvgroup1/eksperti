@@ -22,7 +22,7 @@ export default function LoginPage() {
     },
   ];
 
-  function handleSubmit(e) {
+function handleSubmit(e) {
   e.preventDefault();
   setError("");
 
@@ -48,14 +48,18 @@ export default function LoginPage() {
     })
   );
 
-  // --- FIXED REDIRECT ---
-  // Nosakām, vai esam GitHub Pages (/eksperti) vai lokāli (/)
-  const path = window.location.pathname;
-  const base = path.startsWith("/eksperti") ? "/eksperti" : "";
+  // --- IMPORTANT PART: correct redirect ---
 
-  // Pāradresācija:
-  window.location.href = `${base}/wizard/`;
+  const host = window.location.hostname;
+  const isGithubPages = host.endsWith("github.io");
+
+  // On GitHub Pages → /eksperti/wizard/
+  // Locally (localhost:3000) → /wizard/
+  const target = isGithubPages ? "/eksperti/wizard/" : "/wizard/";
+
+  window.location.href = target;
 }
+
 
 
   return (
