@@ -48,13 +48,8 @@ export default function LoginPage() {
       })
     );
 
-    // Dinamiski nosakām basePath ("" lokāli, "/eksperti" GitHub Pages)
-    const data = typeof window !== "undefined" ? window.__NEXT_DATA__ : null;
-    const assetPrefix = (data?.assetPrefix || "").replace(/\/$/, ""); // no trailing slash
-
-    const target = assetPrefix ? `${assetPrefix}/wizard/` : "/wizard/";
-
-    window.location.href = target;
+    // Relatīva pāradresācija – strādā gan lokāli, gan GitHub Pages
+    window.location.href = "wizard/";
   }
 
   return (

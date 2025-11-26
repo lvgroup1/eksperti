@@ -2,13 +2,16 @@
 const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig = {
-  // GitHub Pages static export
+  // Static export for GitHub Pages
   output: "export",
-  distDir: "out",
   trailingSlash: true,
 
-  // Required for GitHub Pages project site
-  basePath: isProd ? "/eksperti" : "",
+  // Let Next output to the default `.next` + `out/` directories
+  // (no need for distDir when using `output: "export"`)
+  // distDir: "out", // ❌ remove this
+
+  // For a GitHub *project* site, we only need assetPrefix
+  // so that JS/CSS are loaded from /eksperti/_next/...
   assetPrefix: isProd ? "/eksperti" : "",
 
   // Disable Next Image optimizer
