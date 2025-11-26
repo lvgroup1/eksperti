@@ -1,6 +1,23 @@
 // pages/index.js
 import { useState } from "react";
 
+const USERS = [
+  {
+    email: "gabriella@test.com",
+    password: "test",
+    fullName: "Gabriella Test",
+    buvkomersantaNr: "BV-1234",
+    sertNr: "A-00123",
+  },
+  {
+    email: "edgars@example.com",
+    password: "lvgroup123",
+    fullName: "Edgars Ramanis",
+    buvkomersantaNr: "12204",
+    sertNr: "4-05120",
+  },
+];
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -10,38 +27,34 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // DEBUG: make sure handler is actually running
-    alert("Login form submitted!");
+    const user = USERS.find(
+      (u) =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.password === password
+    );
 
-    // (Optional) temporarily accept any credentials
-    try {
-      localStorage.setItem(
-        "eksperti_user",
-        JSON.stringify({
-          email,
-          fullName: email || "Eksperts",
-        })
-      );
-    } catch (err) {
-      console.error("localStorage error", err);
+    if (!user) {
+      setError("Nepareizs e-pasts vai parole.");
+      return;
     }
 
-    try {
-      const origin = window.location.origin;
-      const isGithub = origin.includes("github.io");
+    // Saglabājam profilu pārlūkā
+    localStorage.setItem(
+      "eksperti_user",
+      JSON.stringify({
+        email: user.email,
+        fullName: user.fullName,
+        buvkomersantaNr: user.buvkomersantaNr,
+        sertNr: user.sertNr,
+      })
+    );
 
-      // GitHub Pages: https://lvgroup1.github.io/eksperti/wizard/
-      // Local dev:    http://localhost:3000/wizard/
-      const target = isGithub
-        ? `${origin}/eksperti/wizard/`
-        : `${origin.replace(/\/$/, "")}/wizard/`;
+    // *** ŠEIT IR GALVENAIS FIX ***
+    // RELATĪVS ceļš – no /eksperti/ -> /eksperti/wizard/
+    const target = "wizard/"; // NEKĀDA pirmā slīpsvītra!
 
-      console.log("Redirecting to:", target);
-      window.location.href = target; // or window.location.assign(target);
-    } catch (err) {
-      console.error("Redirect error:", err);
-      setError("Neizdevās pāradresēt uz formu.");
-    }
+    console.log("Redirecting to (relative):", target);
+    window.location.href = target;
   }
 
   return (
