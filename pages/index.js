@@ -49,16 +49,22 @@ export default function LoginPage() {
       })
     );
 
-    // --- REDIRECT ---
-    // Esam GitHub Pages (lvgroup1.github.io/eksperti) vai lokāli
-    const host = window.location.hostname;
-    const isGithubPages = host.endsWith("github.io");
+    // ===== ABSOLŪTA PĀRADRESĀCIJA =====
+    try {
+      const origin = window.location.origin;
+      const isGithub = origin.includes("github.io");
 
-    // GitHub Pages -> /eksperti/wizard/
-    // Lokāli (localhost:3000) -> /wizard/
-    const target = isGithubPages ? "/eksperti/wizard/" : "/wizard/";
+      // GitHub Pages: https://lvgroup1.github.io/eksperti/wizard/
+      // Lokāli:       http://localhost:3000/wizard/
+      const target = isGithub
+        ? `${origin}/eksperti/wizard/`
+        : `${origin.replace(/\/$/, "")}/wizard/`;
 
-    window.location.href = target;
+      console.log("Redirecting to:", target);
+      window.location.assign(target);
+    } catch (err) {
+      console.error("Redirect error:", err);
+    }
   }
 
   return (
