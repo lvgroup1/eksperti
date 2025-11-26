@@ -1,66 +1,65 @@
+// pages/index.js
 import { useState } from "react";
+
+const USERS = [
+  {
+    email: "gabriella@test.com",
+    password: "test",
+    fullName: "Gabriella Test",
+    buvkomersantaNr: "BV-1234",
+    sertNr: "A-00123",
+  },
+  {
+    email: "edgars@example.com",
+    password: "lvgroup123",
+    fullName: "Edgars Ramanis",
+    buvkomersantaNr: "12204",
+    sertNr: "4-05120",
+  },
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const USERS = [
-    {
-      email: "gabriella@test.com",
-      password: "test",
-      fullName: "Gabriella Test",
-      buvkomersantaNr: "BV-1234",
-      sertNr: "A-00123",
-    },
-    {
-      email: "edgars@example.com",
-      password: "lvgroup123",
-      fullName: "Edgars Ramanis",
-      buvkomersantaNr: "12204",
-      sertNr: "4-05120",
-    },
-  ];
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
 
-function handleSubmit(e) {
-  e.preventDefault();
-  setError("");
+    const user = USERS.find(
+      (u) =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.password === password
+    );
 
-  const user = USERS.find(
-    (u) =>
-      u.email.toLowerCase() === email.toLowerCase() &&
-      u.password === password
-  );
+    if (!user) {
+      setError("Nepareizs e-pasts vai parole.");
+      return;
+    }
 
-  if (!user) {
-    setError("Nepareizs e-pasts vai parole.");
-    return;
+    // Saglabājam pilnu profilu pārlūkā
+    localStorage.setItem(
+      "eksperti_user",
+      JSON.stringify({
+        email: user.email,
+        fullName: user.fullName,
+        buvkomersantaNr: user.buvkomersantaNr,
+        sertNr: user.sertNr,
+      })
+    );
+
+    // --- REDIRECT ---
+    // Esam GitHub Pages (lvgroup1.github.io/eksperti) vai lokāli
+    const host = window.location.hostname;
+    const isGithubPages = host.endsWith("github.io");
+
+    // GitHub Pages -> /eksperti/wizard/
+    // Lokāli (localhost:3000) -> /wizard/
+    const target = isGithubPages ? "/eksperti/wizard/" : "/wizard/";
+
+    window.location.href = target;
   }
-
-  // saglabājam pilnu profilu pārlūkā
-  localStorage.setItem(
-    "eksperti_user",
-    JSON.stringify({
-      email: user.email,
-      fullName: user.fullName,
-      buvkomersantaNr: user.buvkomersantaNr,
-      sertNr: user.sertNr,
-    })
-  );
-
-  // --- IMPORTANT PART: correct redirect ---
-
-  const host = window.location.hostname;
-  const isGithubPages = host.endsWith("github.io");
-
-  // On GitHub Pages → /eksperti/wizard/
-  // Locally (localhost:3000) → /wizard/
-  const target = isGithubPages ? "/eksperti/wizard/" : "/wizard/";
-
-  window.location.href = target;
-}
-
-
 
   return (
     <div
