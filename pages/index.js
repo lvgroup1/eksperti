@@ -17,8 +17,8 @@ export default function LoginPage() {
       email: "edgars@example.com",
       password: "lvgroup123",
       fullName: "Edgars Ramanis",
-      buvkomersantaNr: "BV-12204",
-      sertNr: "N.4-05120",
+      buvkomersantaNr: "12204",
+      sertNr: "4-05120",
     },
   ];
 
@@ -48,8 +48,13 @@ export default function LoginPage() {
       })
     );
 
-    // redirect uz /wizard (ņemot vērā basePath /eksperti)
-    window.location.href = "/eksperti/wizard/";
+    // Dinamiski nosakām basePath ("" lokāli, "/eksperti" GitHub Pages)
+    const data = typeof window !== "undefined" ? window.__NEXT_DATA__ : null;
+    const assetPrefix = (data?.assetPrefix || "").replace(/\/$/, ""); // no trailing slash
+
+    const target = assetPrefix ? `${assetPrefix}/wizard/` : "/wizard/";
+
+    window.location.href = target;
   }
 
   return (
