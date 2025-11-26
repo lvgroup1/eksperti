@@ -23,34 +23,40 @@ export default function LoginPage() {
   ];
 
   function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    const user = USERS.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password
-    );
+  const user = USERS.find(
+    (u) =>
+      u.email.toLowerCase() === email.toLowerCase() &&
+      u.password === password
+  );
 
-    if (!user) {
-      setError("Nepareizs e-pasts vai parole.");
-      return;
-    }
-
-    // saglabājam pilnu profilu pārlūkā
-    localStorage.setItem(
-      "eksperti_user",
-      JSON.stringify({
-        email: user.email,
-        fullName: user.fullName,
-        buvkomersantaNr: user.buvkomersantaNr,
-        sertNr: user.sertNr,
-      })
-    );
-
-    // Relatīva pāradresācija – strādā gan lokāli, gan GitHub Pages
-    window.location.href = "wizard/";
+  if (!user) {
+    setError("Nepareizs e-pasts vai parole.");
+    return;
   }
+
+  // saglabājam pilnu profilu pārlūkā
+  localStorage.setItem(
+    "eksperti_user",
+    JSON.stringify({
+      email: user.email,
+      fullName: user.fullName,
+      buvkomersantaNr: user.buvkomersantaNr,
+      sertNr: user.sertNr,
+    })
+  );
+
+  // --- FIXED REDIRECT ---
+  // Nosakām, vai esam GitHub Pages (/eksperti) vai lokāli (/)
+  const path = window.location.pathname;
+  const base = path.startsWith("/eksperti") ? "/eksperti" : "";
+
+  // Pāradresācija:
+  window.location.href = `${base}/wizard/`;
+}
+
 
   return (
     <div
