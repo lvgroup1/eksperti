@@ -1,21 +1,25 @@
 import { useState } from "react";
-import { useRouter } from "next/router";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const USERS = [
     {
-    email: "gabriella@test.com",
-    password: "test",
-    fullName: "Gabriella Test",
-    buvkomersantaNr: "BV-1234",
-    sertNr: "A-00123",
-  },
-    { email: "edgars@example.com", password: "lvgroup123" },
+      email: "gabriella@test.com",
+      password: "test",
+      fullName: "Gabriella Test",
+      buvkomersantaNr: "BV-1234",
+      sertNr: "A-00123",
+    },
+    {
+      email: "edgars@example.com",
+      password: "lvgroup123",
+      fullName: "Edgars Ramanis",
+      buvkomersantaNr: "BV-12204",
+      sertNr: "N.4-05120",
+    },
   ];
 
   function handleSubmit(e) {
@@ -28,25 +32,25 @@ export default function LoginPage() {
         u.password === password
     );
 
-if (!user) {
-  setError("Nepareizs e-pasts vai parole.");
-  return;
-}
+    if (!user) {
+      setError("Nepareizs e-pasts vai parole.");
+      return;
+    }
 
-// saglabājam pilnu profilu pārlūkā
-localStorage.setItem(
-  "eksperti_user",
-  JSON.stringify({
-    email: user.email,
-    fullName: user.fullName,
-    buvkomersantaNr: user.buvkomersantaNr,
-    sertNr: user.sertNr,
-  })
-);
+    // saglabājam pilnu profilu pārlūkā
+    localStorage.setItem(
+      "eksperti_user",
+      JSON.stringify({
+        email: user.email,
+        fullName: user.fullName,
+        buvkomersantaNr: user.buvkomersantaNr,
+        sertNr: user.sertNr,
+      })
+    );
 
-// redirect uz /wizard
-window.location.href = "/eksperti/wizard/";
-
+    // redirect uz /wizard (ņemot vērā basePath /eksperti)
+    window.location.href = "/eksperti/wizard/";
+  }
 
   return (
     <div
@@ -122,5 +126,4 @@ window.location.href = "/eksperti/wizard/";
       </div>
     </div>
   );
-  }
 }
