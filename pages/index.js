@@ -23,39 +23,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
+function handleSubmit(e) {
+  e.preventDefault();
+  setError("");
 
-    const user = USERS.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password
-    );
-
-    if (!user) {
-      setError("Nepareizs e-pasts vai parole.");
-      return;
-    }
-
-    // Saglabājam profilu pārlūkā
+  // just accept any credentials for now (we only debug redirect)
+  try {
     localStorage.setItem(
       "eksperti_user",
       JSON.stringify({
-        email: user.email,
-        fullName: user.fullName,
-        buvkomersantaNr: user.buvkomersantaNr,
-        sertNr: user.sertNr,
+        email,
+        fullName: email || "Eksperts",
       })
     );
-
-    // *** ŠEIT IR GALVENAIS FIX ***
-    // RELATĪVS ceļš – no /eksperti/ -> /eksperti/wizard/
-    const target = "wizard/"; // NEKĀDA pirmā slīpsvītra!
-
-    console.log("Redirecting to (relative):", target);
-    window.location.href = target;
+  } catch (err) {
+    console.error("localStorage error", err);
   }
+
+  try {
+    // Debug info: where are we NOW?
+    console.log("Current location:", window.location.href);
+
+    // If we are on GitHub Pages, ALWAYS go to the full wizard URL
+    if (window.location.hostname === "lvgroup1.github.io") {
+      const target = "https://lvgroup1.github.io/eksperti/wizard/";
+      console.log("Redirecting (GH absolute):", target);
+      window.location.href = target;
+      return;
+    }
+
+    // Otherwise (local dev) go to /wizard/
+    const target = "/wizard/";
+    console.log("Redirecting (local):", target);
+    window.location.href = target;
+  } catch (err) {
+    console.error("Redirect error:", err);
+    setError("Neizdevās pāradresēt uz formu.");
+  }
+}
+
 
   return (
     <div
