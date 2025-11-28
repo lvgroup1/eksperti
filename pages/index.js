@@ -1,5 +1,6 @@
 // pages/index.js
 import { useState } from "react";
+import DamageIntakeForm from "../components/DamageIntakeForm.jsx";
 
 const USERS = [
   {
@@ -22,47 +23,48 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-function handleSubmit(e) {
-  e.preventDefault();
-  setError("");
+  function handleLoginClick(e) {
+    e.preventDefault();
+    setError("");
 
-  // just accept any credentials for now (we only debug redirect)
-  try {
-    localStorage.setItem(
-      "eksperti_user",
-      JSON.stringify({
-        email,
-        fullName: email || "Eksperts",
-      })
+    const user = USERS.find(
+      (u) =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.password === password
     );
-  } catch (err) {
-    console.error("localStorage error", err);
-  }
 
-  try {
-    // Debug info: where are we NOW?
-    console.log("Current location:", window.location.href);
-
-    // If we are on GitHub Pages, ALWAYS go to the full wizard URL
-    if (window.location.hostname === "lvgroup1.github.io") {
-      const target = "https://lvgroup1.github.io/eksperti/wizard/";
-      console.log("Redirecting (GH absolute):", target);
-      window.location.href = target;
+    if (!user) {
+      setError("Nepareizs e-pasts vai parole.");
       return;
     }
 
-    // Otherwise (local dev) go to /wizard/
-    const target = "/wizard/";
-    console.log("Redirecting (local):", target);
-    window.location.href = target;
-  } catch (err) {
-    console.error("Redirect error:", err);
-    setError("Neizdevās pāradresēt uz formu.");
+    // Saglabājam profilu pārlūkā (kā iepriekš)
+    try {
+      localStorage.setItem(
+        "eksperti_user",
+        JSON.stringify({
+          email: user.email,
+          fullName: user.fullName,
+          buvkomersantaNr: user.buvkomersantaNr,
+          sertNr: user.sertNr,
+        })
+      );
+    } catch (err) {
+      console.error("localStorage error", err);
+    }
+
+    // Nekur nevairs nenavigējam – vienkārši rādam formu
+    setIsLoggedIn(true);
   }
-}
 
+  // Ja ielogojies – rādām uzreiz formu
+  if (isLoggedIn) {
+    return <DamageIntakeForm />;
+  }
 
+  // Pretējā gadījumā – login ekrāns
   return (
     <div
       style={{
@@ -85,7 +87,7 @@ function handleSubmit(e) {
       >
         <h2 style={{ marginBottom: "20px" }}>Pieslēgties</h2>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleLoginClick}>
           <input
             type="email"
             placeholder="E-pasts"
