@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Auto-login if user data already in localStorage
+  // Automatically log in if user is stored in localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -71,12 +71,64 @@ export default function LoginPage() {
     setCurrentUser(profile);
   }
 
-  // Ja ielogots – rādam uzreiz formu (wizard)
-  if (currentUser) {
-    return <DamageIntakeForm currentUser={currentUser} />;
+  function handleLogout() {
+    try {
+      localStorage.removeItem("eksperti_user");
+    } catch (err) {
+      console.error("localStorage remove error", err);
+    }
+    setCurrentUser(null);
+    setEmail("");
+    setPassword("");
+    setError("");
   }
 
-  // Pretējā gadījumā – login ekrāns
+  // If logged in – show header + form
+  if (currentUser) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f3f4f6" }}>
+        {/* Top bar with user info + logout */}
+        <div
+          style={{
+            maxWidth: 900,
+            margin: "0 auto",
+            padding: "16px 16px 0 16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600 }}>
+              {currentUser.fullName || "Eksperts"}
+            </div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>
+              {currentUser.email}
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 999,
+              border: "1px solid #e5e7eb",
+              background: "white",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Iziet
+          </button>
+        </div>
+
+        {/* Actual wizard form */}
+        <DamageIntakeForm currentUser={currentUser} />
+      </div>
+    );
+  }
+
+  // Otherwise – login screen
   return (
     <div
       style={{
