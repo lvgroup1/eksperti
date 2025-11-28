@@ -42,20 +42,21 @@ export default function SavedTamesPage() {
         {/* Augšējā rindiņa ar atpakaļ pogu */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800 }}>Saglabātās tāmēs</h1>
-          <Link
-            href="/wizard"
-            style={{
-              padding: "8px 14px",
-              borderRadius: 999,
-              border: "1px solid #e5e7eb",
-              background: "white",
-              textDecoration: "none",
-              fontSize: 14,
-              color: "#111827",
-            }}
-          >
-            ← Atpakaļ uz formu
-          </Link>
+<button
+  onClick={onBackToList}
+  style={{
+    padding: "8px 14px",
+    borderRadius: 999,
+    border: "1px solid #e5e7eb",
+    background: "white",
+    textDecoration: "none",
+    fontSize: 14,
+    color: "#111827",
+    cursor: "pointer"
+  }}
+>
+  ← Atpakaļ uz formu
+</button>
         </div>
 
         {/* Pelēks paskaidrojums */}

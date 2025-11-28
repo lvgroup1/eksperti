@@ -692,7 +692,7 @@ const StepShell = React.memo(function StepShell({ title, children }) {
 /* ======================================================================
    COMPONENT
    ====================================================================== */
-export default function DamageIntakeForm() {
+export default function DamageIntakeForm({ onBackToList }) {
   const [step, setStep] = useState(1);
 
   // GitHub Pages base path (/eksperti) for assets

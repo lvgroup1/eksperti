@@ -1,5 +1,5 @@
 // pages/index.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DamageIntakeForm from "../components/DamageIntakeForm.jsx";
 
 const USERS = [
@@ -23,7 +23,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Auto-login if user data already in localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const saved = localStorage.getItem("eksperti_user");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setCurrentUser(parsed);
+      }
+    } catch (err) {
+      console.error("Failed to read saved user", err);
+    }
+  }, []);
 
   function handleLoginClick(e) {
     e.preventDefault();
@@ -31,7 +46,7 @@ export default function LoginPage() {
 
     const user = USERS.find(
       (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
+        u.email.toLowerCase() === email.toLowerCase().trim() &&
         u.password === password
     );
 
@@ -40,28 +55,25 @@ export default function LoginPage() {
       return;
     }
 
-    // Saglabājam profilu pārlūkā (kā iepriekš)
+    const profile = {
+      email: user.email,
+      fullName: user.fullName,
+      buvkomersantaNr: user.buvkomersantaNr,
+      sertNr: user.sertNr,
+    };
+
     try {
-      localStorage.setItem(
-        "eksperti_user",
-        JSON.stringify({
-          email: user.email,
-          fullName: user.fullName,
-          buvkomersantaNr: user.buvkomersantaNr,
-          sertNr: user.sertNr,
-        })
-      );
+      localStorage.setItem("eksperti_user", JSON.stringify(profile));
     } catch (err) {
       console.error("localStorage error", err);
     }
 
-    // Nekur nevairs nenavigējam – vienkārši rādam formu
-    setIsLoggedIn(true);
+    setCurrentUser(profile);
   }
 
-  // Ja ielogojies – rādām uzreiz formu
-  if (isLoggedIn) {
-    return <DamageIntakeForm />;
+  // Ja ielogots – rādam uzreiz formu (wizard)
+  if (currentUser) {
+    return <DamageIntakeForm currentUser={currentUser} />;
   }
 
   // Pretējā gadījumā – login ekrāns
