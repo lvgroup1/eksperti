@@ -2485,21 +2485,7 @@ window.scrollTo({ top: 0, behavior: "smooth" });
               />
             </LabeledRow>
 
-            <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
-            <div style={{ marginTop: 12, marginBottom: 12 }}>
-  <input
-    type="text"
-    placeholder="Meklēt pozīciju..."
-    value={itemSearch}
-    onChange={(e) => setItemSearch(e.target.value)}
-    style={{
-      width: "100%",
-      padding: "8px",
-      border: "1px solid #d1d5db",
-      borderRadius: 10,
-    }}
-  />
-</div>
+
             {(roomActions[editingRoomId] || [
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
@@ -2682,12 +2668,6 @@ window.scrollTo({ top: 0, behavior: "smooth" });
                       style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white" }}
                     >
                       Dzēst
-                    </button>
-                    <button
-                      type="button" onClick={() => { setEditingRoomId(null); setStep(9); }}
-                      style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "white", color: "#111827" }}
-                    >
-                      + Pievienot vēl telpu
                     </button>
                   </div>
                 </div>
