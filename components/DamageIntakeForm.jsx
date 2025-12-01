@@ -1469,7 +1469,12 @@ const categories = useMemo(() => {
       case 5: return ["Jā","Nē"].includes(electricity);
       case 6: return ["Jā","Nē"].includes(needsDrying);
       case 7: return ["Jā","Nē"].includes(commonPropertyDamaged);
-      case 8: return lossKnown === "Nē" || (lossKnown === "Jā" && !!lossAmount && Number(lossAmount) >= 0);
+      case 8:
+  return (
+    zaudejumsPecKlienta === "Nē" ||
+    (zaudejumsPecKlienta === "Jā" && zaudejumaSumma && Number(zaudejumaSumma) >= 0)
+  );
+
       case 9: return Object.values(rooms).some((r) => r.checked);
       default: return true;
     }
@@ -1872,12 +1877,36 @@ let tameName = window.prompt(
       ws.getCell(`B${notesTitleRow}`).font = { ...FONT, bold: true };
       ws.mergeCells(notesTitleRow, 2, notesTitleRow, 12);
 
-      const notes = [
+      // ✅ Bāzes piezīmes (kā līdz šim)
+      const baseNotes = [
         "1. Tāmes derīguma termiņš – 1 mēnesis.",
         "2. Tāme sastādīta provizoriski, atbilstoši bojātā īpašuma apskates protokolam un bildēm.",
-        "3. Iespējami slēpti defekti, kuri atklāsies remontdarbu laikā.",
+        "3. Iespējami slēpti defekti, kurie atklāsies remontdarbu laikā.",
         `4. Tāme ir sagatavota elektroniski un ir autorizēta ar Nr.${tameId}.`,
       ];
+
+      // ✅ Automātiskās piezīmes no formās atbildēm
+      const autoNotes = [];
+
+      if (vajadzigaZavesana === "Jā") {
+        autoNotes.push("Nepieciešama žāvēšana.");
+      }
+
+      if (bojatsKopipasums === "Jā") {
+        autoNotes.push("Tika bojāts kopīpašums.");
+      }
+
+      if (zaudejumsPecKlienta === "Jā" && zaudejumaSumma) {
+        autoNotes.push(`Zaudējuma novērtējums pēc klienta vārdiem ir ${zaudejumaSumma} EUR.`);
+      }
+
+      // Apvienojam visas piezīmes vienā masīvā
+      const notes = [...baseNotes];
+
+      if (autoNotes.length > 0) {
+        notes.push(""); // tukša rinda starpai
+        notes.push(...autoNotes);
+      }
 
       let rowN = notesTitleRow + 1;
       for (const line of notes) {
@@ -1889,7 +1918,11 @@ let tameName = window.prompt(
         rowN++;
       }
 
-      const extraNotes = roomInstances.map((ri) => (ri.note || "").trim()).filter(Boolean);
+      // ✅ Pēc tam paliek tavs esošais kods ar roomInstances piezīmēm
+      const extraNotes = roomInstances
+        .map((ri) => (ri.note || "").trim())
+        .filter(Boolean);
+
       for (const n of extraNotes) {
         ws.mergeCells(rowN, 2, rowN, 12);
         const c = ws.getCell(rowN, 2);
@@ -1898,6 +1931,7 @@ let tameName = window.prompt(
         c.alignment = { wrapText: true, vertical: "top" };
         rowN++;
       }
+
 
       // SASTĀDĪJA / SASKAŅOTS
       const blockStart = rowN + 2;
@@ -2126,10 +2160,20 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
           <StepShell title="5. Elektrības traucējumi">
             <LabeledRow label="Elektrības traucējumi">
               <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
-                <input type="radio" name="el" checked={electricity === "Jā"} onChange={() => setElectricity("Jā")} /> Ir
+                <input
+  type="radio"
+  name="el"
+  checked={elektribasTraucejumi === "ja"}
+  onChange={() => setElektribasTraucejumi("ja")}
+/> Ir
               </label>
               <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <input type="radio" name="el" checked={electricity === "Nē"} onChange={() => setElectricity("Nē")} /> Nav
+               <input
+  type="radio"
+  name="el"
+  checked={elektribasTraucejumi === "ne"}
+  onChange={() => setElektribasTraucejumi("ne")}
+/> Nav
               </label>
             </LabeledRow>
           </StepShell>
@@ -2138,52 +2182,112 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
         {/* Step 6 */}
         {step === 6 && (
           <StepShell title="6. Vai nepieciešama žāvēšana?">
-            <LabeledRow label="Žāvēšana">
-              {YES_NO.map((yn) => (
-                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
-                  <input type="radio" name="dry" checked={needsDrying === yn} onChange={() => setNeedsDrying(yn)} /> {yn}
-                </label>
-              ))}
-            </LabeledRow>
+<LabeledRow label="Žāvēšana">
+  <label style={{ display:"inline-flex",alignItems:"center",gap:8,marginRight:16 }}>
+    <input
+      type="radio"
+      name="dry"
+      checked={vajadzigaZavesana === "Jā"}
+      onChange={() => setVajadzigaZavesana("Jā")}
+    /> Jā
+  </label>
+
+  <label style={{ display:"inline-flex",alignItems:"center",gap:8 }}>
+    <input
+      type="radio"
+      name="dry"
+      checked={vajadzigaZavesana === "Nē"}
+      onChange={() => setVajadzigaZavesana("Nē")}
+    /> Nē
+  </label>
+</LabeledRow>
+
           </StepShell>
         )}
 
         {/* Step 7 */}
         {step === 7 && (
           <StepShell title="7. Vai bojāts kopīpašums?">
-            <LabeledRow label="Kopīpašums">
-              {YES_NO.map((yn) => (
-                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
-                  <input type="radio" name="common" checked={commonPropertyDamaged === yn} onChange={() => setCommonPropertyDamaged(yn)} /> {yn}
-                </label>
-              ))}
-            </LabeledRow>
+<LabeledRow label="Kopīpašums">
+  <label style={{ display:"inline-flex",alignItems:"center",gap:8,marginRight:16 }}>
+    <input
+      type="radio"
+      name="common"
+      checked={bojatsKopipasums === "Jā"}
+      onChange={() => setBojatsKopipasums("Jā")}
+    /> Jā
+  </label>
+
+  <label style={{ display:"inline-flex",alignItems:"center",gap:8 }}>
+    <input
+      type="radio"
+      name="common"
+      checked={bojatsKopipasums === "Nē"}
+      onChange={() => setBojatsKopipasums("Nē")}
+    /> Nē
+  </label>
+</LabeledRow>
           </StepShell>
         )}
 
         {/* Step 8 */}
-        {step === 8 && (
-          <StepShell title="8. Zaudējuma novērtējums pēc klienta vārdiem">
-            <LabeledRow label="Vai ir zināma summa?">
-              {YES_NO.map((yn) => (
-                <label key={yn} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginRight: 16 }}>
-                  <input type="radio" name="loss" checked={lossKnown === yn} onChange={() => setLossKnown(yn)} /> {yn}
-                </label>
-              ))}
-            </LabeledRow>
-            {lossKnown === "Jā" && (
-              <LabeledRow label="Summa EUR">
-                <input
-                  type="number" inputMode="decimal" step="0.01"
-                  value={lossAmount ?? ""} onChange={onNum(setLossAmount)}
-                  autoComplete="off"
-                  style={{ width: 200, border: "1px solid #e5e7eb", borderRadius: 10, padding: 8 }}
-                  placeholder="€ summa"
-                />
-              </LabeledRow>
-            )}
-          </StepShell>
-        )}
+ {step === 8 && (
+  <StepShell title="8. Zaudējuma novērtējums pēc klienta vārdiem">
+    <LabeledRow label="Vai ir zināma summa?">
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          marginRight: 16,
+        }}
+      >
+        <input
+          type="radio"
+          name="lossKnown"
+          checked={zaudejumsPecKlienta === "Jā"}
+          onChange={() => setZaudejumsPecKlienta("Jā")}
+        />{" "}
+        Jā
+      </label>
+
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <input
+          type="radio"
+          name="lossKnown"
+          checked={zaudejumsPecKlienta === "Nē"}
+          onChange={() => setZaudejumsPecKlienta("Nē")}
+        />{" "}
+        Nē
+      </label>
+    </LabeledRow>
+
+    {zaudejumsPecKlienta === "Jā" && (
+      <LabeledRow label="Summa EUR">
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          value={zaudejumaSumma}
+          onChange={(e) => setZaudejumaSumma(e.target.value)}
+          style={{
+            width: 200,
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 8,
+          }}
+          placeholder="€ summa"
+        />
+      </LabeledRow>
+    )}
+  </StepShell>
+)}
 
         {/* Step 9 */}
         {step === 9 && (
