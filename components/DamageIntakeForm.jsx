@@ -2454,8 +2454,8 @@ try {
   <input
     type="text"
     placeholder="Meklēt pozīciju..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
+    value={itemSearch}
+    onChange={(e) => setItemSearch(e.target.value)}
     style={{
       width: "100%",
       padding: "8px",
