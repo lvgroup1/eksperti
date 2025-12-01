@@ -741,6 +741,8 @@ export default function DamageIntakeForm({ onBackToList }) {
     const [nameIndex, setNameIndex] = useState(new Map());
   const [catNameIndex, setCatNameIndex] = useState(new Map());
   const [itemSearch, setItemSearch] = useState("");
+  const [positionSearch, setPositionSearch] = useState("");
+const [openRowKey, setOpenRowKey] = useState(null); // kurai rindai dropdown ir vaļā
 
 
 
@@ -2484,81 +2486,129 @@ try {
                       {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
                     </select>
                   </div>
-{/* Pozīcija (ar meklēšanu) */}
-<div>
+{/* Pozīcija – custom searchable dropdown */}
+<div style={{ position: "relative" }}>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
 
-  {/* Meklēšanas lauks virs saraksta */}
-  <input
-    value={itemSearch}
-    onChange={(e) => setItemSearch(e.target.value)}
-    placeholder="Meklēt pēc nosaukuma..."
-    autoComplete="off"
-    style={{
-      width: "100%",
-      border: "1px solid #e5e7eb",
-      borderRadius: 10,
-      padding: 6,
-      marginBottom: 6,
-      fontSize: 13,
+  {/* “Aizvērtā” poga ar izvēlēto pozīciju */}
+  <button
+    type="button"
+    onClick={() => {
+      const key = `${editingRoomId}-${idx}`;
+      setOpenRowKey((prev) => (prev === key ? null : key));
+      setPositionSearch(""); // kad atveram – tukšs meklēšanas lauks
     }}
-  />
-
-  <select
-    value={row.itemUid ?? ""}
-    onChange={(e) => setRowItem(editingRoomId, idx, e.target.value)}
     style={{
       width: "100%",
-      border: "1px solid #e5e7eb",
+      padding: "8px 12px",
       borderRadius: 10,
-      padding: 8,
+      border: "1px solid #e5e7eb",
       background: "white",
+      textAlign: "left",
+      cursor: "pointer",
     }}
   >
-    <option value="">— izvēlies pozīciju —</option>
-    {priceCatalog
-      .filter((it) => {
-        // Filtrs pēc kategorijas (kā līdz šim)
-        if (insurer === "Gjensidige") {
-          const nName = normTxt(it.name);
-          if (GJ_GROUP_BLACKLIST.has(nName)) return false;
-          if (gjChildOnlyNames.has(nName)) return false;
-        }
+    {row.itemName
+      ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
+      : "— izvēlies pozīciju —"}
+  </button>
 
-        const categoryMatches =
-          !row.category ||
-          it.category === row.category ||
-          it.subcategory === row.category;
+  {/* Atvērtais meklēšanas panelis */}
+  {openRowKey === `${editingRoomId}-${idx}` && (
+    <div
+      style={{
+        position: "absolute",
+        zIndex: 50,
+        top: "100%",
+        left: 0,
+        right: 0,
+        marginTop: 4,
+        background: "white",
+        border: "1px solid #e5e7eb",
+        borderRadius: 10,
+        boxShadow: "0 10px 30px rgba(15,23,42,0.18)",
+        maxHeight: 320,
+        overflowY: "auto",
+      }}
+    >
+      {/* Search bar – redzams tikai, kad dropdown ir vaļā */}
+      <div
+        style={{
+          padding: 8,
+          borderBottom: "1px solid #e5e7eb",
+          position: "sticky",
+          top: 0,
+          background: "white",
+        }}
+      >
+        <input
+          autoFocus
+          placeholder="Meklēt pozīciju..."
+          value={positionSearch}
+          onChange={(e) => setPositionSearch(e.target.value)}
+          style={{
+            width: "100%",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            padding: 6,
+            fontSize: 14,
+          }}
+        />
+      </div>
 
-        if (
-          !categoryMatches ||
-          isChildItem(it) ||
-          it.is_section
-        ) {
-          return false;
-        }
+      {/* Filtrētās pozīcijas */}
+      {priceCatalog
+        .filter((it) => {
+          if (insurer === "Gjensidige") {
+            const nName = normTxt(it.name);
+            if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+            if (gjChildOnlyNames.has(nName)) return false;
+          }
 
-        // Papildus filtrs pēc meklēšanas teksta
-        if (!itemSearch.trim()) return true;
-        const q = normTxt(itemSearch);
-        const nName = normTxt(it.name);
-        const nCat = normTxt(it.category);
-        const nSub = normTxt(it.subcategory);
+          const categoryMatches =
+            !row.category ||
+            it.category === row.category ||
+            it.subcategory === row.category;
 
-        return (
-          nName.includes(q) ||
-          nCat.includes(q) ||
-          nSub.includes(q)
-        );
-      })
-      .map((it) => (
-        <option key={it.uid} value={it.uid}>
-          {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
-          {it.name} · {it.unit || "—"}
-        </option>
-      ))}
-  </select>
+          if (!categoryMatches) return false;
+
+          if (isChildItem(it) || it.is_section) return false;
+
+          // live filtrs pēc search teksta
+          const q = positionSearch.trim().toLowerCase();
+          if (!q) return true;
+          const txt = `${it.name} ${it.subcategory || ""}`.toLowerCase();
+          return txt.includes(q);
+        })
+        .map((it) => (
+          <button
+            key={it.uid}
+            type="button"
+            onClick={() => {
+              setRowItem(editingRoomId, idx, it.uid); // aizpildām rindu ar izvēlēto
+              setOpenRowKey(null);                    // aizveram dropdown
+              setPositionSearch("");                  // notīrām meklēšanu
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "8px 12px",
+              border: "none",
+              borderBottom: "1px solid #f3f4f6",
+              background: "white",
+              textAlign: "left",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
+            {it.name} · {it.unit || "—"}
+          </button>
+        ))}
+    </div>
+  )}
 </div>
+
 
                   {/* Mērv. */}
                   <div>
