@@ -740,6 +740,8 @@ export default function DamageIntakeForm({ onBackToList }) {
   // Name indexes (for fast findRowByName)
     const [nameIndex, setNameIndex] = useState(new Map());
   const [catNameIndex, setCatNameIndex] = useState(new Map());
+  const [searchQuery, setSearchQuery] = useState("");
+
 
   const byId = useMemo(() => {
     const m = new Map();
@@ -1985,6 +1987,26 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       a.remove();
       URL.revokeObjectURL(url);
 
+      // ====== SAVE TAME TO LOCAL STORAGE ======
+try {
+  const existing = JSON.parse(localStorage.getItem("saved_tames") || "[]");
+
+  existing.push({
+    id: tameId,
+    date: new Date().toISOString(),
+    insurer,
+    address,
+    claimNumber,
+    rooms: roomInstances,
+    totalRooms: roomInstances.length,
+  });
+
+  localStorage.setItem("saved_tames", JSON.stringify(existing));
+} catch (err) {
+  console.error("Cannot save tame:", err);
+}
+
+
       // ✅ Pēc veiksmīgas lejupielādes – uz pēdējo soli
       setStep(12);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2410,6 +2432,20 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
             </LabeledRow>
 
             <div style={{ fontWeight: 700, margin: "12px 0 6px" }}>Pozīcijas un apjomi</div>
+            <div style={{ marginTop: 12, marginBottom: 12 }}>
+  <input
+    type="text"
+    placeholder="Meklēt pozīciju..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    style={{
+      width: "100%",
+      padding: "8px",
+      border: "1px solid #d1d5db",
+      borderRadius: 10,
+    }}
+  />
+</div>
             {(roomActions[editingRoomId] || [
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
@@ -2440,31 +2476,41 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
   style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
 >
   <option value="">— izvēlies pozīciju —</option>
-  {priceCatalog
-    .filter((it) => {
-      if (insurer === "Gjensidige") {
-        const nName = normTxt(it.name);
-        if (GJ_GROUP_BLACKLIST.has(nName)) return false;
-        if (gjChildOnlyNames.has(nName)) return false;
-      }
+{priceCatalog
+  .filter((it) => {
+    // Swedbank filtrs
+    if (insurer === "Gjensidige") {
+      const nName = normTxt(it.name);
+      if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+      if (gjChildOnlyNames.has(nName)) return false;
+    }
 
-      const categoryMatches =
-        !row.category ||
-        it.category === row.category ||
-        it.subcategory === row.category;
+    // tikai parent pozīcijas
+    if (isChildItem(it) || it.is_section) return false;
 
-      return (
-        categoryMatches &&
-        !isChildItem(it) &&
-        !it.is_section
-      );
-    })
-    .map((it) => (
-      <option key={it.uid} value={it.uid}>
-        {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
-        {it.name} · {it.unit || "—"}
-      </option>
-    ))}
+    // Filtrē pēc izvēlētās kategorijas
+    const categoryMatches =
+      !row.category ||
+      it.category === row.category ||
+      it.subcategory === row.category;
+
+    if (!categoryMatches) return false;
+
+    // Meklēšana pēc pozīcijas nosaukuma
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      const name = it.name.toLowerCase();
+      if (!name.includes(q)) return false;
+    }
+
+    return true;
+  })
+  .map((it) => (
+    <option key={it.uid} value={it.uid}>
+      {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
+      {it.name} · {it.unit || "—"}
+    </option>
+  ))}
 </select>
 
                   </div>
@@ -2564,7 +2610,7 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
                     onBackToList();
                   } else {
                     // fallback – vienkārši uz /tames
-                    window.location.href = "/tames";
+                    window.location.href = `${window.location.pathname.replace(/\/$/, "")}/tames/`;
                   }
                 }}
                 style={{
