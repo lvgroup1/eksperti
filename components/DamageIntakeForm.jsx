@@ -40,6 +40,18 @@ const UNIT_PRICE_KEYS = [
 
 // default units shown in the UI
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
+const SWEDBANK_CATEGORIES = [
+  "Griesti",
+  "Sienas, ailes",
+  "Grīdas",
+  "Citi apdares darbi",
+  "Jumts",
+  "Fasāde",
+  "Citi darbi un izmaksas",
+  "Telpu kopšana",
+  "Būvgružu utilizācija",
+];
+
 
 // --- Strong normalizers ---
 const _raw = (s) => String(s ?? "");
@@ -1334,7 +1346,12 @@ const gjChildOnlyNames = useMemo(() => {
 const categories = useMemo(() => {
   if (!priceCatalog.length) return [];
 
-  // Gjensidige: categories = section headers ("Griesti", "Sienas", utt.)
+  // Swedbank – vienmēr rādam tikai 9 fiksētās kategorijas
+  if (insurer === "Swedbank") {
+    return SWEDBANK_CATEGORIES;
+  }
+
+  // Gjensidige: kategorijas = section headeri ("Griesti", "Sienas", utt.)
   if (insurer === "Gjensidige") {
     const sectionNames = priceCatalog
       .filter((r) => isSectionRow(r))
@@ -1347,21 +1364,13 @@ const categories = useMemo(() => {
   }
 
   // Default (Balta, BTA, IF, Compensa...)
-   const set = new Set(
+  const set = new Set(
     priceCatalog
       .map((i) => (i.category || "").trim())
       .filter(Boolean)
   );
   return Array.from(set);
 }, [priceCatalog, insurer]);
-
-
-
-  const allUnits = useMemo(() => {
-    const set = new Set(DEFAULT_UNITS);
-    priceCatalog.forEach((i) => i.unit && set.add(normalizeUnit(i.unit)));
-    return Array.from(set);
-  }, [priceCatalog]);
 
   /* ---------- Saved estimates ---------- */
   const [saved, setSaved] = useState([]);
