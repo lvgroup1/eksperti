@@ -3,26 +3,37 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const STORAGE_KEY = "eksperti_tames";
+const getTameStorageKey = (user) => {
+  const uid = user?.email || user?.id || user?.fullName || "anonymous";
+  return `eksperti_tames_${uid}`;
+};
+
 
 export default function SavedTamesPage() {
   const [tames, setTames] = useState([]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+useEffect(() => {
+  if (typeof window === "undefined") return;
 
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
+  try {
+    // nolasām pašreizējo ekspertu
+    const userRaw = localStorage.getItem("eksperti_user");
+    const user = userRaw ? JSON.parse(userRaw) : null;
+
+    const key = getTameStorageKey(user);
+    const raw = localStorage.getItem(key);
+
+    if (raw) {
       const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-
-      // jaunākās pa virsu
-      parsed.sort((a, b) => (b.createdTs || 0) - (a.createdTs || 0));
-      setTames(parsed);
-    } catch (err) {
-      console.error("Neizdevās nolasīt saglabātās tāmes:", err);
+      if (Array.isArray(parsed)) {
+        setTames(parsed);
+      }
     }
-  }, []);
+  } catch (err) {
+    console.error("Neizdevās nolasīt saglabātās tāmēs:", err);
+  }
+}, []);
+
 
   const handleBackToForm = () => {
   if (typeof window === "undefined") return;
@@ -31,12 +42,22 @@ export default function SavedTamesPage() {
 };
 
 
-  const handleDeleteAll = () => {
-    if (!confirm("Vai tiešām dzēst visas saglabātās tāmes no šīs ierīces?")) return;
-    if (typeof window === "undefined") return;
-    localStorage.removeItem(STORAGE_KEY);
+ const handleDeleteAll = () => {
+  if (typeof window === "undefined") return;
+  if (!window.confirm("Vai tiešām dzēst visas šī eksperta tāmes no šīs ierīces?")) return;
+
+  try {
+    const userRaw = localStorage.getItem("eksperti_user");
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const key = getTameStorageKey(user);
+
+    localStorage.removeItem(key);
     setTames([]);
-  };
+  } catch (e) {
+    console.error("Neizdevās izdzēst:", e);
+  }
+};
+
 
   const handleDownload = (item) => {
     if (typeof window === "undefined") return;

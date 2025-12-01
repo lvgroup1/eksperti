@@ -141,6 +141,7 @@ function attachChildrenFromLegacy(baseParents, rawLegacy) {
     byCatName.set(keyCN(leg.category, leg.name), leg);
   }
 
+
   // attach
   let attached = 0;
   for (const p of baseParents) {
@@ -706,6 +707,29 @@ export default function DamageIntakeForm({ onBackToList }) {
   // Profile
   const [claimNumber, setClaimNumber] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+  // --- helper: atslēga tāmēm konkrētam ekspertam ---
+const getTameStorageKey = (user) => {
+  // vari pamainīt – galvenais, lai ir unikāls per users
+  const uid = user?.email || user?.id || user?.fullName || "anonymous";
+  return `eksperti_tames_${uid}`;
+};
+
+const saveTameToLocalStorage = React.useCallback(
+  (payload) => {
+    if (typeof window === "undefined") return;
+    try {
+      const key = getTameStorageKey(currentUser);
+      const raw = localStorage.getItem(key);
+      const existing = raw ? JSON.parse(raw) : [];
+
+      const updated = [payload, ...existing].slice(0, 50); // max 50 tāmes
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (e) {
+      console.error("Neizdevās saglabāt tāmi:", e);
+    }
+  },
+  [currentUser]
+);
 
 
   // Core fields
@@ -1995,6 +2019,19 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       // finalize
       wb.removeWorksheet(src.id);
       ws.name = "Tāme";
+
+// piemērs – tu vari pievienot ko gribi
+const tamePayload = {
+  title: tameName,
+  insurer,
+  claimNumber,
+  address,
+  createdAt: new Date().toLocaleString("lv-LV"),
+  id: tameId,
+  rooms: roomInstances.map((r) => `${r.type} ${r.index}`),
+};
+
+saveTameToLocalStorage(tamePayload);
 
 const buffer = await wb.xlsx.writeBuffer();
 
