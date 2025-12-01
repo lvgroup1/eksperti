@@ -1,7 +1,8 @@
 [
   {
+    "uid": "SW-0001",
     "id": 1,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma",
     "unit": "m2",
@@ -11,8 +12,9 @@
     "unit_price": 1.67
   },
   {
+    "uid": "SW-0002",
     "id": 2,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
     "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m2",
@@ -22,8 +24,9 @@
     "unit_price": 3.06
   },
   {
+    "uid": "SW-0003",
     "id": 3,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
     "name": "Piekārto reģipšu griestu metāla karkasa ierīkošana",
     "unit": "m2",
@@ -33,305 +36,117 @@
     "unit_price": 4.67
   },
   {
+    "uid": "SW-0004",
     "id": 4,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- metāla karkass",
+    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
     "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.57,
-    "mechanisms": 0.0,
-    "unit_price": 7.57
+    "labor": 3.0,
+    "materials": 0.0,
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 3.17
   },
   {
+    "uid": "SW-0005",
     "id": 5,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.0,
-    "mechanisms": 0.0,
-    "unit_price": 9.0
+    "name": "Griestu attīrīšana no esošā seguma",
+    "unit": "m2",
+    "labor": 1.5,
+    "materials": 0.0,
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 1.67
   },
   {
+    "uid": "SW-0006",
     "id": 6,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+    "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m2",
-    "labor": 3.0,
+    "labor": 2.56,
     "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 3.17
+    "mechanisms": 0.49665000000000004,
+    "unit_price": 3.06
   },
   {
+    "uid": "SW-0007",
     "id": 7,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- ģipškartons GKB 12,5mm",
+    "name": "Piekārto reģipšu griestu metāla karkasa ierīkošana",
     "unit": "m2",
-    "labor": 0.0,
-    "materials": 3.2,
-    "mechanisms": 0.0,
-    "unit_price": 3.2
+    "labor": 4.5,
+    "materials": 0.0,
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 4.67
   },
   {
+    "uid": "SW-0008",
     "id": 8,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
+    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+    "unit": "m2",
+    "labor": 3.0,
+    "materials": 0.0,
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 3.17
   },
   {
+    "uid": "SW-0009",
     "id": 9,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
+    "name": "Griestu attīrīšana no esošā seguma",
+    "unit": "m2",
+    "labor": 1.5,
+    "materials": 0.0,
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 1.67
   },
   {
+    "uid": "SW-0010",
     "id": 10,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
+    "name": "Ģipškartona un metāla karkasa demontāža",
+    "unit": "m2",
+    "labor": 2.56,
+    "materials": 0.0,
+    "mechanisms": 0.49665000000000004,
+    "unit_price": 3.06
   },
   {
+    "uid": "SW-0011",
     "id": 11,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "Griestu attīrīšana no esošā seguma",
+    "name": "Piekārto reģipšu griestu metāla karkasa ierīkošana",
     "unit": "m2",
-    "labor": 1.5,
+    "labor": 4.5,
     "materials": 0.0,
     "mechanisms": 0.17325000000000002,
-    "unit_price": 1.67
+    "unit_price": 4.67
   },
   {
+    "uid": "SW-0012",
     "id": 12,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
+    "category": "Griesti",
     "subcategory": "",
-    "name": "Ģipškartona un metāla karkasa demontāža",
+    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
     "unit": "m2",
-    "labor": 2.56,
+    "labor": 3.0,
     "materials": 0.0,
-    "mechanisms": 0.49665000000000004,
-    "unit_price": 3.06
+    "mechanisms": 0.17325000000000002,
+    "unit_price": 3.17
   },
   {
+    "uid": "SW-0013",
     "id": 13,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "Piekārto reģipšu griestu metāla karkasa ierīkošana",
-    "unit": "m2",
-    "labor": 4.5,
-    "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 4.67
-  },
-  {
-    "id": 14,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.57,
-    "mechanisms": 0.0,
-    "unit_price": 7.57
-  },
-  {
-    "id": 15,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.0,
-    "mechanisms": 0.0,
-    "unit_price": 9.0
-  },
-  {
-    "id": 16,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
-    "unit": "m2",
-    "labor": 3.0,
-    "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 3.17
-  },
-  {
-    "id": 17,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- ugunsdrošais ģipškartons GKF 12,5mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 5.2,
-    "mechanisms": 0.0,
-    "unit_price": 5.2
-  },
-  {
-    "id": 18,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 19,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 20,
-    "category": "Ģipškartona konstrukcija (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 21,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "Griestu attīrīšana no esošā seguma",
-    "unit": "m2",
-    "labor": 1.5,
-    "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 1.67
-  },
-  {
-    "id": 22,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "Ģipškartona un metāla karkasa demontāža",
-    "unit": "m2",
-    "labor": 2.56,
-    "materials": 0.0,
-    "mechanisms": 0.49665000000000004,
-    "unit_price": 3.06
-  },
-  {
-    "id": 23,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "Piekārto reģipšu griestu metāla karkasa ierīkošana",
-    "unit": "m2",
-    "labor": 4.5,
-    "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 4.67
-  },
-  {
-    "id": 24,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.57,
-    "mechanisms": 0.0,
-    "unit_price": 7.57
-  },
-  {
-    "id": 25,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.0,
-    "mechanisms": 0.0,
-    "unit_price": 9.0
-  },
-  {
-    "id": 26,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
-    "unit": "m2",
-    "labor": 3.0,
-    "materials": 0.0,
-    "mechanisms": 0.17325000000000002,
-    "unit_price": 3.17
-  },
-  {
-    "id": 27,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- mitrumizturīgais ģipškartons GKBi 12,5mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 4.2,
-    "mechanisms": 0.0,
-    "unit_price": 4.2
-  },
-  {
-    "id": 28,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 29,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 30,
-    "category": "Ģipškartona konstrukcija (mitumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 31,
-    "category": "Apmetums, 10mm",
+    "category": "Griesti",
     "subcategory": "",
     "name": "Esošā apmetuma demontāža",
     "unit": "m2",
@@ -341,8 +156,9 @@
     "unit_price": 2.73
   },
   {
-    "id": 32,
-    "category": "Apmetums, 10mm",
+    "uid": "SW-0014",
+    "id": 14,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu apmešana 10mm biezumā",
     "unit": "m2",
@@ -352,41 +168,9 @@
     "unit_price": 7.35
   },
   {
-    "id": 33,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 34,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- ģipša apmetums Knauf Rotband, 10mm",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.31,
-    "mechanisms": 0.0,
-    "unit_price": 0.31
-  },
-  {
-    "id": 35,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.3,
-    "mechanisms": 0.0,
-    "unit_price": 0.3
-  },
-  {
-    "id": 36,
-    "category": "Krāsojums (ar špaktelējumu)",
+    "uid": "SW-0015",
+    "id": 15,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma",
     "unit": "m2",
@@ -396,8 +180,9 @@
     "unit_price": 2.03
   },
   {
-    "id": 37,
-    "category": "Krāsojums (ar špaktelējumu)",
+    "uid": "SW-0016",
+    "id": 16,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu gruntēšana, špahtelēšana un slīpēšana",
     "unit": "m2",
@@ -407,30 +192,9 @@
     "unit_price": 6.67
   },
   {
-    "id": 38,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- špahtele sheetrock finish",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.87,
-    "mechanisms": 0.0,
-    "unit_price": 0.87
-  },
-  {
-    "id": 39,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 40,
-    "category": "Krāsojums (ar špaktelējumu)",
+    "uid": "SW-0017",
+    "id": 17,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu krāsošana ar emulsijas krāsu",
     "unit": "m2",
@@ -440,19 +204,9 @@
     "unit_price": 4.62
   },
   {
-    "id": 41,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 42,
-    "category": "Krāsojamās tapetes",
+    "uid": "SW-0018",
+    "id": 18,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma",
     "unit": "m2",
@@ -462,8 +216,9 @@
     "unit_price": 1.17
   },
   {
-    "id": 43,
-    "category": "Krāsojamās tapetes",
+    "uid": "SW-0019",
+    "id": 19,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu gruntēšana pirms tapešu līmēšanas",
     "unit": "m2",
@@ -473,19 +228,9 @@
     "unit_price": 1.08
   },
   {
-    "id": 44,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 45,
-    "category": "Krāsojamās tapetes",
+    "uid": "SW-0020",
+    "id": 20,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Tapešu līmēšana",
     "unit": "m2",
@@ -495,30 +240,9 @@
     "unit_price": 4.12
   },
   {
-    "id": 46,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- krāsojamās tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.18,
-    "mechanisms": 0.0,
-    "unit_price": 1.18
-  },
-  {
-    "id": 47,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 48,
-    "category": "Krāsojamās tapetes",
+    "uid": "SW-0021",
+    "id": 21,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu krāsošana ar emulsijas krāsu",
     "unit": "m2",
@@ -528,19 +252,9 @@
     "unit_price": 3.62
   },
   {
-    "id": 49,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 50,
-    "category": "Tapetes",
+    "uid": "SW-0022",
+    "id": 22,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma",
     "unit": "m2",
@@ -550,8 +264,9 @@
     "unit_price": 1.17
   },
   {
-    "id": 51,
-    "category": "Tapetes",
+    "uid": "SW-0023",
+    "id": 23,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu gruntēšana",
     "unit": "m2",
@@ -561,19 +276,9 @@
     "unit_price": 1.08
   },
   {
-    "id": 52,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 53,
-    "category": "Tapetes",
+    "uid": "SW-0024",
+    "id": 24,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Tapešu līmēšana",
     "unit": "m2",
@@ -583,30 +288,9 @@
     "unit_price": 4.73
   },
   {
-    "id": 54,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 2.56,
-    "mechanisms": 0.0,
-    "unit_price": 2.56
-  },
-  {
-    "id": 55,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 56,
-    "category": "Putoplasta plāksnes",
+    "uid": "SW-0025",
+    "id": 25,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma",
     "unit": "m2",
@@ -616,8 +300,9 @@
     "unit_price": 1.17
   },
   {
-    "id": 57,
-    "category": "Putoplasta plāksnes",
+    "uid": "SW-0026",
+    "id": 26,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Putoplasta plākšņu montāža",
     "unit": "m2",
@@ -627,30 +312,9 @@
     "unit_price": 6.29
   },
   {
-    "id": 58,
-    "category": "Putoplasta plāksnes",
-    "subcategory": "",
-    "name": "- dekoratīvās putoplasta plāksnes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 5.24,
-    "mechanisms": 0.0,
-    "unit_price": 5.24
-  },
-  {
-    "id": 59,
-    "category": "Putoplasta plāksnes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.35,
-    "mechanisms": 0.0,
-    "unit_price": 1.35
-  },
-  {
-    "id": 60,
-    "category": "Armstrong tipa griesti",
+    "uid": "SW-0027",
+    "id": 27,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Armstrong tipa griestu  plākšņu demontāža",
     "unit": "m2",
@@ -660,8 +324,9 @@
     "unit_price": 1.23
   },
   {
-    "id": 61,
-    "category": "Armstrong tipa griesti",
+    "uid": "SW-0028",
+    "id": 28,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Armstrong tipa griestu karkasa demontāža",
     "unit": "m2",
@@ -671,8 +336,9 @@
     "unit_price": 2.38
   },
   {
-    "id": 62,
-    "category": "Armstrong tipa griesti",
+    "uid": "SW-0029",
+    "id": 29,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Armstrong tipa griestu karkasa montāža",
     "unit": "m2",
@@ -682,8 +348,9 @@
     "unit_price": 16.85
   },
   {
-    "id": 63,
-    "category": "Armstrong tipa griesti",
+    "uid": "SW-0030",
+    "id": 30,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Armstrong tipa griestu  plākšņu montāža",
     "unit": "m2",
@@ -693,8 +360,9 @@
     "unit_price": 6.97
   },
   {
-    "id": 64,
-    "category": "PVC apdares dēļi",
+    "uid": "SW-0031",
+    "id": 31,
+    "category": "Griesti",
     "subcategory": "",
     "name": "PVC apdares paneļu demontāža",
     "unit": "m2",
@@ -704,8 +372,9 @@
     "unit_price": 1.88
   },
   {
-    "id": 65,
-    "category": "PVC apdares dēļi",
+    "uid": "SW-0032",
+    "id": 32,
+    "category": "Griesti",
     "subcategory": "",
     "name": "PVC apdares dēļu ierīkošana",
     "unit": "m2",
@@ -715,30 +384,9 @@
     "unit_price": 7.79
   },
   {
-    "id": 66,
-    "category": "PVC apdares dēļi",
-    "subcategory": "",
-    "name": "- PVC apdares dēļi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 4.87,
-    "mechanisms": 0.0,
-    "unit_price": 4.87
-  },
-  {
-    "id": 67,
-    "category": "PVC apdares dēļi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.97,
-    "mechanisms": 0.0,
-    "unit_price": 0.97
-  },
-  {
-    "id": 68,
-    "category": "PVC apdares paneļi",
+    "uid": "SW-0033",
+    "id": 33,
+    "category": "Griesti",
     "subcategory": "",
     "name": "PVC apdares paneļu demontāža",
     "unit": "m2",
@@ -748,8 +396,9 @@
     "unit_price": 1.91
   },
   {
-    "id": 69,
-    "category": "PVC apdares paneļi",
+    "uid": "SW-0034",
+    "id": 34,
+    "category": "Griesti",
     "subcategory": "",
     "name": "PVC apdares paneļu ierīkošana",
     "unit": "m2",
@@ -759,30 +408,9 @@
     "unit_price": 8.15
   },
   {
-    "id": 70,
-    "category": "PVC apdares paneļi",
-    "subcategory": "",
-    "name": "- PVC apdares paneļi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 8.6,
-    "mechanisms": 0.0,
-    "unit_price": 8.6
-  },
-  {
-    "id": 71,
-    "category": "PVC apdares paneļi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.97,
-    "mechanisms": 0.0,
-    "unit_price": 0.97
-  },
-  {
-    "id": 72,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
+    "uid": "SW-0035",
+    "id": 35,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu attīrīšana no esošā seguma (apmetuma nokalšana)",
     "unit": "m2",
@@ -792,8 +420,9 @@
     "unit_price": 3.08
   },
   {
-    "id": 73,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
+    "uid": "SW-0036",
+    "id": 36,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) Venēcijas apmetums, dabīgs marmora efekts",
     "unit": "m2",
@@ -803,8 +432,9 @@
     "unit_price": 57.9
   },
   {
-    "id": 74,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
+    "uid": "SW-0037",
+    "id": 37,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) minerālais apmetums ar krāsošanu",
     "unit": "m2",
@@ -814,8 +444,9 @@
     "unit_price": 37.74
   },
   {
-    "id": 75,
-    "category": "Nostieptie griesti",
+    "uid": "SW-0038",
+    "id": 38,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Nostiepto griestu demontāža",
     "unit": "m2",
@@ -825,8 +456,9 @@
     "unit_price": 1.67
   },
   {
-    "id": 76,
-    "category": "Nostieptie griesti",
+    "uid": "SW-0039",
+    "id": 39,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Nostiepto griestu ierīkošana",
     "unit": "m2",
@@ -836,41 +468,9 @@
     "unit_price": 18.52
   },
   {
-    "id": 77,
-    "category": "Nostieptie griesti",
-    "subcategory": "",
-    "name": "- profila ierīkošana",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.5,
-    "mechanisms": 0.0,
-    "unit_price": 1.5
-  },
-  {
-    "id": 78,
-    "category": "Nostieptie griesti",
-    "subcategory": "",
-    "name": "- plēve",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 10.0,
-    "mechanisms": 0.0,
-    "unit_price": 10.0
-  },
-  {
-    "id": 79,
-    "category": "Nostieptie griesti",
-    "subcategory": "",
-    "name": "- palīgmateriāli (profili un tt.)",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.0,
-    "mechanisms": 0.0,
-    "unit_price": 7.0
-  },
-  {
-    "id": 80,
-    "category": "Nostieptie griesti",
+    "uid": "SW-0040",
+    "id": 40,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Iestiepto griestu gaismekļu ierīkošana",
     "unit": "gb.",
@@ -880,8 +480,9 @@
     "unit_price": 12.0
   },
   {
-    "id": 81,
-    "category": "Koka dēlīšu apšuvums",
+    "uid": "SW-0041",
+    "id": 41,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Esošo koka dēlīšu demontāža saglabājot latojumu",
     "unit": "m2",
@@ -891,8 +492,9 @@
     "unit_price": 2.92
   },
   {
-    "id": 82,
-    "category": "Koka dēlīšu apšuvums",
+    "uid": "SW-0042",
+    "id": 42,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Koka dēlīšu apšuvuma ierīkošana",
     "unit": "m2",
@@ -902,30 +504,9 @@
     "unit_price": 8.35
   },
   {
-    "id": 83,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
-    "name": "- koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 23.0,
-    "mechanisms": 0.0,
-    "unit_price": 23.0
-  },
-  {
-    "id": 84,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.78,
-    "mechanisms": 0.0,
-    "unit_price": 0.78
-  },
-  {
-    "id": 85,
-    "category": "Ģipša dekoratīvās karnīzes (atlietas, jaunas)",
+    "uid": "SW-0043",
+    "id": 43,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu karnīžu restaurācija (atlējumu izgatavošana un ierīkošana)",
     "unit": "m",
@@ -935,8 +516,9 @@
     "unit_price": 40.09
   },
   {
-    "id": 86,
-    "category": "Griestu apstrāde ar pretsēnīšu šķidrumu",
+    "uid": "SW-0044",
+    "id": 44,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu apstrāde ar pretsēnīšu šķidrumu",
     "unit": "m2",
@@ -946,19 +528,9 @@
     "unit_price": 2.58
   },
   {
-    "id": 87,
-    "category": "Griestu apstrāde ar pretsēnīšu šķidrumu",
-    "subcategory": "",
-    "name": "- antibakteriāls fungicīdu sastāvs",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.25,
-    "mechanisms": 0.0,
-    "unit_price": 2.25
-  },
-  {
-    "id": 88,
-    "category": "Karnīžu montāža saglabājot esošās",
+    "uid": "SW-0045",
+    "id": 45,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu demontāža (saglabājot esošās)",
     "unit": "m",
@@ -968,8 +540,9 @@
     "unit_price": 1.31
   },
   {
-    "id": 89,
-    "category": "Karnīžu montāža saglabājot esošās",
+    "uid": "SW-0046",
+    "id": 46,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu ierīkošana (izmantojot esošās)",
     "unit": "m",
@@ -979,19 +552,9 @@
     "unit_price": 2.62
   },
   {
-    "id": 90,
-    "category": "Karnīžu montāža saglabājot esošās",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.55,
-    "mechanisms": 0.0,
-    "unit_price": 0.55
-  },
-  {
-    "id": 91,
-    "category": "Karnīžu montāža saglabājot esošās",
+    "uid": "SW-0047",
+    "id": 47,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu ierīkošana",
     "unit": "m",
@@ -1001,30 +564,9 @@
     "unit_price": 3.92
   },
   {
-    "id": 92,
-    "category": "Karnīžu montāža saglabājot esošās",
-    "subcategory": "",
-    "name": "- karnīzes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 5.36,
-    "mechanisms": 0.0,
-    "unit_price": 5.36
-  },
-  {
-    "id": 93,
-    "category": "Karnīžu montāža saglabājot esošās",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.55,
-    "mechanisms": 0.0,
-    "unit_price": 0.55
-  },
-  {
-    "id": 94,
-    "category": "Koka karnīzes",
+    "uid": "SW-0048",
+    "id": 48,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu demontāža",
     "unit": "m",
@@ -1034,8 +576,9 @@
     "unit_price": 1.31
   },
   {
-    "id": 95,
-    "category": "Koka karnīzes",
+    "uid": "SW-0049",
+    "id": 49,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu ierīkošana",
     "unit": "m",
@@ -1045,30 +588,9 @@
     "unit_price": 3.92
   },
   {
-    "id": 96,
-    "category": "Koka karnīzes",
-    "subcategory": "",
-    "name": "- koka karnīzes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.29,
-    "mechanisms": 0.0,
-    "unit_price": 4.29
-  },
-  {
-    "id": 97,
-    "category": "Koka karnīzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.55,
-    "mechanisms": 0.0,
-    "unit_price": 0.55
-  },
-  {
-    "id": 98,
-    "category": "Koka karnīzes",
+    "uid": "SW-0050",
+    "id": 50,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu ierīkošana (izmantojot esošās)",
     "unit": "m",
@@ -1078,19 +600,9 @@
     "unit_price": 2.62
   },
   {
-    "id": 99,
-    "category": "Koka karnīzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.55,
-    "mechanisms": 0.0,
-    "unit_price": 0.55
-  },
-  {
-    "id": 100,
-    "category": "Putoplasta karnīzes",
+    "uid": "SW-0051",
+    "id": 51,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu demontāža",
     "unit": "m",
@@ -1100,8 +612,9 @@
     "unit_price": 1.31
   },
   {
-    "id": 101,
-    "category": "Putoplasta karnīzes",
+    "uid": "SW-0052",
+    "id": 52,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Karnīžu ierīkošana",
     "unit": "m",
@@ -1111,30 +624,9 @@
     "unit_price": 3.37
   },
   {
-    "id": 102,
-    "category": "Putoplasta karnīzes",
-    "subcategory": "",
-    "name": "- putoplasta karnīzes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 2.69,
-    "mechanisms": 0.0,
-    "unit_price": 2.69
-  },
-  {
-    "id": 103,
-    "category": "Putoplasta karnīzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.55,
-    "mechanisms": 0.0,
-    "unit_price": 0.55
-  },
-  {
-    "id": 104,
-    "category": "Putoplasta karnīzes",
+    "uid": "SW-0053",
+    "id": 53,
+    "category": "Griesti",
     "subcategory": "",
     "name": "Griestu dekoratīvo līstu krāsošana (35x35mm)",
     "unit": "m",
@@ -1144,42 +636,10 @@
     "unit_price": 2.44
   },
   {
-    "id": 105,
-    "category": "Putoplasta karnīzes",
-    "subcategory": "",
-    "name": "- akrila hermētiķis",
-    "unit": "gb.",
-    "labor": 0.0,
-    "materials": 1.0,
-    "mechanisms": 0.0,
-    "unit_price": 1.0
-  },
-  {
-    "id": 106,
-    "category": "Putoplasta karnīzes",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 107,
-    "category": "Putoplasta karnīzes",
-    "subcategory": "",
-    "name": "- ūdens emulsijas krāsa griestiem",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 108,
-    "category": "Papildu iespējamie darbi griestu apdarē",
-    "subcategory": "",
+    "uid": "SW-0054",
+    "id": 54,
+    "category": "Griesti",
+    "subcategory": "Papildu iespējamie darbi griestu apdarē",
     "name": "Vairākslāņu tapešu attīrīšana no griestiem",
     "unit": "m2",
     "labor": 1.72,
@@ -1188,9 +648,10 @@
     "unit_price": 1.9
   },
   {
-    "id": 109,
-    "category": "Papildu iespējamie darbi griestu apdarē",
-    "subcategory": "",
+    "uid": "SW-0055",
+    "id": 55,
+    "category": "Griesti",
+    "subcategory": "Papildu iespējamie darbi griestu apdarē",
     "name": "Griestu gruntēšana, špahtelēšana un slīpēšana",
     "unit": "m2",
     "labor": 6.5,
@@ -1199,31 +660,10 @@
     "unit_price": 6.67
   },
   {
-    "id": 110,
-    "category": "Papildu iespējamie darbi griestu apdarē",
-    "subcategory": "",
-    "name": "- špahtele",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.84,
-    "mechanisms": 0.0,
-    "unit_price": 0.84
-  },
-  {
-    "id": 111,
-    "category": "Papildu iespējamie darbi griestu apdarē",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 112,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0056",
+    "id": 56,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m2",
     "labor": 2.13,
@@ -1232,9 +672,10 @@
     "unit_price": 2.63
   },
   {
-    "id": 113,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0057",
+    "id": 57,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu metāla karkasa ierīkošana ar akmens vates pildījumu 50mm",
     "unit": "m2",
     "labor": 6.0,
@@ -1243,42 +684,10 @@
     "unit_price": 6.23
   },
   {
-    "id": 114,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.63,
-    "mechanisms": 0.0,
-    "unit_price": 7.63
-  },
-  {
-    "id": 115,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- akmens vate 50mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.5,
-    "mechanisms": 0.0,
-    "unit_price": 1.5
-  },
-  {
-    "id": 116,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.5,
-    "mechanisms": 0.0,
-    "unit_price": 9.5
-  },
-  {
-    "id": 117,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0058",
+    "id": 58,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārtā no katras puses",
     "unit": "m2",
     "labor": 5.0,
@@ -1287,53 +696,10 @@
     "unit_price": 5.17
   },
   {
-    "id": 118,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- ģipškartons GKB 12,5mm, 2.kārtas",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 3.2,
-    "mechanisms": 0.0,
-    "unit_price": 3.2
-  },
-  {
-    "id": 119,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 120,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 121,
-    "category": "Ģipškartona konstrukcija (parastais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 122,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0059",
+    "id": 59,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m2",
     "labor": 2.13,
@@ -1342,9 +708,10 @@
     "unit_price": 2.63
   },
   {
-    "id": 123,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0060",
+    "id": 60,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu metāla karkasa ierīkošana ar akmens vates pildījumu 50mm",
     "unit": "m2",
     "labor": 6.0,
@@ -1353,42 +720,10 @@
     "unit_price": 6.23
   },
   {
-    "id": 124,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.0,
-    "mechanisms": 0.0,
-    "unit_price": 0.0
-  },
-  {
-    "id": 125,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- akmens vate 50mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.57,
-    "mechanisms": 0.0,
-    "unit_price": 7.57
-  },
-  {
-    "id": 126,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.0,
-    "mechanisms": 0.0,
-    "unit_price": 9.0
-  },
-  {
-    "id": 127,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0061",
+    "id": 61,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārtā no katras puses",
     "unit": "m2",
     "labor": 5.0,
@@ -1397,53 +732,10 @@
     "unit_price": 5.17
   },
   {
-    "id": 128,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- ugunsdrošais ģipškartons 12,5mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 5.2,
-    "mechanisms": 0.0,
-    "unit_price": 5.2
-  },
-  {
-    "id": 129,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 130,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 131,
-    "category": "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 132,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0062",
+    "id": 62,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m2",
     "labor": 2.13,
@@ -1452,9 +744,10 @@
     "unit_price": 2.63
   },
   {
-    "id": 133,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0063",
+    "id": 63,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu metāla karkasa ierīkošana ar akmens vates pildījumu 50mm",
     "unit": "m2",
     "labor": 6.0,
@@ -1463,42 +756,10 @@
     "unit_price": 6.23
   },
   {
-    "id": 134,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.0,
-    "mechanisms": 0.0,
-    "unit_price": 0.0
-  },
-  {
-    "id": 135,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- akmens vate 50mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 7.57,
-    "mechanisms": 0.0,
-    "unit_price": 7.57
-  },
-  {
-    "id": 136,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.0,
-    "mechanisms": 0.0,
-    "unit_price": 9.0
-  },
-  {
-    "id": 137,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0064",
+    "id": 64,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārtā no katras puses",
     "unit": "m2",
     "labor": 5.0,
@@ -1507,53 +768,10 @@
     "unit_price": 5.17
   },
   {
-    "id": 138,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- mitrumizturīgais ģipškartons 12,5mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 4.2,
-    "mechanisms": 0.0,
-    "unit_price": 4.2
-  },
-  {
-    "id": 139,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 140,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 141,
-    "category": "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 142,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0065",
+    "id": 65,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Ģipškartona un metāla karkasa demontāža",
     "unit": "m",
     "labor": 2.13,
@@ -1562,9 +780,10 @@
     "unit_price": 2.63
   },
   {
-    "id": 143,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0066",
+    "id": 66,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Metāla karkasa ierīkošana",
     "unit": "m",
     "labor": 12.0,
@@ -1573,31 +792,10 @@
     "unit_price": 12.23
   },
   {
-    "id": 144,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- metāla karkass",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 7.63,
-    "mechanisms": 0.0,
-    "unit_price": 7.63
-  },
-  {
-    "id": 145,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 9.5,
-    "mechanisms": 0.0,
-    "unit_price": 9.5
-  },
-  {
-    "id": 146,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
+    "uid": "SW-0067",
+    "id": 67,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Apdares kārbas apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārta",
     "unit": "m",
     "labor": 10.0,
@@ -1606,64 +804,10 @@
     "unit_price": 10.17
   },
   {
-    "id": 147,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- mitrumizturīgais ģipškartons 12,5mm",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.2,
-    "mechanisms": 0.0,
-    "unit_price": 4.2
-  },
-  {
-    "id": 148,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- sietiņlenta",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.05,
-    "mechanisms": 0.0,
-    "unit_price": 0.05
-  },
-  {
-    "id": 149,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- šuvju špaktele Knauf Uniflot",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.5,
-    "mechanisms": 0.0,
-    "unit_price": 2.5
-  },
-  {
-    "id": 150,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- skrūves",
-    "unit": "100 gab",
-    "labor": 0.0,
-    "materials": 0.8,
-    "mechanisms": 0.0,
-    "unit_price": 0.8
-  },
-  {
-    "id": 151,
-    "category": "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
-    "subcategory": "",
-    "name": "- stūra šinas reģipsim",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.6,
-    "mechanisms": 0.0,
-    "unit_price": 0.6
-  },
-  {
-    "id": 152,
-    "category": "Koka skaidu plākšņu sienas apakšklājs",
-    "subcategory": "",
+    "uid": "SW-0068",
+    "id": 68,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Esošā seguma demontāža",
     "unit": "m2",
     "labor": 2.13,
@@ -1672,9 +816,10 @@
     "unit_price": 2.63
   },
   {
-    "id": 153,
-    "category": "Koka skaidu plākšņu sienas apakšklājs",
-    "subcategory": "",
+    "uid": "SW-0069",
+    "id": 69,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Koka skaidu plākšņu montāža",
     "unit": "m2",
     "labor": 3.0,
@@ -1683,31 +828,10 @@
     "unit_price": 3.23
   },
   {
-    "id": 154,
-    "category": "Koka skaidu plākšņu sienas apakšklājs",
-    "subcategory": "",
-    "name": "- koka skaidu plāksnes 16mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 6.3,
-    "mechanisms": 0.0,
-    "unit_price": 6.3
-  },
-  {
-    "id": 155,
-    "category": "Koka skaidu plākšņu sienas apakšklājs",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 156,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
+    "uid": "SW-0070",
+    "id": 70,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Esošā apmetuma demontāža",
     "unit": "m2",
     "labor": 2.13,
@@ -1716,9 +840,10 @@
     "unit_price": 2.36
   },
   {
-    "id": 157,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
+    "uid": "SW-0071",
+    "id": 71,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu apmešana 10mm biezumā",
     "unit": "m2",
     "labor": 6.8,
@@ -1727,42 +852,10 @@
     "unit_price": 7.15
   },
   {
-    "id": 158,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 159,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- ģipša apmetums Knauf Rotband, 10mm",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.31,
-    "mechanisms": 0.0,
-    "unit_price": 0.31
-  },
-  {
-    "id": 160,
-    "category": "Apmetums, 10mm",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.7,
-    "mechanisms": 0.0,
-    "unit_price": 0.7
-  },
-  {
-    "id": 161,
-    "category": "Tapetes",
-    "subcategory": "",
+    "uid": "SW-0072",
+    "id": 72,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 0.71,
@@ -1771,9 +864,10 @@
     "unit_price": 0.88
   },
   {
-    "id": 162,
-    "category": "Tapetes",
-    "subcategory": "",
+    "uid": "SW-0073",
+    "id": 73,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu gruntēšana pirms tapešu līmēšanas",
     "unit": "m2",
     "labor": 1.0,
@@ -1782,20 +876,10 @@
     "unit_price": 1.08
   },
   {
-    "id": 163,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 164,
-    "category": "Tapetes",
-    "subcategory": "",
+    "uid": "SW-0074",
+    "id": 74,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Tapešu līmēšana",
     "unit": "m2",
     "labor": 4.0,
@@ -1804,31 +888,10 @@
     "unit_price": 4.23
   },
   {
-    "id": 165,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 2.56,
-    "mechanisms": 0.0,
-    "unit_price": 2.56
-  },
-  {
-    "id": 166,
-    "category": "Tapetes",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 167,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
+    "uid": "SW-0075",
+    "id": 75,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 0.71,
@@ -1837,9 +900,10 @@
     "unit_price": 0.88
   },
   {
-    "id": 168,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
+    "uid": "SW-0076",
+    "id": 76,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu gruntēšana pirms tapešu līmēšanas",
     "unit": "m2",
     "labor": 1.0,
@@ -1848,20 +912,10 @@
     "unit_price": 1.08
   },
   {
-    "id": 169,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 170,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
+    "uid": "SW-0077",
+    "id": 77,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Tapešu līmēšana",
     "unit": "m2",
     "labor": 2.57,
@@ -1870,31 +924,10 @@
     "unit_price": 2.69
   },
   {
-    "id": 171,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- krāsojamās tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.18,
-    "mechanisms": 0.0,
-    "unit_price": 1.18
-  },
-  {
-    "id": 172,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 173,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
+    "uid": "SW-0078",
+    "id": 78,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu krāsošana ar emulsijas krāsu",
     "unit": "m2",
     "labor": 2.5,
@@ -1903,20 +936,10 @@
     "unit_price": 2.62
   },
   {
-    "id": 174,
-    "category": "Krāsojamās tapetes",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 175,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
+    "uid": "SW-0079",
+    "id": 79,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 1.25,
@@ -1925,9 +948,10 @@
     "unit_price": 1.48
   },
   {
-    "id": 176,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
+    "uid": "SW-0080",
+    "id": 80,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu gruntēšana, špahtelēšana un slīpēšana",
     "unit": "m2",
     "labor": 6.3,
@@ -1936,31 +960,10 @@
     "unit_price": 6.47
   },
   {
-    "id": 177,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- špahtele",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.84,
-    "mechanisms": 0.0,
-    "unit_price": 0.84
-  },
-  {
-    "id": 178,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 179,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
+    "uid": "SW-0081",
+    "id": 81,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu krāsošana ar emulsijas krāsu",
     "unit": "m2",
     "labor": 4.5,
@@ -1969,20 +972,10 @@
     "unit_price": 4.62
   },
   {
-    "id": 180,
-    "category": "Krāsojums (ar špaktelējumu)",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 181,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
-    "subcategory": "",
+    "uid": "SW-0082",
+    "id": 82,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu attīrīšana no esošā seguma (apmetuma nokalšana)",
     "unit": "m2",
     "labor": 2.15,
@@ -1991,9 +984,10 @@
     "unit_price": 2.73
   },
   {
-    "id": 182,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
-    "subcategory": "",
+    "uid": "SW-0083",
+    "id": 83,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) Venēcijas apmetums, dabīgs marmora efekts",
     "unit": "m2",
     "labor": 33.0,
@@ -2002,9 +996,10 @@
     "unit_price": 55.9
   },
   {
-    "id": 183,
-    "category": "Augstvērtīgs dekoratīvais apmetums",
-    "subcategory": "",
+    "uid": "SW-0084",
+    "id": 84,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) minerālais apmetums ar krāsošanu",
     "unit": "m2",
     "labor": 21.0,
@@ -2013,9 +1008,10 @@
     "unit_price": 35.74
   },
   {
-    "id": 184,
-    "category": "Fototapete",
-    "subcategory": "",
+    "uid": "SW-0085",
+    "id": 85,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Fototapetes līmēšana",
     "unit": "m2",
     "labor": 6.0,
@@ -2024,31 +1020,10 @@
     "unit_price": 6.23
   },
   {
-    "id": 185,
-    "category": "Fototapete",
-    "subcategory": "",
-    "name": "- fototapete",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 3.7,
-    "mechanisms": 0.0,
-    "unit_price": 3.7
-  },
-  {
-    "id": 186,
-    "category": "Fototapete",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 187,
-    "category": "MDF apdares paneļi",
-    "subcategory": "",
+    "uid": "SW-0086",
+    "id": 86,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "MDF apdares paneļu demontāža",
     "unit": "m2",
     "labor": 1.65,
@@ -2057,9 +1032,10 @@
     "unit_price": 1.91
   },
   {
-    "id": 188,
-    "category": "MDF apdares paneļi",
-    "subcategory": "",
+    "uid": "SW-0087",
+    "id": 87,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "MDF apdares paneļu ierīkošana",
     "unit": "m2",
     "labor": 7.5,
@@ -2068,31 +1044,10 @@
     "unit_price": 8.15
   },
   {
-    "id": 189,
-    "category": "MDF apdares paneļi",
-    "subcategory": "",
-    "name": "- MDF apdares paneļi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 6.0,
-    "mechanisms": 0.0,
-    "unit_price": 6.0
-  },
-  {
-    "id": 190,
-    "category": "MDF apdares paneļi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.97,
-    "mechanisms": 0.0,
-    "unit_price": 0.97
-  },
-  {
-    "id": 191,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
+    "uid": "SW-0088",
+    "id": 88,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Esošo koka dēlīšu demontāža saglabājot latojumu",
     "unit": "m2",
     "labor": 2.5,
@@ -2101,9 +1056,10 @@
     "unit_price": 2.62
   },
   {
-    "id": 192,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
+    "uid": "SW-0089",
+    "id": 89,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Koka dēlīšu apšuvuma ierīkošana",
     "unit": "m2",
     "labor": 7.5,
@@ -2112,31 +1068,10 @@
     "unit_price": 7.85
   },
   {
-    "id": 193,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
-    "name": "- koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 23.0,
-    "mechanisms": 0.0,
-    "unit_price": 23.0
-  },
-  {
-    "id": 194,
-    "category": "Koka dēlīšu apšuvums",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.78,
-    "mechanisms": 0.0,
-    "unit_price": 0.78
-  },
-  {
-    "id": 195,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
+    "uid": "SW-0090",
+    "id": 90,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Esošā latojuma demontāža",
     "unit": "m2",
     "labor": 1.5,
@@ -2145,9 +1080,10 @@
     "unit_price": 1.9
   },
   {
-    "id": 196,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
+    "uid": "SW-0091",
+    "id": 91,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Latojuma ierīkošana",
     "unit": "m2",
     "labor": 4.0,
@@ -2156,31 +1092,10 @@
     "unit_price": 4.17
   },
   {
-    "id": 197,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
-    "name": "- koka latas 25x50mm, solis 400mm Solideco",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.68,
-    "mechanisms": 0.0,
-    "unit_price": 0.68
-  },
-  {
-    "id": 198,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.14,
-    "mechanisms": 0.0,
-    "unit_price": 0.14
-  },
-  {
-    "id": 199,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
+    "uid": "SW-0092",
+    "id": 92,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Flīžu demontāža",
     "unit": "m2",
     "labor": 2.5,
@@ -2189,9 +1104,10 @@
     "unit_price": 3.0
   },
   {
-    "id": 200,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
+    "uid": "SW-0093",
+    "id": 93,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Hidroizolācijas ierīkošana zem flīzēm",
     "unit": "m2",
     "labor": 4.0,
@@ -2200,20 +1116,10 @@
     "unit_price": 4.17
   },
   {
-    "id": 201,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
-    "name": "- hidroizolācija (membrana)",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 5.0,
-    "mechanisms": 0.0,
-    "unit_price": 5.0
-  },
-  {
-    "id": 202,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
+    "uid": "SW-0094",
+    "id": 94,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu flīzēšana",
     "unit": "m2",
     "labor": 25.0,
@@ -2222,53 +1128,10 @@
     "unit_price": 25.35
   },
   {
-    "id": 203,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
-    "name": "- flīzes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 11.4,
-    "mechanisms": 0.0,
-    "unit_price": 11.4
-  },
-  {
-    "id": 204,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
-    "name": "- flīžu krustiņi",
-    "unit": "pak",
-    "labor": 0.0,
-    "materials": 2.0,
-    "mechanisms": 0.0,
-    "unit_price": 2.0
-  },
-  {
-    "id": 205,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
-    "name": "- flīžu līme",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.4,
-    "mechanisms": 0.0,
-    "unit_price": 0.4
-  },
-  {
-    "id": 206,
-    "category": "Sienu flīzējums",
-    "subcategory": "",
-    "name": "- flīžu fūga",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.65,
-    "mechanisms": 0.0,
-    "unit_price": 2.65
-  },
-  {
-    "id": 207,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
+    "uid": "SW-0095",
+    "id": 95,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Esošā seguma demontāža (saglabājot latojumu)",
     "unit": "m2",
     "labor": 1.15,
@@ -2277,9 +1140,10 @@
     "unit_price": 1.55
   },
   {
-    "id": 208,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
+    "uid": "SW-0096",
+    "id": 96,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Preskartona montāža",
     "unit": "m2",
     "labor": 2.15,
@@ -2288,31 +1152,10 @@
     "unit_price": 2.27
   },
   {
-    "id": 209,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
-    "name": "- preskartons 3mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.61,
-    "mechanisms": 0.0,
-    "unit_price": 1.61
-  },
-  {
-    "id": 210,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 211,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
+    "uid": "SW-0097",
+    "id": 97,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienas gruntēšana pirms krāsošanas",
     "unit": "m2",
     "labor": 1.0,
@@ -2321,20 +1164,10 @@
     "unit_price": 1.08
   },
   {
-    "id": 212,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 213,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
+    "uid": "SW-0098",
+    "id": 98,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienas krāsošana",
     "unit": "m2",
     "labor": 4.5,
@@ -2343,20 +1176,10 @@
     "unit_price": 4.62
   },
   {
-    "id": 214,
-    "category": "Preskartons (krāsots)",
-    "subcategory": "",
-    "name": "- krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 215,
-    "category": "Apstrāde ar pretsēnīšu šķidrumu",
-    "subcategory": "",
+    "uid": "SW-0099",
+    "id": 99,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu apstrāde ar pretsēnīšu šķidrumu",
     "unit": "m2",
     "labor": 2.0,
@@ -2365,20 +1188,10 @@
     "unit_price": 2.33
   },
   {
-    "id": 216,
-    "category": "Apstrāde ar pretsēnīšu šķidrumu",
-    "subcategory": "",
-    "name": "- antibakteriāls fungicīdu sastāvs",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.25,
-    "mechanisms": 0.0,
-    "unit_price": 2.25
-  },
-  {
-    "id": 217,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
+    "uid": "SW-0100",
+    "id": 100,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 2.5,
@@ -2387,9 +1200,10 @@
     "unit_price": 2.85
   },
   {
-    "id": 218,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
+    "uid": "SW-0101",
+    "id": 101,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu gruntēšana, špahtelēšana un slīpēšana",
     "unit": "m2",
     "labor": 10.0,
@@ -2398,31 +1212,10 @@
     "unit_price": 10.17
   },
   {
-    "id": 219,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
-    "name": "- špaktele",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.84,
-    "mechanisms": 0.0,
-    "unit_price": 0.84
-  },
-  {
-    "id": 220,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 221,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
+    "uid": "SW-0102",
+    "id": 102,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu krāsošana ar emulsijas krāsu",
     "unit": "m2",
     "labor": 6.0,
@@ -2431,20 +1224,10 @@
     "unit_price": 6.12
   },
   {
-    "id": 222,
-    "category": "Ailes ar krāsojumu",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 223,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
+    "uid": "SW-0103",
+    "id": 103,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 1.0,
@@ -2453,9 +1236,10 @@
     "unit_price": 1.17
   },
   {
-    "id": 224,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
+    "uid": "SW-0104",
+    "id": 104,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu gruntēšana pirms tapešu līmēšanas",
     "unit": "m2",
     "labor": 1.15,
@@ -2464,20 +1248,10 @@
     "unit_price": 1.23
   },
   {
-    "id": 225,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 226,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
+    "uid": "SW-0105",
+    "id": 105,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Tapešu līmēšana ailē",
     "unit": "m2",
     "labor": 5.5,
@@ -2486,31 +1260,10 @@
     "unit_price": 5.62
   },
   {
-    "id": 227,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
-    "name": "- krāsojamās tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.18,
-    "mechanisms": 0.0,
-    "unit_price": 1.18
-  },
-  {
-    "id": 228,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 229,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
+    "uid": "SW-0106",
+    "id": 106,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu krāsošana ar emulsijas krāsu",
     "unit": "m2",
     "labor": 5.0,
@@ -2519,20 +1272,10 @@
     "unit_price": 5.12
   },
   {
-    "id": 230,
-    "category": "Ailes ar krāsojamām tapetēm",
-    "subcategory": "",
-    "name": "- emulsijas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.7,
-    "mechanisms": 0.0,
-    "unit_price": 5.7
-  },
-  {
-    "id": 231,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
+    "uid": "SW-0107",
+    "id": 107,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu attīrīšana no esošā seguma",
     "unit": "m2",
     "labor": 1.0,
@@ -2541,9 +1284,10 @@
     "unit_price": 1.17
   },
   {
-    "id": 232,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
+    "uid": "SW-0108",
+    "id": 108,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu gruntēšana pirms tapešu līmēšanas",
     "unit": "m2",
     "labor": 1.15,
@@ -2552,20 +1296,10 @@
     "unit_price": 1.23
   },
   {
-    "id": 233,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 234,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
+    "uid": "SW-0109",
+    "id": 109,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Tapešu līmēšana ailē",
     "unit": "m2",
     "labor": 5.5,
@@ -2574,31 +1308,10 @@
     "unit_price": 5.73
   },
   {
-    "id": 235,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
-    "name": "- tapetes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 2.56,
-    "mechanisms": 0.0,
-    "unit_price": 2.56
-  },
-  {
-    "id": 236,
-    "category": "Ailes ar tapetēm",
-    "subcategory": "",
-    "name": "- tapešu līme",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.51,
-    "mechanisms": 0.0,
-    "unit_price": 2.51
-  },
-  {
-    "id": 237,
-    "category": "Augstvērtīgs dekoratīvais apmetums ailē",
-    "subcategory": "",
+    "uid": "SW-0110",
+    "id": 110,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Aiļu attīrīšana no esošā seguma (apmetuma nokalšana)",
     "unit": "m2",
     "labor": 3.0,
@@ -2607,9 +1320,10 @@
     "unit_price": 3.58
   },
   {
-    "id": 238,
-    "category": "Augstvērtīgs dekoratīvais apmetums ailē",
-    "subcategory": "",
+    "uid": "SW-0111",
+    "id": 111,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) Venēcijas apmetums, dabīgs marmora efekts",
     "unit": "m2",
     "labor": 35.0,
@@ -2618,9 +1332,10 @@
     "unit_price": 57.9
   },
   {
-    "id": 239,
-    "category": "Augstvērtīgs dekoratīvais apmetums ailē",
-    "subcategory": "",
+    "uid": "SW-0112",
+    "id": 112,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) minerālais apmetums ar krāsošanu",
     "unit": "m2",
     "labor": 23.0,
@@ -2629,9 +1344,10 @@
     "unit_price": 37.74
   },
   {
-    "id": 240,
-    "category": "Papildu iespējamie darbi sienu apdarē",
-    "subcategory": "",
+    "uid": "SW-0113",
+    "id": 113,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Vairākslāņu tapešu attīrīšana no sienām",
     "unit": "m2",
     "labor": 1.5,
@@ -2640,9 +1356,10 @@
     "unit_price": 1.68
   },
   {
-    "id": 241,
-    "category": "Papildu iespējamie darbi sienu apdarē",
-    "subcategory": "",
+    "uid": "SW-0114",
+    "id": 114,
+    "category": "Sienas, ailes",
+    "subcategory": "Ģipškartona konstrukcija (parastais ģipškartons)",
     "name": "Sienu gruntēšana, špaktelēšana un slīpēšana",
     "unit": "m2",
     "labor": 6.3,
@@ -2651,30 +1368,9 @@
     "unit_price": 6.47
   },
   {
-    "id": 242,
-    "category": "Papildu iespējamie darbi sienu apdarē",
-    "subcategory": "",
-    "name": "- špaktele",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.84,
-    "mechanisms": 0.0,
-    "unit_price": 0.84
-  },
-  {
-    "id": 243,
-    "category": "Papildu iespējamie darbi sienu apdarē",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 244,
-    "category": "Palīgdarbi",
+    "uid": "SW-0115",
+    "id": 115,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošā grīdas seguma demontāža un būvgružu izvākšana",
     "unit": "m2",
@@ -2684,8 +1380,9 @@
     "unit_price": 5.19
   },
   {
-    "id": 245,
-    "category": "Palīgdarbi",
+    "uid": "SW-0116",
+    "id": 116,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu demontāža (saglabājot esošās)",
     "unit": "m",
@@ -2695,8 +1392,9 @@
     "unit_price": 1.67
   },
   {
-    "id": 246,
-    "category": "Palīgdarbi",
+    "uid": "SW-0117",
+    "id": 117,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu ierīkošana (izmantojot esošās)",
     "unit": "m",
@@ -2706,19 +1404,9 @@
     "unit_price": 3.62
   },
   {
-    "id": 247,
-    "category": "Palīgdarbi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 248,
-    "category": "Palīgdarbi",
+    "uid": "SW-0118",
+    "id": 118,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu ierīkošana",
     "unit": "m",
@@ -2728,30 +1416,9 @@
     "unit_price": 4.62
   },
   {
-    "id": 249,
-    "category": "Palīgdarbi",
-    "subcategory": "",
-    "name": "- grīdlīstes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 3.91,
-    "mechanisms": 0.0,
-    "unit_price": 3.91
-  },
-  {
-    "id": 250,
-    "category": "Palīgdarbi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 251,
-    "category": "Saplāksnis",
+    "uid": "SW-0119",
+    "id": 119,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošā seguma un apakšklāja demontāža",
     "unit": "m2",
@@ -2761,8 +1428,9 @@
     "unit_price": 3.0
   },
   {
-    "id": 252,
-    "category": "Saplāksnis",
+    "uid": "SW-0120",
+    "id": 120,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Saplākšņa montāža",
     "unit": "m2",
@@ -2772,30 +1440,9 @@
     "unit_price": 3.73
   },
   {
-    "id": 253,
-    "category": "Saplāksnis",
-    "subcategory": "",
-    "name": "- saplāksnis 15mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 12.2,
-    "mechanisms": 0.0,
-    "unit_price": 12.2
-  },
-  {
-    "id": 254,
-    "category": "Saplāksnis",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 255,
-    "category": "OSB-3",
+    "uid": "SW-0121",
+    "id": 121,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošā seguma un apakšklāja demontāža",
     "unit": "m2",
@@ -2805,8 +1452,9 @@
     "unit_price": 3.0
   },
   {
-    "id": 256,
-    "category": "OSB-3",
+    "uid": "SW-0122",
+    "id": 122,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "OSB-3 plāksnes  montāža",
     "unit": "m2",
@@ -2816,30 +1464,9 @@
     "unit_price": 4.23
   },
   {
-    "id": 257,
-    "category": "OSB-3",
-    "subcategory": "",
-    "name": "- mitrumizturīga OSB-3 plāksne 22mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 16.03,
-    "mechanisms": 0.0,
-    "unit_price": 16.03
-  },
-  {
-    "id": 258,
-    "category": "OSB-3",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 259,
-    "category": "Preskartons",
+    "uid": "SW-0123",
+    "id": 123,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošā seguma demontāža",
     "unit": "m2",
@@ -2849,8 +1476,9 @@
     "unit_price": 1.9
   },
   {
-    "id": 260,
-    "category": "Preskartons",
+    "uid": "SW-0124",
+    "id": 124,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Preskartona montāža",
     "unit": "m2",
@@ -2860,30 +1488,9 @@
     "unit_price": 2.62
   },
   {
-    "id": 261,
-    "category": "Preskartons",
-    "subcategory": "",
-    "name": "- preskartons 3mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.61,
-    "mechanisms": 0.0,
-    "unit_price": 1.61
-  },
-  {
-    "id": 262,
-    "category": "Preskartons",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 263,
-    "category": "Grīdas krāsojums",
+    "uid": "SW-0125",
+    "id": 125,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas attīrīšana no esošā seguma",
     "unit": "m2",
@@ -2893,8 +1500,9 @@
     "unit_price": 1.9
   },
   {
-    "id": 264,
-    "category": "Grīdas krāsojums",
+    "uid": "SW-0126",
+    "id": 126,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas gruntēšana pirms krāsošanas",
     "unit": "m2",
@@ -2904,19 +1512,9 @@
     "unit_price": 1.08
   },
   {
-    "id": 265,
-    "category": "Grīdas krāsojums",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 3.0,
-    "mechanisms": 0.0,
-    "unit_price": 3.0
-  },
-  {
-    "id": 266,
-    "category": "Grīdas krāsojums",
+    "uid": "SW-0127",
+    "id": 127,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas krāsošana",
     "unit": "m2",
@@ -2926,19 +1524,9 @@
     "unit_price": 3.67
   },
   {
-    "id": 267,
-    "category": "Grīdas krāsojums",
-    "subcategory": "",
-    "name": "- grīdas krāsa, tonēta",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.99,
-    "mechanisms": 0.0,
-    "unit_price": 5.99
-  },
-  {
-    "id": 268,
-    "category": "Linolejs",
+    "uid": "SW-0128",
+    "id": 128,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas attīrīšana no esošā seguma",
     "unit": "m2",
@@ -2948,8 +1536,9 @@
     "unit_price": 2.9
   },
   {
-    "id": 269,
-    "category": "Linolejs",
+    "uid": "SW-0129",
+    "id": 129,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošās grīdas labošana (Pamatnes gruntēšana, špaktelēšana līdz 1 mm, slīpēšana)",
     "unit": "m2",
@@ -2959,8 +1548,9 @@
     "unit_price": 4.76
   },
   {
-    "id": 270,
-    "category": "Linolejs",
+    "uid": "SW-0130",
+    "id": 130,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Linoleja ieklāšana",
     "unit": "m2",
@@ -2970,41 +1560,9 @@
     "unit_price": 7.23
   },
   {
-    "id": 271,
-    "category": "Linolejs",
-    "subcategory": "",
-    "name": "- linolejs",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 10.5,
-    "mechanisms": 0.0,
-    "unit_price": 10.5
-  },
-  {
-    "id": 272,
-    "category": "Linolejs",
-    "subcategory": "",
-    "name": "- linoleja līme",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 3.4,
-    "mechanisms": 0.0,
-    "unit_price": 3.4
-  },
-  {
-    "id": 273,
-    "category": "Linolejs",
-    "subcategory": "",
-    "name": "- metināšanas diegs",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.43,
-    "mechanisms": 0.0,
-    "unit_price": 0.43
-  },
-  {
-    "id": 274,
-    "category": "Lamināts",
+    "uid": "SW-0131",
+    "id": 131,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas attīrīšana no esošā seguma",
     "unit": "m2",
@@ -3014,8 +1572,9 @@
     "unit_price": 1.9
   },
   {
-    "id": 275,
-    "category": "Lamināts",
+    "uid": "SW-0132",
+    "id": 132,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Lamināta ieklāšana (click sistēma)",
     "unit": "m2",
@@ -3025,30 +1584,9 @@
     "unit_price": 7.23
   },
   {
-    "id": 276,
-    "category": "Lamināts",
-    "subcategory": "",
-    "name": "- lamināta apakšklājs",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.7,
-    "mechanisms": 0.0,
-    "unit_price": 1.7
-  },
-  {
-    "id": 277,
-    "category": "Lamināts",
-    "subcategory": "",
-    "name": "- lamināts",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 11.4,
-    "mechanisms": 0.0,
-    "unit_price": 11.4
-  },
-  {
-    "id": 278,
-    "category": "Mīkstais grīdas segums",
+    "uid": "SW-0133",
+    "id": 133,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas attīrīšana no esošā seguma",
     "unit": "m2",
@@ -3058,8 +1596,9 @@
     "unit_price": 2.65
   },
   {
-    "id": 279,
-    "category": "Mīkstais grīdas segums",
+    "uid": "SW-0134",
+    "id": 134,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošās grīdas labošana (Pamatnes gruntēšana, špaktelēšana līdz 1 mm, slīpēšana)",
     "unit": "m2",
@@ -3069,8 +1608,9 @@
     "unit_price": 4.76
   },
   {
-    "id": 280,
-    "category": "Mīkstais grīdas segums",
+    "uid": "SW-0135",
+    "id": 135,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Mīkstā seguma ieklāšana",
     "unit": "m2",
@@ -3080,19 +1620,9 @@
     "unit_price": 6.73
   },
   {
-    "id": 281,
-    "category": "Mīkstais grīdas segums",
-    "subcategory": "",
-    "name": "- mīkstais grīdas segums",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 13.3,
-    "mechanisms": 0.0,
-    "unit_price": 13.3
-  },
-  {
-    "id": 282,
-    "category": "Parketa dēļi",
+    "uid": "SW-0136",
+    "id": 136,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas attīrīšana no esošā seguma",
     "unit": "m2",
@@ -3102,8 +1632,9 @@
     "unit_price": 1.9
   },
   {
-    "id": 283,
-    "category": "Parketa dēļi",
+    "uid": "SW-0137",
+    "id": 137,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Parketa dēļu ierīkošana",
     "unit": "m2",
@@ -3113,30 +1644,9 @@
     "unit_price": 9.81
   },
   {
-    "id": 284,
-    "category": "Parketa dēļi",
-    "subcategory": "",
-    "name": "- parketa dēļu apakšklājs ar plēvi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.5,
-    "mechanisms": 0.0,
-    "unit_price": 1.5
-  },
-  {
-    "id": 285,
-    "category": "Parketa dēļi",
-    "subcategory": "",
-    "name": "- parketa dēļi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 29.0,
-    "mechanisms": 0.0,
-    "unit_price": 29.0
-  },
-  {
-    "id": 286,
-    "category": "Esošas dēļu grīdas slīpēšana, lakošana",
+    "uid": "SW-0138",
+    "id": 138,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas piešpaktelēšana, slīpēšana un lakošana",
     "unit": "m2",
@@ -3146,8 +1656,9 @@
     "unit_price": 19.92
   },
   {
-    "id": 287,
-    "category": "Grīdas flīzējums",
+    "uid": "SW-0139",
+    "id": 139,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Flīžu demontāža",
     "unit": "m2",
@@ -3157,8 +1668,9 @@
     "unit_price": 3.08
   },
   {
-    "id": 288,
-    "category": "Grīdas flīzējums",
+    "uid": "SW-0140",
+    "id": 140,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Hidroizolācijas ierīkošana grīdai",
     "unit": "m2",
@@ -3168,30 +1680,9 @@
     "unit_price": 4.67
   },
   {
-    "id": 289,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- stiklšķiedras siets",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.84,
-    "mechanisms": 0.0,
-    "unit_price": 0.84
-  },
-  {
-    "id": 290,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- hidroizolācija (membrana)",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 5.0,
-    "mechanisms": 0.0,
-    "unit_price": 5.0
-  },
-  {
-    "id": 291,
-    "category": "Grīdas flīzējums",
+    "uid": "SW-0141",
+    "id": 141,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdas flīzēšana",
     "unit": "m2",
@@ -3201,52 +1692,9 @@
     "unit_price": 25.35
   },
   {
-    "id": 292,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- flīzes",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 13.0,
-    "mechanisms": 0.0,
-    "unit_price": 13.0
-  },
-  {
-    "id": 293,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- flīžu krustiņi",
-    "unit": "pak",
-    "labor": 0.0,
-    "materials": 2.0,
-    "mechanisms": 0.0,
-    "unit_price": 2.0
-  },
-  {
-    "id": 294,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- flīžu līme",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.4,
-    "mechanisms": 0.0,
-    "unit_price": 0.4
-  },
-  {
-    "id": 295,
-    "category": "Grīdas flīzējums",
-    "subcategory": "",
-    "name": "- flīžu fūga",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.65,
-    "mechanisms": 0.0,
-    "unit_price": 2.65
-  },
-  {
-    "id": 296,
-    "category": "Koka grīdlīstes",
+    "uid": "SW-0142",
+    "id": 142,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu demontāža",
     "unit": "m",
@@ -3256,8 +1704,9 @@
     "unit_price": 1.31
   },
   {
-    "id": 297,
-    "category": "Koka grīdlīstes",
+    "uid": "SW-0143",
+    "id": 143,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu ierīkošana",
     "unit": "m",
@@ -3267,30 +1716,9 @@
     "unit_price": 4.62
   },
   {
-    "id": 298,
-    "category": "Koka grīdlīstes",
-    "subcategory": "",
-    "name": "- koka grīdlīstes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.75,
-    "mechanisms": 0.0,
-    "unit_price": 4.75
-  },
-  {
-    "id": 299,
-    "category": "Koka grīdlīstes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 300,
-    "category": "Koka grīdlīstes",
+    "uid": "SW-0144",
+    "id": 144,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu ierīkošana (izmantojot esošās)",
     "unit": "m",
@@ -3300,19 +1728,9 @@
     "unit_price": 3.62
   },
   {
-    "id": 301,
-    "category": "Koka grīdlīstes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.64,
-    "mechanisms": 0.0,
-    "unit_price": 0.64
-  },
-  {
-    "id": 302,
-    "category": "PVC grīdlīstes",
+    "uid": "SW-0145",
+    "id": 145,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu demontāža",
     "unit": "m",
@@ -3322,8 +1740,9 @@
     "unit_price": 1.31
   },
   {
-    "id": 303,
-    "category": "PVC grīdlīstes",
+    "uid": "SW-0146",
+    "id": 146,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Grīdlīstu ierīkošana",
     "unit": "m",
@@ -3333,30 +1752,9 @@
     "unit_price": 3.12
   },
   {
-    "id": 304,
-    "category": "PVC grīdlīstes",
-    "subcategory": "",
-    "name": "- PVC grīdlīstes",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 1.65,
-    "mechanisms": 0.0,
-    "unit_price": 1.65
-  },
-  {
-    "id": 305,
-    "category": "PVC grīdlīstes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.59,
-    "mechanisms": 0.0,
-    "unit_price": 0.59
-  },
-  {
-    "id": 306,
-    "category": "Sliekšņi",
+    "uid": "SW-0147",
+    "id": 147,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Sliekšņa demontāža, ierīkošana",
     "unit": "kpl.",
@@ -3366,30 +1764,9 @@
     "unit_price": 9.12
   },
   {
-    "id": 307,
-    "category": "Sliekšņi",
-    "subcategory": "",
-    "name": "- slieksnis 90 cm (alumīnijs), vīdēja cena",
-    "unit": "gb",
-    "labor": 0.0,
-    "materials": 6.4,
-    "mechanisms": 0.0,
-    "unit_price": 6.4
-  },
-  {
-    "id": 308,
-    "category": "Sliekšņi",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.59,
-    "mechanisms": 0.0,
-    "unit_price": 0.59
-  },
-  {
-    "id": 309,
-    "category": "Koka latojuma montāža",
+    "uid": "SW-0148",
+    "id": 148,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Esošā latojuma demontāža",
     "unit": "m2",
@@ -3399,8 +1776,9 @@
     "unit_price": 1.9
   },
   {
-    "id": 310,
-    "category": "Koka latojuma montāža",
+    "uid": "SW-0149",
+    "id": 149,
+    "category": "Grīdas",
     "subcategory": "",
     "name": "Latojuma ierīkošana",
     "unit": "m2",
@@ -3410,30 +1788,9 @@
     "unit_price": 6.17
   },
   {
-    "id": 311,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
-    "name": "- koka latas 50x100mm, solis 400mm",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 2.0,
-    "mechanisms": 0.0,
-    "unit_price": 2.0
-  },
-  {
-    "id": 312,
-    "category": "Koka latojuma montāža",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.28,
-    "mechanisms": 0.0,
-    "unit_price": 0.28
-  },
-  {
-    "id": 313,
-    "category": "PVC logi",
+    "uid": "SW-0150",
+    "id": 150,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "PVC loga montāža",
     "unit": "m2",
@@ -3443,30 +1800,9 @@
     "unit_price": 27.89
   },
   {
-    "id": 314,
-    "category": "PVC logi",
-    "subcategory": "",
-    "name": "- PVC logs",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 125.69,
-    "mechanisms": 0.0,
-    "unit_price": 125.69
-  },
-  {
-    "id": 315,
-    "category": "PVC logi",
-    "subcategory": "",
-    "name": "- palīgmateriāli (stiprinājumi, lentas, putas)",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 15.68,
-    "mechanisms": 0.0,
-    "unit_price": 15.68
-  },
-  {
-    "id": 316,
-    "category": "Koka logi",
+    "uid": "SW-0151",
+    "id": 151,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Koka loga montāža",
     "unit": "m2",
@@ -3476,30 +1812,9 @@
     "unit_price": 27.89
   },
   {
-    "id": 317,
-    "category": "Koka logi",
-    "subcategory": "",
-    "name": "- Koka logs",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 230.0,
-    "mechanisms": 0.0,
-    "unit_price": 230.0
-  },
-  {
-    "id": 318,
-    "category": "Koka logi",
-    "subcategory": "",
-    "name": "- palīgmateriāli (stiprinājumi, lentas, putas)",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 15.68,
-    "mechanisms": 0.0,
-    "unit_price": 15.68
-  },
-  {
-    "id": 319,
-    "category": "Loga, durvju stikla paketes nomaiņa",
+    "uid": "SW-0152",
+    "id": 152,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Logu, durvju stikla paketes nomaiņa",
     "unit": "m2",
@@ -3509,19 +1824,9 @@
     "unit_price": 35.58
   },
   {
-    "id": 320,
-    "category": "Loga, durvju stikla paketes nomaiņa",
-    "subcategory": "",
-    "name": "- Vienkameras stikla pakete ar energotaupīgu (selektīvo) stiklu 24 mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 75.0,
-    "mechanisms": 0.0,
-    "unit_price": 75.0
-  },
-  {
-    "id": 321,
-    "category": "Koka palodzes",
+    "uid": "SW-0153",
+    "id": 153,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Esošo palodžu demontāža",
     "unit": "m",
@@ -3531,8 +1836,9 @@
     "unit_price": 4.08
   },
   {
-    "id": 322,
-    "category": "Koka palodzes",
+    "uid": "SW-0154",
+    "id": 154,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Palodžu montāža",
     "unit": "m",
@@ -3542,30 +1848,9 @@
     "unit_price": 10.4
   },
   {
-    "id": 323,
-    "category": "Koka palodzes",
-    "subcategory": "",
-    "name": "- koka palodze, platums 21-29cm, osis",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 30.43,
-    "mechanisms": 0.0,
-    "unit_price": 30.43
-  },
-  {
-    "id": 324,
-    "category": "Koka palodzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 2.9,
-    "mechanisms": 0.0,
-    "unit_price": 2.9
-  },
-  {
-    "id": 325,
-    "category": "Koka palodžu slīpēšana",
+    "uid": "SW-0155",
+    "id": 155,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Palodžu slīpēšana, špaktelēšana, lakošana, platums 21-29cm",
     "unit": "m",
@@ -3575,8 +1860,9 @@
     "unit_price": 34.27
   },
   {
-    "id": 326,
-    "category": "MDF palodzes",
+    "uid": "SW-0156",
+    "id": 156,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Esošo palodžu demontāža",
     "unit": "m",
@@ -3586,8 +1872,9 @@
     "unit_price": 2.78
   },
   {
-    "id": 327,
-    "category": "MDF palodzes",
+    "uid": "SW-0157",
+    "id": 157,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Palodžu montāža",
     "unit": "m",
@@ -3597,30 +1884,9 @@
     "unit_price": 7.35
   },
   {
-    "id": 328,
-    "category": "MDF palodzes",
-    "subcategory": "",
-    "name": "- MDF palodzes, platums 30cm",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 10.38,
-    "mechanisms": 0.0,
-    "unit_price": 10.38
-  },
-  {
-    "id": 329,
-    "category": "MDF palodzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 2.2,
-    "mechanisms": 0.0,
-    "unit_price": 2.2
-  },
-  {
-    "id": 330,
-    "category": "Ārējās skārda palodzes",
+    "uid": "SW-0158",
+    "id": 158,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Esošo palodžu demontāža",
     "unit": "m",
@@ -3630,8 +1896,9 @@
     "unit_price": 2.28
   },
   {
-    "id": 331,
-    "category": "Ārējās skārda palodzes",
+    "uid": "SW-0159",
+    "id": 159,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Palodžu montāža",
     "unit": "m",
@@ -3641,30 +1908,9 @@
     "unit_price": 4.65
   },
   {
-    "id": 332,
-    "category": "Ārējās skārda palodzes",
-    "subcategory": "",
-    "name": "- skārda palodzes, platums 20cm",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.4,
-    "mechanisms": 0.0,
-    "unit_price": 4.4
-  },
-  {
-    "id": 333,
-    "category": "Ārējās skārda palodzes",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 1.8,
-    "mechanisms": 0.0,
-    "unit_price": 1.8
-  },
-  {
-    "id": 334,
-    "category": "Durvju maiņa",
+    "uid": "SW-0160",
+    "id": 160,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju demontāža",
     "unit": "gb",
@@ -3674,8 +1920,9 @@
     "unit_price": 20.47
   },
   {
-    "id": 335,
-    "category": "Durvju maiņa",
+    "uid": "SW-0161",
+    "id": 161,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, individuāli izgatavotas koka durvis",
     "unit": "kpl",
@@ -3685,8 +1932,9 @@
     "unit_price": 529.24
   },
   {
-    "id": 336,
-    "category": "Durvju maiņa",
+    "uid": "SW-0162",
+    "id": 162,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, standarta izmēra gatavas koka durvis",
     "unit": "kpl",
@@ -3696,8 +1944,9 @@
     "unit_price": 349.24
   },
   {
-    "id": 337,
-    "category": "Durvju maiņa",
+    "uid": "SW-0163",
+    "id": 163,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, standarta izmēra gatavas MDF/preskartona durvis",
     "unit": "kpl",
@@ -3707,8 +1956,9 @@
     "unit_price": 229.24
   },
   {
-    "id": 338,
-    "category": "Durvju maiņa",
+    "uid": "SW-0164",
+    "id": 164,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju vērtnes montāža (durvju vērtne, furnitūra), 900x2100mm, idividuāli izgatavota koka durvju vērtne",
     "unit": "gb",
@@ -3718,8 +1968,9 @@
     "unit_price": 277.29
   },
   {
-    "id": 339,
-    "category": "Durvju maiņa",
+    "uid": "SW-0165",
+    "id": 165,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvis, 900x2100mm, PVC durvis ar stiklu",
     "unit": "gb",
@@ -3729,8 +1980,9 @@
     "unit_price": 351.73
   },
   {
-    "id": 340,
-    "category": "Durvju maiņa",
+    "uid": "SW-0166",
+    "id": 166,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju atdures montāža",
     "unit": "kpl.",
@@ -3740,19 +1992,9 @@
     "unit_price": 2.22
   },
   {
-    "id": 341,
-    "category": "Durvju maiņa",
-    "subcategory": "",
-    "name": "- durvju atdure D45mm",
-    "unit": "gb.",
-    "labor": 0.0,
-    "materials": 6.7,
-    "mechanisms": 0.0,
-    "unit_price": 6.7
-  },
-  {
-    "id": 342,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0167",
+    "id": 167,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Logu un durvju aiļu apmešana (līdz 400mm platumā)",
     "unit": "m",
@@ -3762,41 +2004,9 @@
     "unit_price": 6.11
   },
   {
-    "id": 343,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 2.1,
-    "mechanisms": 0.0,
-    "unit_price": 2.1
-  },
-  {
-    "id": 344,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- apmetums",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.31,
-    "mechanisms": 0.0,
-    "unit_price": 0.31
-  },
-  {
-    "id": 345,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.46,
-    "mechanisms": 0.0,
-    "unit_price": 0.46
-  },
-  {
-    "id": 346,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0168",
+    "id": 168,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Logu iekšējo aiļu aplīmēšana ar ģipškartona plāksnēm (līdz 400mm platumā)",
     "unit": "m",
@@ -3806,30 +2016,9 @@
     "unit_price": 4.884
   },
   {
-    "id": 347,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- mitrumizturīga  ģipškartona plāksne 12,5 mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 4.2,
-    "mechanisms": 0.0,
-    "unit_price": 4.2
-  },
-  {
-    "id": 348,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "-  palīgmateriāli (līme, PVC uzgalis...)",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.56,
-    "mechanisms": 0.0,
-    "unit_price": 0.56
-  },
-  {
-    "id": 349,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0169",
+    "id": 169,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Logu un durvju bloku iekšējo aiļu aizšūšana ar ģipškartona plāksnēm (līdz 400mm platumā)",
     "unit": "m",
@@ -3839,41 +2028,9 @@
     "unit_price": 6.105
   },
   {
-    "id": 350,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- mitrumizturīgās  ģipškartona plāksnes  12,5 mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 4.2,
-    "mechanisms": 0.0,
-    "unit_price": 4.2
-  },
-  {
-    "id": 351,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- metāla profili",
-    "unit": "kpl",
-    "labor": 0.0,
-    "materials": 8.74,
-    "mechanisms": 0.0,
-    "unit_price": 8.74
-  },
-  {
-    "id": 352,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- palīgmateriāli (akmens vate, PVC uzgalis, stiprinājumi...)",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 2.42,
-    "mechanisms": 0.0,
-    "unit_price": 2.42
-  },
-  {
-    "id": 353,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0170",
+    "id": 170,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Logu un durvju apmaļu  sagatavošana krāsošanai (līdz 400mm platumā)",
     "unit": "m",
@@ -3883,19 +2040,9 @@
     "unit_price": 4.884
   },
   {
-    "id": 354,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- palīgmateriāli (grunts, špaktele, stūra šina...)",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.32,
-    "mechanisms": 0.0,
-    "unit_price": 4.32
-  },
-  {
-    "id": 355,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0171",
+    "id": 171,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Loga iekšējo aiļu krāsošana (līdz 400mm platumā)",
     "unit": "m",
@@ -3905,30 +2052,9 @@
     "unit_price": 3.663
   },
   {
-    "id": 356,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- grunts krāsa",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 4.14,
-    "mechanisms": 0.0,
-    "unit_price": 4.14
-  },
-  {
-    "id": 357,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- ūdens emulsijas krāsa",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 6.05,
-    "mechanisms": 0.0,
-    "unit_price": 6.05
-  },
-  {
-    "id": 358,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0172",
+    "id": 172,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju aplodu demontāža, saglabajot esošas",
     "unit": "m",
@@ -3938,8 +2064,9 @@
     "unit_price": 1.11
   },
   {
-    "id": 359,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0173",
+    "id": 173,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Esošu durvju aplodu montāža",
     "unit": "m",
@@ -3949,19 +2076,9 @@
     "unit_price": 2.22
   },
   {
-    "id": 360,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- naglas",
-    "unit": "gb.",
-    "labor": 0.0,
-    "materials": 0.01,
-    "mechanisms": 0.0,
-    "unit_price": 0.01
-  },
-  {
-    "id": 361,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0174",
+    "id": 174,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju aplodu demontāža",
     "unit": "m",
@@ -3971,8 +2088,9 @@
     "unit_price": 0.6160000000000001
   },
   {
-    "id": 362,
-    "category": "Loga/durvju ailes apdare",
+    "uid": "SW-0175",
+    "id": 175,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju aplodu montāža",
     "unit": "m",
@@ -3982,30 +2100,9 @@
     "unit_price": 2.22
   },
   {
-    "id": 363,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- durvju aplodas (vidējā cena)",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 4.0,
-    "mechanisms": 0.0,
-    "unit_price": 4.0
-  },
-  {
-    "id": 364,
-    "category": "Loga/durvju ailes apdare",
-    "subcategory": "",
-    "name": "- naglas",
-    "unit": "gb.",
-    "labor": 0.0,
-    "materials": 0.01,
-    "mechanisms": 0.0,
-    "unit_price": 0.01
-  },
-  {
-    "id": 365,
-    "category": "Koka durvju remonts",
+    "uid": "SW-0176",
+    "id": 176,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju demontāža",
     "unit": "gb",
@@ -4015,8 +2112,9 @@
     "unit_price": 20.47
   },
   {
-    "id": 366,
-    "category": "Koka durvju remonts",
+    "uid": "SW-0177",
+    "id": 177,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju slīpēšana, špaktelēšana, lakošana, 900x2100mm",
     "unit": "gb",
@@ -4026,8 +2124,9 @@
     "unit_price": 65.15
   },
   {
-    "id": 367,
-    "category": "Koka durvju remonts",
+    "uid": "SW-0178",
+    "id": 178,
+    "category": "Citi apdares darbi",
     "subcategory": "",
     "name": "Durvju montāža",
     "unit": "gb",
@@ -4037,7 +2136,8 @@
     "unit_price": 47.77
   },
   {
-    "id": 368,
+    "uid": "SW-0179",
+    "id": 179,
     "category": "Jumts",
     "subcategory": "",
     "name": "Esošā jumta seguma demontāža",
@@ -4048,7 +2148,8 @@
     "unit_price": 3.05
   },
   {
-    "id": 369,
+    "uid": "SW-0180",
+    "id": 180,
     "category": "Jumts",
     "subcategory": "",
     "name": "Esošā latojuma, šķērslatojuma un pretkondensāta plēves demontāža",
@@ -4059,7 +2160,8 @@
     "unit_price": 3.15
   },
   {
-    "id": 370,
+    "uid": "SW-0181",
+    "id": 181,
     "category": "Jumts",
     "subcategory": "",
     "name": "Antikondensāta plēves montāža",
@@ -4070,29 +2172,8 @@
     "unit_price": 1.58
   },
   {
-    "id": 371,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- antikondensāta plēve",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.68,
-    "mechanisms": 0.0,
-    "unit_price": 0.68
-  },
-  {
-    "id": 372,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.14,
-    "mechanisms": 0.0,
-    "unit_price": 0.14
-  },
-  {
-    "id": 373,
+    "uid": "SW-0182",
+    "id": 182,
     "category": "Jumts",
     "subcategory": "",
     "name": "Koka latojuma montāža, solis 600mm",
@@ -4103,29 +2184,8 @@
     "unit_price": 2.65
   },
   {
-    "id": 374,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- koka latas 50x50mm",
-    "unit": "m3",
-    "labor": 0.0,
-    "materials": 300.0,
-    "mechanisms": 0.0,
-    "unit_price": 300.0
-  },
-  {
-    "id": 375,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.43,
-    "mechanisms": 0.0,
-    "unit_price": 0.43
-  },
-  {
-    "id": 376,
+    "uid": "SW-0183",
+    "id": 183,
     "category": "Jumts",
     "subcategory": "",
     "name": "Šķērslatojuma montāža, solis 350mm",
@@ -4136,29 +2196,8 @@
     "unit_price": 4.58
   },
   {
-    "id": 377,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- koka latas 40x75mm",
-    "unit": "m3",
-    "labor": 0.0,
-    "materials": 300.0,
-    "mechanisms": 0.0,
-    "unit_price": 300.0
-  },
-  {
-    "id": 378,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.43,
-    "mechanisms": 0.0,
-    "unit_price": 0.43
-  },
-  {
-    "id": 379,
+    "uid": "SW-0184",
+    "id": 184,
     "category": "Jumts",
     "subcategory": "",
     "name": "Jumta seguma montāža",
@@ -4169,30 +2208,9 @@
     "unit_price": 8.32
   },
   {
-    "id": 380,
+    "uid": "SW-0185",
+    "id": 185,
     "category": "Jumts",
-    "subcategory": "",
-    "name": "- valcprofils PURAL (0.6mm) Monier Rukki",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 19.64,
-    "mechanisms": 0.0,
-    "unit_price": 19.64
-  },
-  {
-    "id": 381,
-    "category": "Jumts",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 1.14,
-    "mechanisms": 0.0,
-    "unit_price": 1.14
-  },
-  {
-    "id": 382,
-    "category": "Lietus ūdens teknes un notekcaurules",
     "subcategory": "",
     "name": "Lietus ūdens tekņu un notekcauruļu demontāža",
     "unit": "m",
@@ -4202,8 +2220,9 @@
     "unit_price": 2.1
   },
   {
-    "id": 383,
-    "category": "Lietus ūdens teknes un notekcaurules",
+    "uid": "SW-0186",
+    "id": 186,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Lietus tekņu uzstādīšana",
     "unit": "m",
@@ -4213,30 +2232,9 @@
     "unit_price": 7.16
   },
   {
-    "id": 384,
-    "category": "Lietus ūdens teknes un notekcaurules",
-    "subcategory": "",
-    "name": "- teknes 110mm, ieskaitot veidgabalus",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 14.0,
-    "mechanisms": 0.0,
-    "unit_price": 14.0
-  },
-  {
-    "id": 385,
-    "category": "Lietus ūdens teknes un notekcaurules",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.85,
-    "mechanisms": 0.0,
-    "unit_price": 0.85
-  },
-  {
-    "id": 386,
-    "category": "Lietus ūdens teknes un notekcaurules",
+    "uid": "SW-0187",
+    "id": 187,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Lietus notekcauruļu uzstādīšana",
     "unit": "m",
@@ -4246,30 +2244,9 @@
     "unit_price": 7.16
   },
   {
-    "id": 387,
-    "category": "Lietus ūdens teknes un notekcaurules",
-    "subcategory": "",
-    "name": "- notekcaurules 80mm, ieskaitot veidgabalus",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 16.0,
-    "mechanisms": 0.0,
-    "unit_price": 16.0
-  },
-  {
-    "id": 388,
-    "category": "Lietus ūdens teknes un notekcaurules",
-    "subcategory": "",
-    "name": "- palīgmateriāli",
-    "unit": "m",
-    "labor": 0.0,
-    "materials": 0.85,
-    "mechanisms": 0.0,
-    "unit_price": 0.85
-  },
-  {
-    "id": 389,
-    "category": "Jumta vējkastes",
+    "uid": "SW-0188",
+    "id": 188,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Esošās vēja kastes demontāža",
     "unit": "m2",
@@ -4279,8 +2256,9 @@
     "unit_price": 2.89
   },
   {
-    "id": 390,
-    "category": "Jumta vējkastes",
+    "uid": "SW-0189",
+    "id": 189,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Vējkastes montāža",
     "unit": "m2",
@@ -4290,19 +2268,9 @@
     "unit_price": 12.32
   },
   {
-    "id": 391,
-    "category": "Jumta vējkastes",
-    "subcategory": "",
-    "name": "- ēvelēti dēļi",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 20.0,
-    "mechanisms": 0.0,
-    "unit_price": 20.0
-  },
-  {
-    "id": 392,
-    "category": "Jumta vējkastes",
+    "uid": "SW-0190",
+    "id": 190,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Vējkastes krāsošana ar Pinotex",
     "unit": "m2",
@@ -4312,19 +2280,9 @@
     "unit_price": 6.16
   },
   {
-    "id": 393,
-    "category": "Jumta vējkastes",
-    "subcategory": "",
-    "name": "- Pinotex",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 6.14,
-    "mechanisms": 0.0,
-    "unit_price": 6.14
-  },
-  {
-    "id": 394,
-    "category": "Jumts, dažādi darbi",
+    "uid": "SW-0191",
+    "id": 191,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Kores montāža",
     "unit": "m",
@@ -4334,8 +2292,9 @@
     "unit_price": 17.15
   },
   {
-    "id": 395,
-    "category": "Jumts, dažādi darbi",
+    "uid": "SW-0192",
+    "id": 192,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Skārda pieslēgumi sienai",
     "unit": "m",
@@ -4345,8 +2304,9 @@
     "unit_price": 24.91
   },
   {
-    "id": 396,
-    "category": "Jumts, dažādi darbi",
+    "uid": "SW-0193",
+    "id": 193,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Skārda pieslēgumi skurstenim",
     "unit": "m",
@@ -4356,8 +2316,9 @@
     "unit_price": 51.51
   },
   {
-    "id": 397,
-    "category": "Jumts, dažādi darbi",
+    "uid": "SW-0194",
+    "id": 194,
+    "category": "Jumts",
     "subcategory": "",
     "name": "Skursteņa jumtiņa montāža 1200x600",
     "unit": "kompl",
@@ -4367,7 +2328,8 @@
     "unit_price": 199.19
   },
   {
-    "id": 398,
+    "uid": "SW-0195",
+    "id": 195,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Fasādes apšuvuma demontāža (dekoratīvais apmetums, plastikāta siets, siltinājums",
@@ -4378,7 +2340,8 @@
     "unit_price": 3.58
   },
   {
-    "id": 399,
+    "uid": "SW-0196",
+    "id": 196,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Sastatņu montāža, demontāža, īre (1. mēnesis)",
@@ -4389,7 +2352,8 @@
     "unit_price": 7.36
   },
   {
-    "id": 400,
+    "uid": "SW-0197",
+    "id": 197,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Fasādes siltināšana ar akmens vati",
@@ -4400,40 +2364,8 @@
     "unit_price": 9.08
   },
   {
-    "id": 401,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- akmens vate Paroc Linio 15 100mm",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 12.0,
-    "mechanisms": 0.0,
-    "unit_price": 12.0
-  },
-  {
-    "id": 402,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- līmjava",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.22,
-    "mechanisms": 0.0,
-    "unit_price": 0.22
-  },
-  {
-    "id": 403,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- dībelis",
-    "unit": "gab",
-    "labor": 0.0,
-    "materials": 0.15,
-    "mechanisms": 0.0,
-    "unit_price": 0.15
-  },
-  {
-    "id": 404,
+    "uid": "SW-0198",
+    "id": 198,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Plastikāta sieta montāža",
@@ -4444,29 +2376,8 @@
     "unit_price": 4.58
   },
   {
-    "id": 405,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- armēšanas java",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.22,
-    "mechanisms": 0.0,
-    "unit_price": 0.22
-  },
-  {
-    "id": 406,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- stiklašķiedras siets",
-    "unit": "m2",
-    "labor": 0.0,
-    "materials": 0.6,
-    "mechanisms": 0.0,
-    "unit_price": 0.6
-  },
-  {
-    "id": 407,
+    "uid": "SW-0199",
+    "id": 199,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Fasādes plānais dekoratīvais apmetums",
@@ -4477,29 +2388,8 @@
     "unit_price": 5.08
   },
   {
-    "id": 408,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.2,
-    "mechanisms": 0.0,
-    "unit_price": 2.2
-  },
-  {
-    "id": 409,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- dekoratīvais apmetums",
-    "unit": "kg",
-    "labor": 0.0,
-    "materials": 0.34,
-    "mechanisms": 0.0,
-    "unit_price": 0.34
-  },
-  {
-    "id": 410,
+    "uid": "SW-0200",
+    "id": 200,
     "category": "Fasāde",
     "subcategory": "",
     "name": "Fasāde krāsošana",
@@ -4510,29 +2400,8 @@
     "unit_price": 4.58
   },
   {
-    "id": 411,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- grunts",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 2.0,
-    "mechanisms": 0.0,
-    "unit_price": 2.0
-  },
-  {
-    "id": 412,
-    "category": "Fasāde",
-    "subcategory": "",
-    "name": "- silikātkrāsa (tonēta)",
-    "unit": "l",
-    "labor": 0.0,
-    "materials": 5.5,
-    "mechanisms": 0.0,
-    "unit_price": 5.5
-  },
-  {
-    "id": 413,
+    "uid": "SW-0201",
+    "id": 201,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Esoša gaismekļa demontāža, montāža",
@@ -4543,7 +2412,8 @@
     "unit_price": 9.99
   },
   {
-    "id": 414,
+    "uid": "SW-0202",
+    "id": 202,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Esoša difuzora demontāža, montāža",
@@ -4554,7 +2424,8 @@
     "unit_price": 9.99
   },
   {
-    "id": 415,
+    "uid": "SW-0203",
+    "id": 203,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Lustras demontāža, montāža",
@@ -4565,7 +2436,8 @@
     "unit_price": 33.3
   },
   {
-    "id": 416,
+    "uid": "SW-0204",
+    "id": 204,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Esoša iebūvēta gaismekļa demontāža, montāža",
@@ -4576,7 +2448,8 @@
     "unit_price": 7.77
   },
   {
-    "id": 417,
+    "uid": "SW-0205",
+    "id": 205,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Aizskaru karnīzes demontāža, montāža",
@@ -4587,7 +2460,8 @@
     "unit_price": 16.65
   },
   {
-    "id": 418,
+    "uid": "SW-0206",
+    "id": 206,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Rozešu un sledžu demontāža, montāža",
@@ -4598,7 +2472,8 @@
     "unit_price": 9.99
   },
   {
-    "id": 419,
+    "uid": "SW-0207",
+    "id": 207,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Radiatora demontāža, montāža",
@@ -4609,7 +2484,8 @@
     "unit_price": 66.6
   },
   {
-    "id": 420,
+    "uid": "SW-0208",
+    "id": 208,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)",
@@ -4620,7 +2496,8 @@
     "unit_price": 160.7
   },
   {
-    "id": 421,
+    "uid": "SW-0209",
+    "id": 209,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Mēbeles pārvietošana",
@@ -4631,7 +2508,8 @@
     "unit_price": 67.27
   },
   {
-    "id": 422,
+    "uid": "SW-0210",
+    "id": 210,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Iebūvēta skapja demontāža, montāža (1-durvju)",
@@ -4642,7 +2520,8 @@
     "unit_price": 36.2
   },
   {
-    "id": 423,
+    "uid": "SW-0211",
+    "id": 211,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Iebūvēta skapja demontāža, montāža (2-durvju)",
@@ -4653,7 +2532,8 @@
     "unit_price": 71.9
   },
   {
-    "id": 424,
+    "uid": "SW-0212",
+    "id": 212,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Iebūvēta skapja demontāža, montāža (3-durvju)",
@@ -4664,7 +2544,8 @@
     "unit_price": 142.3
   },
   {
-    "id": 425,
+    "uid": "SW-0213",
+    "id": 213,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Elektroinstalācijas pārbaude",
@@ -4675,7 +2556,8 @@
     "unit_price": 72.6
   },
   {
-    "id": 426,
+    "uid": "SW-0214",
+    "id": 214,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Vannas demontāža un montāža",
@@ -4686,7 +2568,8 @@
     "unit_price": 82.7
   },
   {
-    "id": 427,
+    "uid": "SW-0215",
+    "id": 215,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Duškabīnes demontāža un montāža",
@@ -4697,7 +2580,8 @@
     "unit_price": 138.2
   },
   {
-    "id": 428,
+    "uid": "SW-0216",
+    "id": 216,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Izlietnes demontāža, montāža",
@@ -4708,7 +2592,8 @@
     "unit_price": 48.4
   },
   {
-    "id": 429,
+    "uid": "SW-0217",
+    "id": 217,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Klozetpoda demontāža, montāža",
@@ -4719,7 +2604,8 @@
     "unit_price": 48.4
   },
   {
-    "id": 430,
+    "uid": "SW-0218",
+    "id": 218,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Biotualetes noma un apkalpošana divas reizes mēnesi (transportēšana uz objektu un atpakaļ, Rīga)",
@@ -4730,7 +2616,8 @@
     "unit_price": 110.0
   },
   {
-    "id": 431,
+    "uid": "SW-0219",
+    "id": 219,
     "category": "Citi darbi un izmaksas",
     "subcategory": "",
     "name": "Deodorācija",
@@ -4741,7 +2628,8 @@
     "unit_price": 1.26
   },
   {
-    "id": 432,
+    "uid": "SW-0220",
+    "id": 220,
     "category": "Telpu kopšana",
     "subcategory": "",
     "name": "Telpu sagatavošana remontdarbiem un sakopšana pēc remontdarbu veikšanas (telpa līdz 30 m2)",
@@ -4752,7 +2640,8 @@
     "unit_price": 79.23
   },
   {
-    "id": 433,
+    "uid": "SW-0221",
+    "id": 221,
     "category": "Telpu kopšana",
     "subcategory": "",
     "name": "Telpu sagatavošana remontdarbiem un sakopšana pēc remontdarbu veikšanas (telpa līdz 60 m2)",
@@ -4763,7 +2652,8 @@
     "unit_price": 158.46
   },
   {
-    "id": 434,
+    "uid": "SW-0222",
+    "id": 222,
     "category": "Telpu kopšana",
     "subcategory": "",
     "name": "Telpu sagatavošana remontdarbiem un sakopšana pēc remontdarbu veikšanas (telpa līdz 100 m2)",
@@ -4774,7 +2664,8 @@
     "unit_price": 264.1
   },
   {
-    "id": 435,
+    "uid": "SW-0223",
+    "id": 223,
     "category": "Būvgružu utilizācija",
     "subcategory": "",
     "name": "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 1m3",
@@ -4785,7 +2676,8 @@
     "unit_price": 64.75
   },
   {
-    "id": 436,
+    "uid": "SW-0224",
+    "id": 224,
     "category": "Būvgružu utilizācija",
     "subcategory": "",
     "name": "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 5,5m3",
@@ -4796,7 +2688,8 @@
     "unit_price": 259.25
   },
   {
-    "id": 437,
+    "uid": "SW-0225",
+    "id": 225,
     "category": "Būvgružu utilizācija",
     "subcategory": "",
     "name": "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 8,5m3",

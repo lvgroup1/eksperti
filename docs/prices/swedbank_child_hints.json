@@ -1,368 +1,744 @@
-{
-  "Piekārto reģipšu griestu metāla karkasa ierīkošana": [
-    "metāla karkass",
-    "skrūves",
-    "metāla karkass",
-    "skrūves",
-    "metāla karkass",
-    "skrūves"
-  ],
-  "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde": [
-    "ģipškartons GKB 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves",
-    "ugunsdrošais ģipškartons GKF 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves",
-    "mitrumizturīgais ģipškartons GKBi 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves"
-  ],
-  "Griestu apmešana 10mm biezumā": [
-    "grunts",
-    "ģipša apmetums Knauf Rotband, 10mm",
-    "palīgmateriāli"
-  ],
-  "Griestu gruntēšana, špahtelēšana un slīpēšana": [
-    "špahtele sheetrock finish",
-    "grunts",
-    "špahtele",
-    "grunts"
-  ],
-  "Griestu krāsošana ar emulsijas krāsu": [
-    "emulsijas krāsa, tonēta",
-    "emulsijas krāsa, tonēta"
-  ],
-  "Griestu gruntēšana pirms tapešu līmēšanas": [
-    "grunts"
-  ],
-  "Tapešu līmēšana": [
-    "krāsojamās tapetes",
-    "tapešu līme",
-    "tapetes",
-    "tapešu līme",
-    "tapetes",
-    "tapešu līme",
-    "krāsojamās tapetes",
-    "tapešu līme"
-  ],
-  "Griestu gruntēšana": [
-    "grunts"
-  ],
-  "Putoplasta plākšņu montāža": [
-    "dekoratīvās putoplasta plāksnes",
-    "palīgmateriāli"
-  ],
-  "PVC apdares dēļu ierīkošana": [
-    "PVC apdares dēļi",
-    "palīgmateriāli"
-  ],
-  "PVC apdares paneļu ierīkošana": [
-    "PVC apdares paneļi",
-    "palīgmateriāli"
-  ],
-  "Nostiepto griestu ierīkošana": [
-    "profila ierīkošana",
-    "plēve",
-    "palīgmateriāli (profili un tt.)"
-  ],
-  "Koka dēlīšu apšuvuma ierīkošana": [
-    "koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
-    "palīgmateriāli",
-    "koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
-    "palīgmateriāli"
-  ],
-  "Griestu apstrāde ar pretsēnīšu šķidrumu": [
-    "antibakteriāls fungicīdu sastāvs"
-  ],
-  "Karnīžu ierīkošana (izmantojot esošās)": [
-    "palīgmateriāli",
-    "palīgmateriāli"
-  ],
-  "Karnīžu ierīkošana": [
-    "karnīzes",
-    "palīgmateriāli",
-    "koka karnīzes",
-    "palīgmateriāli",
-    "putoplasta karnīzes",
-    "palīgmateriāli"
-  ],
-  "Griestu dekoratīvo līstu krāsošana (35x35mm)": [
-    "akrila hermētiķis",
-    "grunts",
-    "ūdens emulsijas krāsa griestiem"
-  ],
-  "Sienu metāla karkasa ierīkošana ar akmens vates pildījumu 50mm": [
-    "metāla karkass",
-    "akmens vate 50mm",
-    "skrūves",
-    "metāla karkass",
-    "akmens vate 50mm",
-    "skrūves",
-    "metāla karkass",
-    "akmens vate 50mm",
-    "skrūves"
-  ],
-  "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārtā no katras puses": [
-    "ģipškartons GKB 12,5mm, 2.kārtas",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves",
-    "ugunsdrošais ģipškartons 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves",
-    "mitrumizturīgais ģipškartons 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves"
-  ],
-  "Metāla karkasa ierīkošana": [
-    "metāla karkass",
-    "skrūves"
-  ],
-  "Apdares kārbas apšūšana ar ģipškartonu un šuvju apstrāde, ģipškartons 1.kārta": [
-    "mitrumizturīgais ģipškartons 12,5mm",
-    "sietiņlenta",
-    "šuvju špaktele Knauf Uniflot",
-    "skrūves",
-    "stūra šinas reģipsim"
-  ],
-  "Koka skaidu plākšņu montāža": [
-    "koka skaidu plāksnes 16mm",
-    "palīgmateriāli"
-  ],
-  "Sienu apmešana 10mm biezumā": [
-    "grunts",
-    "ģipša apmetums Knauf Rotband, 10mm",
-    "palīgmateriāli"
-  ],
-  "Sienu gruntēšana pirms tapešu līmēšanas": [
-    "grunts",
-    "grunts"
-  ],
-  "Sienu krāsošana ar emulsijas krāsu": [
-    "emulsijas krāsa, tonēta",
-    "emulsijas krāsa, tonēta"
-  ],
-  "Sienu gruntēšana, špahtelēšana un slīpēšana": [
-    "špahtele",
-    "grunts"
-  ],
-  "Fototapetes līmēšana": [
-    "fototapete",
-    "tapešu līme"
-  ],
-  "MDF apdares paneļu ierīkošana": [
-    "MDF apdares paneļi",
-    "palīgmateriāli"
-  ],
-  "Latojuma ierīkošana": [
-    "koka latas 25x50mm, solis 400mm Solideco",
-    "palīgmateriāli",
-    "koka latas 50x100mm, solis 400mm",
-    "palīgmateriāli"
-  ],
-  "Hidroizolācijas ierīkošana zem flīzēm": [
-    "hidroizolācija (membrana)"
-  ],
-  "Sienu flīzēšana": [
-    "flīzes",
-    "flīžu krustiņi",
-    "flīžu līme",
-    "flīžu fūga"
-  ],
-  "Preskartona montāža": [
-    "preskartons 3mm",
-    "palīgmateriāli",
-    "preskartons 3mm",
-    "palīgmateriāli"
-  ],
-  "Sienas gruntēšana pirms krāsošanas": [
-    "grunts"
-  ],
-  "Sienas krāsošana": [
-    "krāsa, tonēta"
-  ],
-  "Sienu apstrāde ar pretsēnīšu šķidrumu": [
-    "antibakteriāls fungicīdu sastāvs"
-  ],
-  "Aiļu gruntēšana, špahtelēšana un slīpēšana": [
-    "špaktele",
-    "grunts"
-  ],
-  "Aiļu krāsošana ar emulsijas krāsu": [
-    "emulsijas krāsa, tonēta",
-    "emulsijas krāsa, tonēta"
-  ],
-  "Aiļu gruntēšana pirms tapešu līmēšanas": [
-    "grunts",
-    "grunts"
-  ],
-  "Tapešu līmēšana ailē": [
-    "krāsojamās tapetes",
-    "tapešu līme",
-    "tapetes",
-    "tapešu līme"
-  ],
-  "Sienu gruntēšana, špaktelēšana un slīpēšana": [
-    "špaktele",
-    "grunts"
-  ],
-  "Grīdlīstu ierīkošana (izmantojot esošās)": [
-    "palīgmateriāli",
-    "palīgmateriāli"
-  ],
-  "Grīdlīstu ierīkošana": [
-    "grīdlīstes",
-    "palīgmateriāli",
-    "koka grīdlīstes",
-    "palīgmateriāli",
-    "PVC grīdlīstes",
-    "palīgmateriāli"
-  ],
-  "Saplākšņa montāža": [
-    "saplāksnis 15mm",
-    "palīgmateriāli"
-  ],
-  "OSB-3 plāksnes  montāža": [
-    "mitrumizturīga OSB-3 plāksne 22mm",
-    "palīgmateriāli"
-  ],
-  "Grīdas gruntēšana pirms krāsošanas": [
-    "grunts"
-  ],
-  "Grīdas krāsošana": [
-    "grīdas krāsa, tonēta"
-  ],
-  "Linoleja ieklāšana": [
-    "linolejs",
-    "linoleja līme",
-    "metināšanas diegs"
-  ],
-  "Lamināta ieklāšana (click sistēma)": [
-    "lamināta apakšklājs",
-    "lamināts"
-  ],
-  "Mīkstā seguma ieklāšana": [
-    "mīkstais grīdas segums"
-  ],
-  "Parketa dēļu ierīkošana": [
-    "parketa dēļu apakšklājs ar plēvi",
-    "parketa dēļi"
-  ],
-  "Hidroizolācijas ierīkošana grīdai": [
-    "stiklšķiedras siets",
-    "hidroizolācija (membrana)"
-  ],
-  "Grīdas flīzēšana": [
-    "flīzes",
-    "flīžu krustiņi",
-    "flīžu līme",
-    "flīžu fūga"
-  ],
-  "Sliekšņa demontāža, ierīkošana": [
-    "slieksnis 90 cm (alumīnijs), vīdēja cena",
-    "palīgmateriāli"
-  ],
-  "PVC loga montāža": [
-    "PVC logs",
-    "palīgmateriāli (stiprinājumi, lentas, putas)"
-  ],
-  "Koka loga montāža": [
-    "Koka logs",
-    "palīgmateriāli (stiprinājumi, lentas, putas)"
-  ],
-  "Logu, durvju stikla paketes nomaiņa": [
-    "Vienkameras stikla pakete ar energotaupīgu (selektīvo) stiklu 24 mm"
-  ],
-  "Palodžu montāža": [
-    "koka palodze, platums 21-29cm, osis",
-    "palīgmateriāli",
-    "MDF palodzes, platums 30cm",
-    "palīgmateriāli",
-    "skārda palodzes, platums 20cm",
-    "palīgmateriāli"
-  ],
-  "Durvju atdures montāža": [
-    "durvju atdure D45mm"
-  ],
-  "Logu un durvju aiļu apmešana (līdz 400mm platumā)": [
-    "grunts",
-    "apmetums",
-    "palīgmateriāli"
-  ],
-  "Logu iekšējo aiļu aplīmēšana ar ģipškartona plāksnēm (līdz 400mm platumā)": [
-    "mitrumizturīga  ģipškartona plāksne 12,5 mm",
-    "palīgmateriāli (līme, PVC uzgalis...)"
-  ],
-  "Logu un durvju bloku iekšējo aiļu aizšūšana ar ģipškartona plāksnēm (līdz 400mm platumā)": [
-    "mitrumizturīgās  ģipškartona plāksnes  12,5 mm",
-    "metāla profili",
-    "palīgmateriāli (akmens vate, PVC uzgalis, stiprinājumi...)"
-  ],
-  "Logu un durvju apmaļu  sagatavošana krāsošanai (līdz 400mm platumā)": [
-    "palīgmateriāli (grunts, špaktele, stūra šina...)"
-  ],
-  "Loga iekšējo aiļu krāsošana (līdz 400mm platumā)": [
-    "grunts krāsa",
-    "ūdens emulsijas krāsa"
-  ],
-  "Esošu durvju aplodu montāža": [
-    "naglas"
-  ],
-  "Durvju aplodu montāža": [
-    "durvju aplodas (vidējā cena)",
-    "naglas"
-  ],
-  "Antikondensāta plēves montāža": [
-    "antikondensāta plēve",
-    "palīgmateriāli"
-  ],
-  "Koka latojuma montāža, solis 600mm": [
-    "koka latas 50x50mm",
-    "palīgmateriāli"
-  ],
-  "Šķērslatojuma montāža, solis 350mm": [
-    "koka latas 40x75mm",
-    "palīgmateriāli"
-  ],
-  "Jumta seguma montāža": [
-    "valcprofils PURAL (0.6mm) Monier Rukki",
-    "palīgmateriāli"
-  ],
-  "Lietus tekņu uzstādīšana": [
-    "teknes 110mm, ieskaitot veidgabalus",
-    "palīgmateriāli"
-  ],
-  "Lietus notekcauruļu uzstādīšana": [
-    "notekcaurules 80mm, ieskaitot veidgabalus",
-    "palīgmateriāli"
-  ],
-  "Vējkastes montāža": [
-    "ēvelēti dēļi"
-  ],
-  "Vējkastes krāsošana ar Pinotex": [
-    "Pinotex"
-  ],
-  "Fasādes siltināšana ar akmens vati": [
-    "akmens vate Paroc Linio 15 100mm",
-    "līmjava",
-    "dībelis"
-  ],
-  "Plastikāta sieta montāža": [
-    "armēšanas java",
-    "stiklašķiedras siets"
-  ],
-  "Fasādes plānais dekoratīvais apmetums": [
-    "grunts",
-    "dekoratīvais apmetums"
-  ],
-  "Fasāde krāsošana": [
-    "grunts",
-    "silikātkrāsa (tonēta)"
-  ]
-}
+[
+  {
+    "parent_uid": "SW-0003",
+    "child_names": [
+      "metāla karkass",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0004",
+    "child_names": [
+      "ģipškartons GKB 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0007",
+    "child_names": [
+      "metāla karkass",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0008",
+    "child_names": [
+      "ugunsdrošais ģipškartons GKF 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0011",
+    "child_names": [
+      "metāla karkass",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0012",
+    "child_names": [
+      "mitrumizturīgais ģipškartons GKBi 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0014",
+    "child_names": [
+      "grunts",
+      "ģipša apmetums Knauf Rotband, 10mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0016",
+    "child_names": [
+      "špahtele sheetrock finish",
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0017",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0019",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0020",
+    "child_names": [
+      "krāsojamās tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0021",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0023",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0024",
+    "child_names": [
+      "tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0026",
+    "child_names": [
+      "dekoratīvās putoplasta plāksnes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0032",
+    "child_names": [
+      "PVC apdares dēļi",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0034",
+    "child_names": [
+      "PVC apdares paneļi",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0039",
+    "child_names": [
+      "profila ierīkošana",
+      "plēve",
+      "palīgmateriāli (profili un tt.)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0042",
+    "child_names": [
+      "koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0044",
+    "child_names": [
+      "antibakteriāls fungicīdu sastāvs"
+    ]
+  },
+  {
+    "parent_uid": "SW-0046",
+    "child_names": [
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0047",
+    "child_names": [
+      "karnīzes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0049",
+    "child_names": [
+      "koka karnīzes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0050",
+    "child_names": [
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0052",
+    "child_names": [
+      "putoplasta karnīzes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0053",
+    "child_names": [
+      "akrila hermētiķis",
+      "grunts",
+      "ūdens emulsijas krāsa griestiem"
+    ]
+  },
+  {
+    "parent_uid": "SW-0055",
+    "child_names": [
+      "špahtele",
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0057",
+    "child_names": [
+      "metāla karkass",
+      "akmens vate 50mm",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0058",
+    "child_names": [
+      "ģipškartons GKB 12,5mm, 2.kārtas",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0060",
+    "child_names": [
+      "metāla karkass",
+      "akmens vate 50mm",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0061",
+    "child_names": [
+      "ugunsdrošais ģipškartons 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0063",
+    "child_names": [
+      "metāla karkass",
+      "akmens vate 50mm",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0064",
+    "child_names": [
+      "mitrumizturīgais ģipškartons 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0066",
+    "child_names": [
+      "metāla karkass",
+      "skrūves"
+    ]
+  },
+  {
+    "parent_uid": "SW-0067",
+    "child_names": [
+      "mitrumizturīgais ģipškartons 12,5mm",
+      "sietiņlenta",
+      "šuvju špaktele Knauf Uniflot",
+      "skrūves",
+      "stūra šinas reģipsim"
+    ]
+  },
+  {
+    "parent_uid": "SW-0069",
+    "child_names": [
+      "koka skaidu plāksnes 16mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0071",
+    "child_names": [
+      "grunts",
+      "ģipša apmetums Knauf Rotband, 10mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0073",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0074",
+    "child_names": [
+      "tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0076",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0077",
+    "child_names": [
+      "krāsojamās tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0078",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0080",
+    "child_names": [
+      "špahtele",
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0081",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0085",
+    "child_names": [
+      "fototapete",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0087",
+    "child_names": [
+      "MDF apdares paneļi",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0089",
+    "child_names": [
+      "koka dēlīšu apšuvums, priedes dēlis 15x90x3000 Solideco",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0091",
+    "child_names": [
+      "koka latas 25x50mm, solis 400mm Solideco",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0093",
+    "child_names": [
+      "hidroizolācija (membrana)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0094",
+    "child_names": [
+      "flīzes",
+      "flīžu krustiņi",
+      "flīžu līme",
+      "flīžu fūga"
+    ]
+  },
+  {
+    "parent_uid": "SW-0096",
+    "child_names": [
+      "preskartons 3mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0097",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0098",
+    "child_names": [
+      "krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0099",
+    "child_names": [
+      "antibakteriāls fungicīdu sastāvs"
+    ]
+  },
+  {
+    "parent_uid": "SW-0101",
+    "child_names": [
+      "špaktele",
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0102",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0104",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0105",
+    "child_names": [
+      "krāsojamās tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0106",
+    "child_names": [
+      "emulsijas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0108",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0109",
+    "child_names": [
+      "tapetes",
+      "tapešu līme"
+    ]
+  },
+  {
+    "parent_uid": "SW-0114",
+    "child_names": [
+      "špaktele",
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0117",
+    "child_names": [
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0118",
+    "child_names": [
+      "grīdlīstes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0120",
+    "child_names": [
+      "saplāksnis 15mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0122",
+    "child_names": [
+      "mitrumizturīga OSB-3 plāksne 22mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0124",
+    "child_names": [
+      "preskartons 3mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0126",
+    "child_names": [
+      "grunts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0127",
+    "child_names": [
+      "grīdas krāsa, tonēta"
+    ]
+  },
+  {
+    "parent_uid": "SW-0130",
+    "child_names": [
+      "linolejs",
+      "linoleja līme",
+      "metināšanas diegs"
+    ]
+  },
+  {
+    "parent_uid": "SW-0132",
+    "child_names": [
+      "lamināta apakšklājs",
+      "lamināts"
+    ]
+  },
+  {
+    "parent_uid": "SW-0135",
+    "child_names": [
+      "mīkstais grīdas segums"
+    ]
+  },
+  {
+    "parent_uid": "SW-0137",
+    "child_names": [
+      "parketa dēļu apakšklājs ar plēvi",
+      "parketa dēļi"
+    ]
+  },
+  {
+    "parent_uid": "SW-0140",
+    "child_names": [
+      "stiklšķiedras siets",
+      "hidroizolācija (membrana)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0141",
+    "child_names": [
+      "flīzes",
+      "flīžu krustiņi",
+      "flīžu līme",
+      "flīžu fūga"
+    ]
+  },
+  {
+    "parent_uid": "SW-0143",
+    "child_names": [
+      "koka grīdlīstes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0144",
+    "child_names": [
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0146",
+    "child_names": [
+      "PVC grīdlīstes",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0147",
+    "child_names": [
+      "slieksnis 90 cm (alumīnijs), vīdēja cena",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0149",
+    "child_names": [
+      "koka latas 50x100mm, solis 400mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0150",
+    "child_names": [
+      "PVC logs",
+      "palīgmateriāli (stiprinājumi, lentas, putas)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0151",
+    "child_names": [
+      "Koka logs",
+      "palīgmateriāli (stiprinājumi, lentas, putas)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0152",
+    "child_names": [
+      "Vienkameras stikla pakete ar energotaupīgu (selektīvo) stiklu 24 mm"
+    ]
+  },
+  {
+    "parent_uid": "SW-0154",
+    "child_names": [
+      "koka palodze, platums 21-29cm, osis",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0157",
+    "child_names": [
+      "MDF palodzes, platums 30cm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0159",
+    "child_names": [
+      "skārda palodzes, platums 20cm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0166",
+    "child_names": [
+      "durvju atdure D45mm"
+    ]
+  },
+  {
+    "parent_uid": "SW-0167",
+    "child_names": [
+      "grunts",
+      "apmetums",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0168",
+    "child_names": [
+      "mitrumizturīga  ģipškartona plāksne 12,5 mm",
+      "palīgmateriāli (līme, PVC uzgalis...)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0169",
+    "child_names": [
+      "mitrumizturīgās  ģipškartona plāksnes  12,5 mm",
+      "metāla profili",
+      "palīgmateriāli (akmens vate, PVC uzgalis, stiprinājumi...)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0170",
+    "child_names": [
+      "palīgmateriāli (grunts, špaktele, stūra šina...)"
+    ]
+  },
+  {
+    "parent_uid": "SW-0171",
+    "child_names": [
+      "grunts krāsa",
+      "ūdens emulsijas krāsa"
+    ]
+  },
+  {
+    "parent_uid": "SW-0173",
+    "child_names": [
+      "naglas"
+    ]
+  },
+  {
+    "parent_uid": "SW-0175",
+    "child_names": [
+      "durvju aplodas (vidējā cena)",
+      "naglas"
+    ]
+  },
+  {
+    "parent_uid": "SW-0181",
+    "child_names": [
+      "antikondensāta plēve",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0182",
+    "child_names": [
+      "koka latas 50x50mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0183",
+    "child_names": [
+      "koka latas 40x75mm",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0184",
+    "child_names": [
+      "valcprofils PURAL (0.6mm) Monier Rukki",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0186",
+    "child_names": [
+      "teknes 110mm, ieskaitot veidgabalus",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0187",
+    "child_names": [
+      "notekcaurules 80mm, ieskaitot veidgabalus",
+      "palīgmateriāli"
+    ]
+  },
+  {
+    "parent_uid": "SW-0189",
+    "child_names": [
+      "ēvelēti dēļi"
+    ]
+  },
+  {
+    "parent_uid": "SW-0190",
+    "child_names": [
+      "Pinotex"
+    ]
+  },
+  {
+    "parent_uid": "SW-0197",
+    "child_names": [
+      "akmens vate Paroc Linio 15 100mm",
+      "līmjava",
+      "dībelis"
+    ]
+  },
+  {
+    "parent_uid": "SW-0198",
+    "child_names": [
+      "armēšanas java",
+      "stiklašķiedras siets"
+    ]
+  },
+  {
+    "parent_uid": "SW-0199",
+    "child_names": [
+      "grunts",
+      "dekoratīvais apmetums"
+    ]
+  },
+  {
+    "parent_uid": "SW-0200",
+    "child_names": [
+      "grunts",
+      "silikātkrāsa (tonēta)"
+    ]
+  }
+]
