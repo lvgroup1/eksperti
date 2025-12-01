@@ -1471,16 +1471,33 @@ const categories = useMemo(() => {
       case 5: return ["Jā","Nē"].includes(electricity);
       case 6: return ["Jā","Nē"].includes(needsDrying);
       case 7: return ["Jā","Nē"].includes(commonPropertyDamaged);
-      case 8:
-  return (
-    zaudejumsPecKlienta === "Nē" ||
-    (zaudejumsPecKlienta === "Jā" && zaudejumaSumma && Number(zaudejumaSumma) >= 0)
-  );
+case 8:
+  // vispirms jābūt izvēlētam Jā/Nē
+  if (!zaudejumsPecKlienta) return false;
 
+  // ja Nē → drīkst iet tālāk bez summas
+  if (zaudejumsPecKlienta === "Nē") return true;
+
+  // ja Jā → jābūt summai > 0
+  return zaudejumaSumma && Number(zaudejumaSumma) > 0;
       case 9: return Object.values(rooms).some((r) => r.checked);
       default: return true;
     }
-  }, [step,address,insurer,locationType,dwellingSubtype,incidentType,incidentOther,electricity,needsDrying,commonPropertyDamaged,lossKnown,lossAmount,rooms]);
+    }, [
+    step,
+    address,
+    insurer,
+    locationType,
+    dwellingSubtype,
+    incidentType,
+    incidentOther,
+    electricity,
+    needsDrying,
+    commonPropertyDamaged,
+    zaudejumsPecKlienta,
+    zaudejumaSumma,
+    rooms
+  ]);
 
   const suggestedCategoriesFor = () => [];
 
