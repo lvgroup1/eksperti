@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const STORAGE_KEY = "eksperti_tames"; // adjust if you use a different key
+const STORAGE_KEY = "eksperti_tames"; // change if you use another key
 
 export default function SavedTamesPage() {
   const [tames, setTames] = useState([]);
@@ -37,7 +37,7 @@ export default function SavedTamesPage() {
         >
           <h1 style={{ fontSize: 22, fontWeight: 800 }}>Saglabātās tāmēs</h1>
 
-          {/* Šī poga ved atpakaļ uz formu (wizard.js lapu) */}
+          {/* Šī poga ved atpakaļ uz formu (wizard lapu) */}
           <Link
             href="/wizard"
             style={{
@@ -54,7 +54,6 @@ export default function SavedTamesPage() {
           </Link>
         </div>
 
-        {/* Saraksts ar tāmēm (vienkāršs piemērs) */}
         {tames.length === 0 ? (
           <p>Šobrīd nav saglabātu tāmju.</p>
         ) : (

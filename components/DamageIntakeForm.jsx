@@ -767,6 +767,39 @@ export default function DamageIntakeForm({ onBackToList }) {
   
 // Optional name-based child hints from /prices/child_hints.json
 const [childHints, setChildHints] = useState({});
+
+  const [elektribasTraucejumi, setElektribasTraucejumi] = useState(null); // 'ja' | 'ne'
+  const [vajadzigaZavesana, setVajadzigaZavesana] = useState(null);       // 'ja' | 'ne'
+  const [bojatsKopipasums, setBojatsKopipasums] = useState(null);         // 'ja' | 'ne'
+  const [zaudejumsPecKlienta, setZaudejumsPecKlienta] = useState(null);   // 'ja' | 'ne'
+  const [zaudejumaSumma, setZaudejumaSumma] = useState("");               // summa EUR
+
+  // Palīgfunkcija, kas no atbildēm uztaisa automātisku piezīmju tekstu
+  function buildAutoNotes() {
+    const lines = [];
+
+    if (elektribasTraucejumi === "ja") {
+      lines.push("Nepieciešama elektropārbaude.");
+    }
+
+    if (vajadzigaZavesana === "ja") {
+      lines.push("Nepieciešama žāvēšana.");
+    }
+
+    if (bojatsKopipasums === "ja") {
+      lines.push("Tika bojāts kopīpašums.");
+    }
+
+    if (zaudejumsPecKlienta === "ja" && zaudejumaSumma) {
+      lines.push(
+        `Zaudējuma novērtējums pēc klienta vārdiem ir ${zaudejumaSumma} EUR.`
+      );
+    }
+
+    return lines.join("\n"); // katrs teikums jaunā rindā
+  }
+
+
 useEffect(() => {
   try {
     const raw = localStorage.getItem("eksperti_user");
@@ -1488,17 +1521,52 @@ const categories = useMemo(() => {
       };
 
       // Header
-      const d = new Date();
-      const dateStamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
-      const tameId    = insurer === "Balta" ? `B-${dateStamp}` : dateStamp;
-      const tameTitle = insurer === "Balta" ? `LOKĀLĀ TĀME NR.${tameId}` : `TĀMES NR.: ${tameId}`;
-      const humanDate = d.toLocaleDateString("lv-LV", { year: "numeric", month: "long", day: "numeric" });
-      // Ļaujam ekspertam nosaukt tāmi, kā vēlas
-      const defaultFileName = `${insurer || "Tame"}_${prettyDate()}`; // piem., "Balta_2025-09-26_11-00"
-      let tameName = window.prompt(
-        "Norādi tāmes nosaukumu (piemēram, 'Virtuve griesti 3. stāvs'):",
-        defaultFileName
-      );
+const d = new Date();
+const dateStamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+
+// ⚠️ Šeit pieliekam Burta loģiku
+let tamePrefix = ""; 
+if (insurer === "Swedbank") {
+  tamePrefix = "S";
+} else if (insurer === "Balta") {
+  tamePrefix = "B";
+} else {
+  tamePrefix = ""; // vai "X" ja vēlies citiem arī burtu
+}
+
+const tameId = tamePrefix ? `${tamePrefix}-${dateStamp}` : dateStamp;
+
+// Virsraksts (Swedbank izmanto tādu pašu formātu kā Balta, ja gribi to pašu dizainu)
+let tameTitle = "";
+if (insurer === "Swedbank") {
+  tameTitle = `LOKĀLĀ TĀME NR.${tameId}`;
+} else if (insurer === "Balta") {
+  tameTitle = `LOKĀLĀ TĀME NR.${tameId}`;
+} else {
+  tameTitle = `TĀMES NR.: ${tameId}`;
+}
+
+const humanDate = d.toLocaleDateString("lv-LV", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+// Pasūtītājs (Swedbank speciālais teksts)
+let pasutitajs = insurer;
+if (insurer === "Swedbank") {
+  pasutitajs = `"Swedbank P&C Insurance" AS Latvijas filiāle`;
+} else if (insurer === "Balta") {
+  pasutitajs = "AAS BALTA";
+}
+
+// Faila nosaukums
+const defaultFileName = `${insurer || "Tame"}_${prettyDate()}`;
+let tameName = window.prompt(
+  "Norādi tāmes nosaukumu (piemēram, 'Virtuve griesti 3. stāvs'):",
+  defaultFileName
+);
+
 
       // Ja nospiež “Cancel” – netaisām failu
       if (tameName === null) {
@@ -1520,9 +1588,7 @@ const categories = useMemo(() => {
       ws.getCell("A9").value = `Pamatojums: apdrošināšanas lieta Nr. ${claimNumber || "—"}`;
 
       ws.getCell("J1").value = "LV GROUP SIA";
-      ws.getCell("J2").value = "Reģ. Nr.: LV40003216553";
-      ws.getCell("J3").value = "Banka: Luminor";
-      ws.getCell("J4").value = "Konts: LV12RIKO0002012345678";
+      ws.getCell("J2").value = "Reģ. Nr.: LV40103160668";
 
       ws.mergeCells(6, 2, 6, 12);
       const tCell = ws.getCell(6, 2);
@@ -1884,12 +1950,18 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+
+      // ✅ Pēc veiksmīgas lejupielādes – uz pēdējo soli
+      setStep(12);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("Excel export error:", err);
       alert("Neizdevās izveidot Excel failu. Skaties konsolē kļūdu.");
     }
   }
 
+
+  
   /* ---------- Input helpers (stable) ---------- */
   const onText = useCallback((setter) => (e) => setter(e.target.value), []);
   const onNum  = useCallback((setter) => (e) => setter(e.target.value), []);
@@ -2355,6 +2427,57 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
           </StepShell>
         )}
 
+                {/* Step 12 – Pabeigts */}
+        {step === 12 && (
+          <StepShell title="Tāme izveidota un lejupielādēta">
+            <p style={{ marginBottom: 16 }}>
+              Excel tāme ir lejupielādēta. Ko vēlies darīt tālāk?
+            </p>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  // vienkāršā versija – tikai aiziet atpakaļ uz 1. soli
+                  // ja gribi pilnībā notīrīt formu, varam izveidot atsevišķu reset funkciju
+                  setStep(1);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  background: "#111827",
+                  color: "white",
+                  border: 0,
+                }}
+              >
+                Sākt jaunu tāmi
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onBackToList) {
+                    onBackToList();
+                  } else {
+                    // fallback – vienkārši uz /tames
+                    window.location.href = "/tames";
+                  }
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  border: "1px solid #e5e7eb",
+                  background: "white",
+                  color: "#111827",
+                }}
+              >
+                Atpakaļ uz saglabātajām tāmēm
+              </button>
+            </div>
+          </StepShell>
+        )}
+
+
         {/* Navigation bar (hide default on steps 10 & 11) */}
         {[1,2,3,4,5,6,7,8,9,12].includes(step) && (
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
@@ -2402,4 +2525,4 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       </div>
     </div>
   );
-}
+    }
