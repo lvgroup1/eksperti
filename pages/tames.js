@@ -61,13 +61,11 @@ export default function SavedTamesPage() {
     }
   }
 
-  function handleBackToForm() {
-    if (typeof window === "undefined") return;
-    // GitHub Pages: pašreizējais ceļš ir /eksperti/tames/ → ejam uz /eksperti/
-    const base = window.location.pathname.replace(/\/tames\/?$/, "");
-    const target = base || "/";
-    window.location.href = target;
-  }
+function handleBackToForm() {
+  const base = window.location.pathname.split("/")[1]; // "eksperti"
+  window.location.href = `/${base}/wizard/`;
+}
+
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7fafc", color: "#111827" }}>
@@ -90,22 +88,22 @@ export default function SavedTamesPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleBackToForm}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 999,
-              border: "1px solid #e5e7eb",
-              background: "white",
-              textDecoration: "none",
-              fontSize: 14,
-              color: "#111827",
-              cursor: "pointer",
-            }}
-          >
-            ← Atpakaļ uz formu
-          </button>
+<button
+  type="button"
+  onClick={handleBackToForm}
+  style={{
+    padding: "8px 14px",
+    borderRadius: 999,
+    border: "1px solid #e5e7eb",
+    background: "white",
+    textDecoration: "none",
+    fontSize: 14,
+    color: "#111827",
+    cursor: "pointer",
+  }}
+>
+  ← Atpakaļ uz formu
+</button>
         </div>
 
         {/* Clear poga, ja ir dati */}
