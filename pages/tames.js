@@ -25,13 +25,11 @@ export default function SavedTamesPage() {
   }, []);
 
   const handleBackToForm = () => {
-    if (typeof window === "undefined") return;
-    // GitHub Pages: /eksperti/ + wizard
-    const base = window.location.pathname.startsWith("/eksperti")
-      ? "/eksperti"
-      : "";
-    window.location.href = `${base}/wizard`;
-  };
+  if (typeof window === "undefined") return;
+  // GitHub Pages – app ir zem /eksperti
+  window.location.href = "/eksperti";
+};
+
 
   const handleDeleteAll = () => {
     if (!confirm("Vai tiešām dzēst visas saglabātās tāmes no šīs ierīces?")) return;

@@ -2781,7 +2781,7 @@ window.scrollTo({ top: 0, behavior: "smooth" });
         {/* Link uz saglabāto tāmju lapu */}
         <div style={{ background: "white", padding: 16, borderRadius: 12, marginTop: 20 }}>
           <Link
-            href="/tames"
+            href="/eksperti/tames"
             style={{
               display: "inline-block",
               padding: "10px 16px",
