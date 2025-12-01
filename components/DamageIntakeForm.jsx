@@ -1996,40 +1996,74 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       wb.removeWorksheet(src.id);
       ws.name = "Tāme";
 
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeFileName}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+const buffer = await wb.xlsx.writeBuffer();
 
-      // ====== SAVE TAME TO LOCAL STORAGE ======
+// === saglabājam šo tāmi localStorage kopā ar failu (base64) ===
 try {
-  const existing = JSON.parse(localStorage.getItem("saved_tames") || "[]");
+  const STORAGE_KEY_TAMES = "eksperti_tames";
 
-  existing.push({
-    id: tameId,
-    date: new Date().toISOString(),
-    insurer,
-    address,
-    claimNumber,
-    rooms: roomInstances,
-    totalRooms: roomInstances.length,
-  });
+  // buffer -> base64
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const fileB64 = window.btoa(binary);
 
-  localStorage.setItem("saved_tames", JSON.stringify(existing));
-} catch (err) {
-  console.error("Cannot save tame:", err);
+  const now = new Date();
+  const newRecord = {
+    id: tameId,                                // piem. B-20251201
+    title: tameName,                           // tas, ko ievadīja promptā
+    insurer,                                   // Balta / Swedbank / ...
+    claimNumber,                               // Lietas Nr.
+    rooms: roomInstances.map((ri) => `${ri.type} ${ri.index}`),
+    createdAt: now.toLocaleString("lv-LV"),
+    createdTs: now.getTime(),
+    fileName: `${safeFileName}.xlsx`,
+    fileB64,
+  };
+
+  let prev = [];
+  const rawPrev = localStorage.getItem(STORAGE_KEY_TAMES);
+  if (rawPrev) {
+    try {
+      prev = JSON.parse(rawPrev) || [];
+    } catch {
+      prev = [];
+    }
+  }
+
+  // notīram vecākas par 7 dienām
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const nowTs = now.getTime();
+  prev = prev.filter(
+    (t) => t.createdTs && nowTs - t.createdTs <= weekMs
+  );
+
+  // pieliekam jauno pašā sākumā
+  prev.unshift(newRecord);
+
+  localStorage.setItem(STORAGE_KEY_TAMES, JSON.stringify(prev));
+} catch (e) {
+  console.warn("Neizdevās saglabāt tāmi localStorage:", e);
 }
 
+// === lejupielādējam kā līdz šim ===
+const blob = new Blob([buffer], {
+  type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+});
+const url = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = url;
+a.download = `${safeFileName}.xlsx`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
 
-      // ✅ Pēc veiksmīgas lejupielādes – uz pēdējo soli
-      setStep(12);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+// ✅ Pēc veiksmīgas lejupielādes – uz pēdējo soli
+setStep(12);
+window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("Excel export error:", err);
       alert("Neizdevās izveidot Excel failu. Skaties konsolē kļūdu.");
