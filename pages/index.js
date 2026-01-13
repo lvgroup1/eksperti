@@ -1,6 +1,12 @@
 // pages/index.js
-import { useEffect, useState } from "react";
-import DamageIntakeForm from "../components/DamageIntakeForm.jsx";
+// pages/index.js
+import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+const DamageIntakeForm = dynamic(
+  () => import("../components/DamageIntakeForm.jsx"),
+  { ssr: false }
+);
 
 const USERS = [
   {

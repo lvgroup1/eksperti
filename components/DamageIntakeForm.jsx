@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
+import { SWEDBANK_POSITIONS } from "../data/swedbank_positions";
+
 
 /* ==========================
    Damage Intake – STEP WIZARD (1..12)
@@ -18,6 +20,7 @@ const ROOM_TYPES = [
   "Virtuve","Guļamistaba","Koridors","Katla telpa","Dzīvojamā istaba",
   "Vannas istaba","Tualete","Garderobe","Cits",
 ];
+const normCat = (v) => (v || "").trim();
 
 // numeric key sets for robust parsing
 const LABOR_KEYS      = ["labor","darbs"];
@@ -38,6 +41,21 @@ const UNIT_PRICE_KEYS = [
   "vienc","vienības cena eur" // <- add if present
 ];
 
+const SWEDBANK_UI_POSITIONS = [
+  "Krāsots betons",
+  "Krāsots ģipškartons",
+  "Ģipškartons un krāsojamās tapetes vai tapetes",
+];
+
+const availablePositions = useMemo(() => {
+  if (insurer !== "Swedbank") return [];
+
+  return Object.keys(SWEDBANK_POSITIONS[selectedCategory] || {});
+  return SWEDBANK_UI_POSITIONS;
+}, [insurer]);
+
+
+
 // default units shown in the UI
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
 const SWEDBANK_CATEGORIES = [
@@ -51,6 +69,33 @@ const SWEDBANK_CATEGORIES = [
   "Telpu kopšana",
   "Būvgružu utilizācija",
 ];
+
+const SWEDBANK_SURFACE_CATS = new Set(["Griesti", "Sienas, ailes", "Sienas"]);
+
+const SWEDBANK_SURFACE_POSITIONS = [
+  "Krāsots betons",
+  "Krāsots ģipškartons",
+  "Ģipškartons un krāsojamās tapetes vai tapetes",
+];
+
+// minimāls “auto” darbu komplekts katrai pozīcijai (ņemts no Swedbank cenrāža nosaukumiem)
+const SWEDBANK_SURFACE_WORKS = {
+  "Krāsots betons": [
+    "Attīrīšana no esošā seguma",
+    "gruntēšana, špahtelēšana un slīpēšana",
+    "krāsošana ar emulsijas krāsu",
+  ],
+  "Krāsots ģipškartons": [
+    "Karkasa apšūšana ar ģipškartonu",
+    "gruntēšana, špahtelēšana un slīpēšana",
+    "krāsošana ar emulsijas krāsu",
+  ],
+  "Ģipškartons un krāsojamās tapetes vai tapetes": [
+    "gruntēšana pirms tapešu līmēšanas",
+    "Tapešu līmēšana",
+  ],
+};
+
 
 
 // --- Strong normalizers ---
@@ -707,6 +752,8 @@ const StepShell = React.memo(function StepShell({ title, children }) {
    ====================================================================== */
 export default function DamageIntakeForm({ onBackToList }) {
   const [step, setStep] = useState(1);
+  const [selectedPosition, setSelectedPosition] = useState("");
+  const [selectedVariant, setSelectedVariant] = useState(""); // tapetes / krasojamas
 
   // GitHub Pages base path (/eksperti) for assets
   const assetBase = useMemo(() => {
@@ -1461,6 +1508,42 @@ const categories = useMemo(() => {
       return { ...ra, [roomId]: list };
     });
   }
+
+  function applySwedbankSurfacePosition(roomId, idx, category, position) {
+  const keys = SWEDBANK_SURFACE_WORKS[position] || [];
+  if (!keys.length) return;
+
+  // atrodam reālas rindas no kataloga pēc nosaukuma (fuzzy)
+  const found = [];
+  for (const k of keys) {
+    const hit = findRowByNameFuzzy(k, category, priceCatalog);
+    if (hit) found.push(hit);
+  }
+  if (!found.length) return;
+
+  setRoomActions((ra) => {
+    const list = [...(ra[roomId] || [])];
+    const baseRow = list[idx] || { category: category || "", quantity: "", unit: "" };
+
+    const newRows = found.map((it) => ({
+      ...baseRow,
+      category: it.category || category || "",
+      itemUid: it.uid,
+      itemId: it.id,
+      itemName: it.name,
+      unit: it.unit || baseRow.unit || "",
+      unit_price: pickNum(it, UNIT_PRICE_KEYS),
+      labor: pickNum(it, LABOR_KEYS),
+      materials: pickNum(it, MATERIAL_KEYS),
+      mechanisms: pickNum(it, MECHANISM_KEYS),
+    }));
+
+    // aizvietojam esošo rindu ar jaunajām rindām (ievieto tieši tajā pašā vietā)
+    list.splice(idx, 1, ...newRows);
+    return { ...ra, [roomId]: list };
+  });
+}
+
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
@@ -2545,136 +2628,159 @@ window.scrollTo({ top: 0, behavior: "smooth" });
                     <div style={{ fontSize: 13, marginBottom: 4 }}>Kategorija</div>
                     <select
                       value={row.category ?? ""}
-                      onChange={(e) => setRowCategory(editingRoomId, idx, e.target.value)}
+                      onChange={(e) => setRowCategory(editingRoomId, idx, (e.target.value || "").trim())}
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">— visas —</option>
                       {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
                     </select>
                   </div>
-{/* Pozīcija – custom searchable dropdown */}
+{/* Pozīcija */}
 <div style={{ position: "relative" }}>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
 
-  {/* “Aizvērtā” poga ar izvēlēto pozīciju */}
-  <button
-    type="button"
-    onClick={() => {
-      const key = `${editingRoomId}-${idx}`;
-      setOpenRowKey((prev) => (prev === key ? null : key));
-      setPositionSearch(""); // kad atveram – tukšs meklēšanas lauks
-    }}
-    style={{
-      width: "100%",
-      padding: "8px 12px",
-      borderRadius: 10,
-      border: "1px solid #e5e7eb",
-      background: "white",
-      textAlign: "left",
-      cursor: "pointer",
-    }}
-  >
-    {row.itemName
-      ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
-      : "— izvēlies pozīciju —"}
-  </button>
+{insurer === "Swedbank" && (normCat(row.category) === "" || ["Griesti", "Sienas, ailes", "Sienas"].includes(normCat(row.category))) ? (
+    <select
+      value={row.swedSurfacePos || ""}
+      onChange={(e) => {
+        const pos = e.target.value;
+        setRowField(editingRoomId, idx, "swedSurfacePos", pos);
 
-  {/* Atvērtais meklēšanas panelis */}
-  {openRowKey === `${editingRoomId}-${idx}` && (
-    <div
+        // 🔸 pagaidām tikai parāda 3 pozīcijas (UI fix)
+        // nākamajā solī te pieslēgsim auto-underpositions ielikšanu
+      }}
       style={{
-        position: "absolute",
-        zIndex: 50,
-        top: "100%",
-        left: 0,
-        right: 0,
-        marginTop: 4,
-        background: "white",
-        border: "1px solid #e5e7eb",
+        width: "100%",
+        padding: "8px 12px",
         borderRadius: 10,
-        boxShadow: "0 10px 30px rgba(15,23,42,0.18)",
-        maxHeight: 320,
-        overflowY: "auto",
+        border: "1px solid #e5e7eb",
+        background: "white",
       }}
     >
-      {/* Search bar – redzams tikai, kad dropdown ir vaļā */}
-      <div
+      <option value="">— izvēlies pozīciju —</option>
+      <option value="Krāsots betons">Krāsots betons</option>
+      <option value="Krāsots ģipškartons">Krāsots ģipškartons</option>
+      <option value="Ģipškartons un krāsojamās tapetes vai tapetes">
+        Ģipškartons un krāsojamās tapetes vai tapetes
+      </option>
+    </select>
+  ) : (
+    <>
+      {/* ✅ TAVS VECĀS VERSIJAS searchable dropdown – atstāj tieši kā bija */}
+      <button
+        type="button"
+        onClick={() => {
+          const key = `${editingRoomId}-${idx}`;
+          setOpenRowKey((prev) => (prev === key ? null : key));
+          setPositionSearch("");
+        }}
         style={{
-          padding: 8,
-          borderBottom: "1px solid #e5e7eb",
-          position: "sticky",
-          top: 0,
+          width: "100%",
+          padding: "8px 12px",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
           background: "white",
+          textAlign: "left",
+          cursor: "pointer",
         }}
       >
-        <input
-          autoFocus
-          placeholder="Meklēt pozīciju..."
-          value={positionSearch}
-          onChange={(e) => setPositionSearch(e.target.value)}
+        {row.itemName
+          ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
+          : "— izvēlies pozīciju —"}
+      </button>
+
+      {openRowKey === `${editingRoomId}-${idx}` && (
+        <div
           style={{
-            width: "100%",
+            position: "absolute",
+            zIndex: 50,
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            background: "white",
             border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            padding: 6,
-            fontSize: 14,
+            borderRadius: 10,
+            boxShadow: "0 10px 30px rgba(15,23,42,0.18)",
+            maxHeight: 320,
+            overflowY: "auto",
           }}
-        />
-      </div>
-
-      {/* Filtrētās pozīcijas */}
-      {priceCatalog
-        .filter((it) => {
-          if (insurer === "Gjensidige") {
-            const nName = normTxt(it.name);
-            if (GJ_GROUP_BLACKLIST.has(nName)) return false;
-            if (gjChildOnlyNames.has(nName)) return false;
-          }
-
-          const categoryMatches =
-            !row.category ||
-            it.category === row.category ||
-            it.subcategory === row.category;
-
-          if (!categoryMatches) return false;
-
-          if (isChildItem(it) || it.is_section) return false;
-
-          // live filtrs pēc search teksta
-          const q = positionSearch.trim().toLowerCase();
-          if (!q) return true;
-          const txt = `${it.name} ${it.subcategory || ""}`.toLowerCase();
-          return txt.includes(q);
-        })
-        .map((it) => (
-          <button
-            key={it.uid}
-            type="button"
-            onClick={() => {
-              setRowItem(editingRoomId, idx, it.uid); // aizpildām rindu ar izvēlēto
-              setOpenRowKey(null);                    // aizveram dropdown
-              setPositionSearch("");                  // notīrām meklēšanu
-            }}
+        >
+          <div
             style={{
-              display: "block",
-              width: "100%",
-              padding: "8px 12px",
-              border: "none",
-              borderBottom: "1px solid #f3f4f6",
+              padding: 8,
+              borderBottom: "1px solid #e5e7eb",
+              position: "sticky",
+              top: 0,
               background: "white",
-              textAlign: "left",
-              fontSize: 14,
-              cursor: "pointer",
             }}
           >
-            {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
-            {it.name} · {it.unit || "—"}
-          </button>
-        ))}
-    </div>
+            <input
+              autoFocus
+              placeholder="Meklēt pozīciju."
+              value={positionSearch}
+              onChange={(e) => setPositionSearch(e.target.value)}
+              style={{
+                width: "100%",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: 6,
+                fontSize: 14,
+              }}
+            />
+          </div>
+
+          {priceCatalog
+            .filter((it) => {
+              if (insurer === "Gjensidige") {
+                const nName = normTxt(it.name);
+                if (GJ_GROUP_BLACKLIST.has(nName)) return false;
+                if (gjChildOnlyNames.has(nName)) return false;
+              }
+
+              const categoryMatches =
+                !row.category ||
+                it.category === row.category ||
+                it.subcategory === row.category;
+
+              if (!categoryMatches) return false;
+              if (isChildItem(it) || it.is_section) return false;
+
+              const q = positionSearch.trim().toLowerCase();
+              if (!q) return true;
+              const txt = `${it.name} ${it.subcategory || ""}`.toLowerCase();
+              return txt.includes(q);
+            })
+            .map((it) => (
+              <button
+                key={it.uid}
+                type="button"
+                onClick={() => {
+                  setRowItem(editingRoomId, idx, it.uid);
+                  setOpenRowKey(null);
+                  setPositionSearch("");
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "none",
+                  borderBottom: "1px solid #f3f4f6",
+                  background: "white",
+                  textAlign: "left",
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                {insurer !== "Swedbank" && it.subcategory ? `[${it.subcategory}] ` : ""}
+                {it.name} · {it.unit || "—"}
+              </button>
+            ))}
+        </div>
+      )}
+    </>
   )}
 </div>
-
 
                   {/* Mērv. */}
                   <div>
