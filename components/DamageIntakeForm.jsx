@@ -844,7 +844,7 @@ const saveTameToLocalStorage = React.useCallback(
 
   // Catalog
   const [priceCatalog, setPriceCatalog] = useState([]);  // parents + children (children hidden in UI)
-  const allUnits = useMemo(() => {
+  const unitsAll = useMemo(() => {
   const s = new Set(DEFAULT_UNITS);
   for (const r of priceCatalog) {
     const u = normalizeUnit(r?.unit || "");
@@ -2875,7 +2875,7 @@ window.scrollTo({ top: 0, behavior: "smooth" });
                       style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: 8, background: "white" }}
                     >
                       <option value="">—</option>
-                      {allUnits.map((u) => (<option key={u} value={u}>{u}</option>))}
+                      {unitsAll.map((u) => (<option key={u} value={u}>{u}</option>))}
                     </select>
                   </div>
 
