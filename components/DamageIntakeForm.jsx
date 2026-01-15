@@ -1572,22 +1572,25 @@ const categories = useMemo(() => {
     const list = [...(ra[roomId] || [])];
     const baseRow = list[idx] || { category: cat || "", quantity: "", unit: "" };
 
-    const newRows = found.map((it) => ({
-      ...baseRow,
-      category: it.category || cat || "",
-      itemUid: it.uid,
-      itemId: it.id,
-      itemName: it.name,
-      unit: it.unit || baseRow.unit || "",
-      unit_price: pickNum(it, UNIT_PRICE_KEYS),
-      labor: pickNum(it, LABOR_KEYS),
-      materials: pickNum(it, MATERIAL_KEYS),
-      mechanisms: pickNum(it, MECHANISM_KEYS),
+const newRows = found.map((it) => ({
+  ...baseRow,
+  category: it.category || cat || "",
+  itemUid: it.uid,
+  itemId: it.id,
+  itemName: it.name,
+  unit: it.unit || baseRow.unit || "",
+  unit_price: pickNum(it, UNIT_PRICE_KEYS),
+  labor: pickNum(it, LABOR_KEYS),
+  materials: pickNum(it, MATERIAL_KEYS),
+  mechanisms: pickNum(it, MECHANISM_KEYS),
 
-      // saglabājam izvēlēto “pozīciju līmeni”, lai UI to rāda
-      swedSurfacePos: position,
-      swedSurfaceVariant: variant || "",
-    }));
+  swedAuto: true,        // ✅ tells UI this row is generated
+  locked: true,          // ✅ optional: prevent deleting/changing if you want
+
+  swedSurfacePos: position,
+  swedSurfaceVariant: variant || "",
+}));
+
 
     list.splice(idx, 1, ...newRows);
     return { ...ra, [roomId]: list };
@@ -2668,6 +2671,11 @@ window.scrollTo({ top: 0, behavior: "smooth" });
             {(roomActions[editingRoomId] || [
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
+              const isSwedbankSurfaceSelector =
+              insurer === "Swedbank" &&
+              SWEDBANK_SURFACE_CATS.has((row.category || "").trim()) &&
+              !row.swedAuto &&
+              !row.itemUid;
               return (
                 <div
                   key={idx}
@@ -2685,11 +2693,13 @@ window.scrollTo({ top: 0, behavior: "smooth" });
                       {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
                     </select>
                   </div>
+
 {/* Pozīcija */}
+
 <div style={{ position: "relative" }}>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
 
-  {insurer === "Swedbank" && SWEDBANK_SURFACE_CATS.has((row.category || "").trim()) ? (
+  {isSwedbankSurfaceSelector ? (
     <>
       <select
         value={row.swedSurfacePos || ""}
