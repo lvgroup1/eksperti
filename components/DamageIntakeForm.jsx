@@ -1548,7 +1548,7 @@ const categories = useMemo(() => {
     });
   }
 
- function applySwedbankSurfacePosition(roomId, idx, category, position, variant) {
+function applySwedbankSurfacePosition(roomId, idx, category, position, variant) {
   const cat = (category || "").trim();
 
   let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
@@ -1568,31 +1568,31 @@ const categories = useMemo(() => {
   }
   if (!found.length) return;
 
+  // ✅ paņemam tikai pirmo atrasto (lai nekad neveidojas dublikāti)
+  const it = found[0];
+
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     const baseRow = list[idx] || { category: cat || "", quantity: "", unit: "" };
 
-const newRows = found.map((it) => ({
-  ...baseRow,
-  category: it.category || cat || "",
-  itemUid: it.uid,
-  itemId: it.id,
-  itemName: it.name,
-  unit: it.unit || baseRow.unit || "",
-  unit_price: pickNum(it, UNIT_PRICE_KEYS),
-  labor: pickNum(it, LABOR_KEYS),
-  materials: pickNum(it, MATERIAL_KEYS),
-  mechanisms: pickNum(it, MECHANISM_KEYS),
+    list[idx] = {
+      ...baseRow,
+      category: it.category || cat || "",
+      itemUid: it.uid,
+      itemId: it.id,
+      itemName: it.name,
+      unit: it.unit || baseRow.unit || "",
+      unit_price: pickNum(it, UNIT_PRICE_KEYS),
+      labor: pickNum(it, LABOR_KEYS),
+      materials: pickNum(it, MATERIAL_KEYS),
+      mechanisms: pickNum(it, MECHANISM_KEYS),
 
-  swedAuto: true,        // ✅ tells UI this row is generated
-  locked: true,          // ✅ optional: prevent deleting/changing if you want
+      swedSurfacePos: position,
+      swedSurfaceVariant: variant || "",
+      swedAuto: true,
+      locked: false,
+    };
 
-  swedSurfacePos: position,
-  swedSurfaceVariant: variant || "",
-}));
-
-
-    list.splice(idx, 1, ...newRows);
     return { ...ra, [roomId]: list };
   });
 }
