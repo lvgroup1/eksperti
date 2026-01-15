@@ -1551,54 +1551,40 @@ const categories = useMemo(() => {
 function applySwedbankSurfacePosition(roomId, idx, category, position, variant) {
   const cat = (category || "").trim();
 
-  let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
-
-  // variants tikai 3. pozīcijai
-  if (keys && typeof keys === "object" && !Array.isArray(keys)) {
-    const v = variant === "tapetes" ? "tapetes" : "krasojamas";
-    keys = keys[v];
-  }
-
-  if (!Array.isArray(keys) || !keys.length) return;
-
-  // atrodam pirmo reālo rindu no kataloga pēc nosaukuma (fuzzy)
-  let firstHit = null;
-  for (const k of keys) {
-    const hit = findRowByNameFuzzy(k, cat, priceCatalog);
-    if (hit) {
-      firstHit = hit;
-      break; // ✅ STOP — tikai viena pozīcija
-    }
-  }
-  if (!firstHit) return;
-
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
     const baseRow = list[idx] || { category: cat || "", quantity: "", unit: "" };
 
+    const uid = `SWED_SURFACE::${cat}::${position}::${variant || ""}`;
+
     list[idx] = {
       ...baseRow,
-      category: firstHit.category || cat || "",
-      itemUid: firstHit.uid,
-      itemId: firstHit.id,
-      itemName: firstHit.name,
-      unit: firstHit.unit || baseRow.unit || "",
-      unit_price: pickNum(firstHit, UNIT_PRICE_KEYS),
-      labor: pickNum(firstHit, LABOR_KEYS),
-      materials: pickNum(firstHit, MATERIAL_KEYS),
-      mechanisms: pickNum(firstHit, MECHANISM_KEYS),
 
-      // lai UI rāda izvēlēto “pozīciju līmeni”
+      // šī rinda paliek kā “virspozīcija”, nevis konkrēts darbs
+      category: cat,
+      itemUid: uid,
+      itemId: uid,
+      itemName: position,           // UI rādīs šo
+      unit: baseRow.unit || "m2",    // pēc noklusējuma
+
+      // virspozīcijai cenas nerādām (Excelā apakšdarbi dos summu)
+      unit_price: 0,
+      labor: 0,
+      materials: 0,
+      mechanisms: 0,
+
+      // Swedbank izvēles lauki UI
       swedSurfacePos: position,
       swedSurfaceVariant: variant || "",
 
-      // ja gribi atzīmēt kā auto, vari atstāt
-      swedAuto: true,
+      // vari atstāt false, lai vienmēr rāda to Swedbank selector UI
+      swedAuto: false,
     };
 
     return { ...ra, [roomId]: list };
   });
 }
+
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
@@ -1801,6 +1787,63 @@ let tameName = window.prompt(
         list.forEach((a) => {
           const qty = parseDec(a.quantity);
           if (!qty) return;
+// --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
+if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
+  const qty = parseDec(a.quantity);
+  if (!qty) return;
+
+  const parts = String(a.itemUid).split("::"); 
+  // ["SWED_SURFACE", cat, position, variant]
+  const cat = parts[1] || "";
+  const position = parts[2] || "";
+  const variant = parts[3] || "";
+
+  // parent row (virspozīcija)
+  selections.push({
+    isChild: false,
+    room: `${ri.type} ${ri.index}`,
+    name: position + (variant ? ` · ${variant}` : ""),
+    unit: normalizeUnit(a.unit || "m2"),
+    qty,
+    labor: 0,
+    materials: 0,
+    mechanisms: 0,
+    unitPrice: 0,
+  });
+
+  // now expand works under it
+  let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
+  if (keys && typeof keys === "object" && !Array.isArray(keys)) {
+    keys = variant === "tapetes" ? keys.tapetes : keys.krasojamas;
+  }
+
+  if (Array.isArray(keys)) {
+    for (const k of keys) {
+      const hit = findRowByNameFuzzy(k, cat, priceCatalog);
+      if (!hit) continue;
+
+      const cLabor = pickNum(hit, LABOR_KEYS);
+      const cMat   = pickNum(hit, MATERIAL_KEYS);
+      const cMech  = pickNum(hit, MECHANISM_KEYS);
+      const cSplit = cLabor + cMat + cMech;
+      const cUprice = cSplit ? cSplit : pickNum(hit, UNIT_PRICE_KEYS);
+
+      selections.push({
+        isChild: true,
+        room: `${ri.type} ${ri.index}`,
+        name: hit.name,
+        unit: normalizeUnit(hit.unit || a.unit || "m2"),
+        qty, // koef = 1
+        labor: cLabor,
+        materials: cMat,
+        mechanisms: cMech,
+        unitPrice: cUprice,
+      });
+    }
+  }
+
+  return; // svarīgi: neiet tālāk uz parasto parent loģiku
+}
 
           const parent =
             priceCatalog.find((i) => i.uid === a.itemUid) ||
@@ -2673,12 +2716,16 @@ window.scrollTo({ top: 0, behavior: "smooth" });
             {(roomActions[editingRoomId] || [
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
-             const cat = (row.category || "").trim();
+const cat = (row.category || "").trim();
+
 const isSwedbankSurfaceSelector =
-  K === "Swedbank" &&
-  (cat === "Griesti" || cat === "Sienas, ailes") &&
-  !row.swedAuto &&
-  !row.itemUid;
+  insurer === "Swedbank" &&
+  SWEDBANK_SURFACE_CATS.has(cat) &&
+  (
+    !row.itemUid ||
+    String(row.itemUid || "").startsWith("SWED_SURFACE::")
+  );
+
               return (
                 <div
                   key={idx}
@@ -2781,7 +2828,7 @@ const isSwedbankSurfaceSelector =
           cursor: "pointer",
         }}
       >
-{K === "Swedbank" && (cat === "Griesti" || cat === "Sienas, ailes") && row.swedSurfacePos
+{insurer === "Swedbank" && (cat === "Griesti" || cat === "Sienas, ailes") && row.swedSurfacePos
   ? row.swedSurfacePos + (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
   : row.itemName
     ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
