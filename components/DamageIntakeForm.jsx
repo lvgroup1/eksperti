@@ -41,23 +41,11 @@ const UNIT_PRICE_KEYS = [
   "vienc","vienības cena eur" // <- add if present
 ];
 
-const SWEDBANK_UI_POSITIONS = [
-  "Krāsots betons",
-  "Krāsots ģipškartons",
-  "Ģipškartons un krāsojamās tapetes vai tapetes",
-];
-
-const availablePositions = useMemo(() => {
-  if (insurer !== "Swedbank") return [];
-
-  return Object.keys(SWEDBANK_POSITIONS[selectedCategory] || {});
-  return SWEDBANK_UI_POSITIONS;
-}, [insurer]);
-
-
 
 // default units shown in the UI
 const DEFAULT_UNITS = ["m2","m3","m","gab","kpl","diena","obj","c/h"];
+
+
 const SWEDBANK_CATEGORIES = [
   "Griesti",
   "Sienas, ailes",
@@ -80,20 +68,61 @@ const SWEDBANK_SURFACE_POSITIONS = [
 
 // minimāls “auto” darbu komplekts katrai pozīcijai (ņemts no Swedbank cenrāža nosaukumiem)
 const SWEDBANK_SURFACE_WORKS = {
-  "Krāsots betons": [
-    "Attīrīšana no esošā seguma",
-    "gruntēšana, špahtelēšana un slīpēšana",
-    "krāsošana ar emulsijas krāsu",
-  ],
-  "Krāsots ģipškartons": [
-    "Karkasa apšūšana ar ģipškartonu",
-    "gruntēšana, špahtelēšana un slīpēšana",
-    "krāsošana ar emulsijas krāsu",
-  ],
-  "Ģipškartons un krāsojamās tapetes vai tapetes": [
-    "gruntēšana pirms tapešu līmēšanas",
-    "Tapešu līmēšana",
-  ],
+  Griesti: {
+    "Krāsots betons": [
+      "Krāsojums (ar špaktelējumu)",
+      "Griestu attīrīšana no esošā seguma",
+      "Griestu gruntēšana, špahtelēšana un slīpēšana",
+      "Griestu krāsošana ar emulsijas krāsu",
+    ],
+
+    "Krāsots ģipškartons": [
+      "Ģipškartona konstrukcija (parastais ģipškartons)",
+      "Griestu attīrīšana no esošā seguma",
+      "Ģipškartona un metāla karkasa demontāža",
+      "Piekārto reģipšu griestu metāla karkasa ierīkošana",
+      "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+      "Griestu gruntēšana, špahtelēšana un slīpēšana",
+      "Griestu krāsošana ar emulsijas krāsu",
+    ],
+
+    "Ģipškartons un krāsojamās tapetes vai tapetes": {
+      krasojamas: [
+        "Ģipškartona konstrukcija (parastais ģipškartons)",
+        "Griestu attīrīšana no esošā seguma",
+        "Ģipškartona un metāla karkasa demontāža",
+        "Piekārto reģipšu griestu metāla karkasa ierīkošana",
+        "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+        "Griestu gruntēšana, špahtelēšana un slīpēšana",
+
+        "Krāsojamās tapetes",
+        "Griestu gruntēšana pirms tapešu līmēšanas",
+        "Tapešu līmēšana",
+        "Griestu krāsošana ar emulsijas krāsu",
+      ],
+      tapetes: [
+        "Tapetes",
+        "Griestu attīrīšana no esošā seguma",
+        "Griestu gruntēšana",
+        "Tapešu līmēšana",
+      ],
+    },
+  },
+
+  // Sienām doc nedod detalizētu sarakstu, bet prasība ir par “pozīciju līmeni”.
+  // Te atstājam minimālu (lai nerādas “vecais saraksts”), un vēlāk vari papildināt ar Sienu analogiem.
+  "Sienas, ailes": {
+    "Krāsots betons": [
+      "Krāsojums (ar špaktelējumu)",
+    ],
+    "Krāsots ģipškartons": [
+      "Ģipškartona konstrukcija (parastais ģipškartons)",
+    ],
+    "Ģipškartons un krāsojamās tapetes vai tapetes": {
+      krasojamas: ["Krāsojamās tapetes", "Tapešu līmēšana"],
+      tapetes: ["Tapetes", "Tapešu līmēšana"],
+    },
+  },
 };
 
 
@@ -752,8 +781,8 @@ const StepShell = React.memo(function StepShell({ title, children }) {
    ====================================================================== */
 export default function DamageIntakeForm({ onBackToList }) {
   const [step, setStep] = useState(1);
-  const [selectedPosition, setSelectedPosition] = useState("");
-  const [selectedVariant, setSelectedVariant] = useState(""); // tapetes / krasojamas
+  //const [selectedPosition, setSelectedPosition] = useState("");
+  //const [selectedVariant, setSelectedVariant] = useState(""); // tapetes / krasojamas
 
   // GitHub Pages base path (/eksperti) for assets
   const assetBase = useMemo(() => {
@@ -815,6 +844,14 @@ const saveTameToLocalStorage = React.useCallback(
 
   // Catalog
   const [priceCatalog, setPriceCatalog] = useState([]);  // parents + children (children hidden in UI)
+  const allUnits = useMemo(() => {
+  const s = new Set(DEFAULT_UNITS);
+  for (const r of priceCatalog) {
+    const u = normalizeUnit(r?.unit || "");
+    if (u) s.add(u);
+  }
+  return Array.from(s);
+}, [priceCatalog]);
   const [catalogError, setCatalogError] = useState("");
 
   // Adjacency fallback: parent.uid -> array of compact children
@@ -905,10 +942,12 @@ useEffect(() => {
   (async () => {
     try {
       // Choose correct hints file depending on insurer
-      let url = `${assetBase}/prices/child_hints.json`; // default → Balta
-      if (insurer === "Gjensidige") {
-        url = `${assetBase}/prices/gjensidige_child_hints.json`;
-      }
+let url = `${assetBase}/prices/child_hints.json`; // default → Balta
+if (insurer === "Gjensidige") {
+  url = `${assetBase}/prices/gjensidige_child_hints.json`;
+} else if (insurer === "Swedbank") {
+  url = `${assetBase}/prices/swedbank_child_hints.json`;
+}
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) {
         // Hints are optional, so just return silently
@@ -1509,25 +1548,33 @@ const categories = useMemo(() => {
     });
   }
 
-  function applySwedbankSurfacePosition(roomId, idx, category, position) {
-  const keys = SWEDBANK_SURFACE_WORKS[position] || [];
-  if (!keys.length) return;
+ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) {
+  const cat = (category || "").trim();
 
-  // atrodam reālas rindas no kataloga pēc nosaukuma (fuzzy)
+  let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
+
+  // variants tikai 3. pozīcijai
+  if (keys && typeof keys === "object" && !Array.isArray(keys)) {
+    const v = variant === "tapetes" ? "tapetes" : "krasojamas";
+    keys = keys[v];
+  }
+
+  if (!Array.isArray(keys) || !keys.length) return;
+
   const found = [];
   for (const k of keys) {
-    const hit = findRowByNameFuzzy(k, category, priceCatalog);
+    const hit = findRowByNameFuzzy(k, cat, priceCatalog);
     if (hit) found.push(hit);
   }
   if (!found.length) return;
 
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
-    const baseRow = list[idx] || { category: category || "", quantity: "", unit: "" };
+    const baseRow = list[idx] || { category: cat || "", quantity: "", unit: "" };
 
     const newRows = found.map((it) => ({
       ...baseRow,
-      category: it.category || category || "",
+      category: it.category || cat || "",
       itemUid: it.uid,
       itemId: it.id,
       itemName: it.name,
@@ -1536,9 +1583,12 @@ const categories = useMemo(() => {
       labor: pickNum(it, LABOR_KEYS),
       materials: pickNum(it, MATERIAL_KEYS),
       mechanisms: pickNum(it, MECHANISM_KEYS),
+
+      // saglabājam izvēlēto “pozīciju līmeni”, lai UI to rāda
+      swedSurfacePos: position,
+      swedSurfaceVariant: variant || "",
     }));
 
-    // aizvietojam esošo rindu ar jaunajām rindām (ievieto tieši tajā pašā vietā)
     list.splice(idx, 1, ...newRows);
     return { ...ra, [roomId]: list };
   });
@@ -2639,31 +2689,65 @@ window.scrollTo({ top: 0, behavior: "smooth" });
 <div style={{ position: "relative" }}>
   <div style={{ fontSize: 13, marginBottom: 4 }}>Pozīcija</div>
 
-{insurer === "Swedbank" && (normCat(row.category) === "" || ["Griesti", "Sienas, ailes", "Sienas"].includes(normCat(row.category))) ? (
-    <select
-      value={row.swedSurfacePos || ""}
-      onChange={(e) => {
-        const pos = e.target.value;
-        setRowField(editingRoomId, idx, "swedSurfacePos", pos);
+  {insurer === "Swedbank" && SWEDBANK_SURFACE_CATS.has((row.category || "").trim()) ? (
+    <>
+      <select
+        value={row.swedSurfacePos || ""}
+        onChange={(e) => {
+          const pos = e.target.value;
+          setRowField(editingRoomId, idx, "swedSurfacePos", pos);
 
-        // 🔸 pagaidām tikai parāda 3 pozīcijas (UI fix)
-        // nākamajā solī te pieslēgsim auto-underpositions ielikšanu
-      }}
-      style={{
-        width: "100%",
-        padding: "8px 12px",
-        borderRadius: 10,
-        border: "1px solid #e5e7eb",
-        background: "white",
-      }}
-    >
-      <option value="">— izvēlies pozīciju —</option>
-      <option value="Krāsots betons">Krāsots betons</option>
-      <option value="Krāsots ģipškartons">Krāsots ģipškartons</option>
-      <option value="Ģipškartons un krāsojamās tapetes vai tapetes">
-        Ģipškartons un krāsojamās tapetes vai tapetes
-      </option>
-    </select>
+          // ja maina pozīciju, notīra variantu
+          setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
+          // auto-ielikšana notiks, kad būs izvēlēts variants (ja vajag) vai uzreiz (ja nevajag)
+          if (pos && pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
+            applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
+          }
+        }}
+        style={{
+          width: "100%",
+          padding: "8px 12px",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
+          background: "white",
+        }}
+      >
+        <option value="">— izvēlies pozīciju —</option>
+        <option value="Krāsots betons">Krāsots betons</option>
+        <option value="Krāsots ģipškartons">Krāsots ģipškartons</option>
+        <option value="Ģipškartons un krāsojamās tapetes vai tapetes">
+          Ģipškartons un krāsojamās tapetes vai tapetes
+        </option>
+      </select>
+
+      {/* Variant izvēle tikai 3. pozīcijai */}
+      {row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 13, marginBottom: 4 }}>Veids</div>
+          <select
+            value={row.swedSurfaceVariant || ""}
+            onChange={(e) => {
+              const v = e.target.value; // "krasojamas" | "tapetes"
+              setRowField(editingRoomId, idx, "swedSurfaceVariant", v);
+              if (v) {
+                applySwedbankSurfacePosition(editingRoomId, idx, row.category, row.swedSurfacePos, v);
+              }
+            }}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #e5e7eb",
+              background: "white",
+            }}
+          >
+            <option value="">— izvēlies —</option>
+            <option value="krasojamas">Krāsojamās tapetes</option>
+            <option value="tapetes">Tapetes</option>
+          </select>
+        </div>
+      )}
+    </>
   ) : (
     <>
       {/* ✅ TAVS VECĀS VERSIJAS searchable dropdown – atstāj tieši kā bija */}

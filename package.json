@@ -1,9 +1,11 @@
 {
   "scripts": {
+    "dev": "next dev",
     "build": "next build",
     "export": "next export",
     "predeploy": "npm run build && npm run export",
-    "deploy": "gh-pages -d out -t true"
+    "deploy": "gh-pages -d out -t true",
+    "start": "next start"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
@@ -16,3 +18,4 @@
     "shx": "^0.4.0"
   }
 }
+
