@@ -2673,11 +2673,12 @@ window.scrollTo({ top: 0, behavior: "smooth" });
             {(roomActions[editingRoomId] || [
               { category: "", itemUid: "", itemId: "", itemName: "", quantity: "", unit: "", unit_price: null },
             ]).map((row, idx) => {
-              const isSwedbankSurfaceSelector =
-              insurer === "Swedbank" &&
-              SWEDBANK_SURFACE_CATS.has((row.category || "").trim()) &&
-              !row.swedAuto &&
-              !row.itemUid;
+             const cat = (row.category || "").trim();
+const isSwedbankSurfaceSelector =
+  K === "Swedbank" &&
+  (cat === "Griesti" || cat === "Sienas, ailes") &&
+  !row.swedAuto &&
+  !row.itemUid;
               return (
                 <div
                   key={idx}
@@ -2780,9 +2781,12 @@ window.scrollTo({ top: 0, behavior: "smooth" });
           cursor: "pointer",
         }}
       >
-        {row.itemName
-          ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
-          : "— izvēlies pozīciju —"}
+{K === "Swedbank" && (cat === "Griesti" || cat === "Sienas, ailes") && row.swedSurfacePos
+  ? row.swedSurfacePos + (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
+  : row.itemName
+    ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
+    : "— izvēlies pozīciju —"}
+
       </button>
 
       {openRowKey === `${editingRoomId}-${idx}` && (
