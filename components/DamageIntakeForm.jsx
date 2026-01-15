@@ -1561,15 +1561,16 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
   if (!Array.isArray(keys) || !keys.length) return;
 
-  const found = [];
+  // atrodam pirmo reālo rindu no kataloga pēc nosaukuma (fuzzy)
+  let firstHit = null;
   for (const k of keys) {
     const hit = findRowByNameFuzzy(k, cat, priceCatalog);
-    if (hit) found.push(hit);
+    if (hit) {
+      firstHit = hit;
+      break; // ✅ STOP — tikai viena pozīcija
+    }
   }
-  if (!found.length) return;
-
-  // ✅ paņemam tikai pirmo atrasto (lai nekad neveidojas dublikāti)
-  const it = found[0];
+  if (!firstHit) return;
 
   setRoomActions((ra) => {
     const list = [...(ra[roomId] || [])];
@@ -1577,26 +1578,27 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
     list[idx] = {
       ...baseRow,
-      category: it.category || cat || "",
-      itemUid: it.uid,
-      itemId: it.id,
-      itemName: it.name,
-      unit: it.unit || baseRow.unit || "",
-      unit_price: pickNum(it, UNIT_PRICE_KEYS),
-      labor: pickNum(it, LABOR_KEYS),
-      materials: pickNum(it, MATERIAL_KEYS),
-      mechanisms: pickNum(it, MECHANISM_KEYS),
+      category: firstHit.category || cat || "",
+      itemUid: firstHit.uid,
+      itemId: firstHit.id,
+      itemName: firstHit.name,
+      unit: firstHit.unit || baseRow.unit || "",
+      unit_price: pickNum(firstHit, UNIT_PRICE_KEYS),
+      labor: pickNum(firstHit, LABOR_KEYS),
+      materials: pickNum(firstHit, MATERIAL_KEYS),
+      mechanisms: pickNum(firstHit, MECHANISM_KEYS),
 
+      // lai UI rāda izvēlēto “pozīciju līmeni”
       swedSurfacePos: position,
       swedSurfaceVariant: variant || "",
+
+      // ja gribi atzīmēt kā auto, vari atstāt
       swedAuto: true,
-      locked: false,
     };
 
     return { ...ra, [roomId]: list };
   });
 }
-
 
   function setRoomNote(roomId, note) {
     setRoomInstances((arr) => arr.map((ri) => (ri.id === roomId ? { ...ri, note } : ri)));
