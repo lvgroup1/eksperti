@@ -953,14 +953,29 @@ if (insurer === "Gjensidige") {
         // Hints are optional, so just return silently
         return;
       }
-      const json = await res.json();
-      if (cancelled || !json || typeof json !== "object") return;
-      const m = {};
-      const nk = (s) => normTxt(s); // same normalizer used in getChildrenFor()
-      for (const [k, v] of Object.entries(json)) {
-        m[nk(k)] = Array.isArray(v) ? v : [];
-      }
-      setChildHints(m);
+const json = await res.json();
+if (cancelled || !json) return;
+
+const m = {};
+const nk = (s) => normTxt(s);
+
+// ✅ Swedbank: json ir ARRAY ar { parent_uid, child_names }
+if (insurer === "Swedbank" && Array.isArray(json)) {
+  for (const row of json) {
+    const p = row?.parent_uid;
+    const kids = row?.child_names;
+    if (!p || !Array.isArray(kids)) continue;
+    m[nk(p)] = kids; // key = SW-0016
+  }
+} else if (typeof json === "object") {
+  // Balta/GJ: json ir objekts { parentName: [...] }
+  for (const [k, v] of Object.entries(json)) {
+    m[nk(k)] = Array.isArray(v) ? v : [];
+  }
+}
+
+setChildHints(m);
+
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
@@ -1121,9 +1136,12 @@ useEffect(() => {
         const category = (it.category || "").trim();
         const subcat =
           (it.subcategory || it.subcat || it.group || it.grupa || it["apakškategorija"] || "").trim();
-        const idStr = String(it.id ?? i);
-        const name = (it.name || "").trim();
-        const uid = [category, subcat, idStr, name].join("::");
+ const idStr = String(it.id ?? i);
+const name = (it.name || "").trim();
+
+// ✅ saglabā oriģinālo UID no swedbank.json (piem. "SW-0016")
+const uid = String(it.uid || [category, subcat, idStr, name].join("::"));
+
 
         const parent_uid =
           it.parent_uid || it.parentUid || it.parent_id || it.parentId ||
@@ -1387,7 +1405,10 @@ const gjChildOnlyNames = useMemo(() => {
     }
 
     // D) name-based hints (merge by *catalog* row to keep split/unit_price)
-    const hints = childHints[normKey(parent.name)];
+    const hints =
+  childHints[normKey(parent.name)] ||
+  childHints[normKey(parent.uid)];
+
     if (Array.isArray(hints)) {
       for (const hint of hints) {
         const hintName = typeof hint === "string" ? hint : hint?.name;
