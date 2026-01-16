@@ -1517,13 +1517,37 @@ const categories = useMemo(() => {
       return { ...ra, [roomId]: list };
     });
   }
-  function setRowCategory(roomId, idx, category) {
-    setRoomActions((ra) => {
-      const list = [...(ra[roomId] || [])];
-      list[idx] = { ...list[idx], category, itemUid: "", itemId: "", itemName: "", unit: "", unit_price: null, labor: 0, materials: 0, mechanisms: 0 };
-      return { ...ra, [roomId]: list };
-    });
-  }
+function setRowCategory(roomId, idx, category) {
+  const cat = (category || "").trim();
+
+  setRoomActions((ra) => {
+    const list = [...(ra[roomId] || [])];
+
+    const base = {
+      ...list[idx],
+      category: cat,
+      itemUid: "",
+      itemId: "",
+      itemName: "",
+      unit: "",
+      unit_price: null,
+      labor: 0,
+      materials: 0,
+      mechanisms: 0,
+    };
+
+    // ✅ ja Swedbank un surface kategorija – notīram surface izvēles
+    if (insurer === "Swedbank" && SWEDBANK_SURFACE_CATS.has(cat)) {
+      base.swedSurfacePos = "";
+      base.swedSurfaceVariant = "";
+      base.swedAuto = false;
+    }
+
+    list[idx] = base;
+    return { ...ra, [roomId]: list };
+  });
+}
+
   function setRowItem(roomId, idx, uid) {
     const item = priceCatalog.find((i) => i.uid === uid);
     setRoomActions((ra) => {
@@ -1664,6 +1688,97 @@ case 8:
   /* ==========================
      Excel export (BALTA template; expands children)
      ========================== */
+     function expandChildrenRecursive({
+  parentRow,
+  qty,
+  categoryHint,
+  priceCatalog,
+  getChildrenFor,
+  findRowByNameFuzzy,
+  normalizeUnit,
+  pickNum,
+  LABOR_KEYS,
+  MATERIAL_KEYS,
+  MECHANISM_KEYS,
+  UNIT_PRICE_KEYS,
+  selections,
+  roomLabel,
+  visited = new Set(),
+  depth = 0,
+  maxDepth = 6,
+}) {
+  if (!parentRow || depth > maxDepth) return;
+
+  const visitKey = `${(parentRow.uid || parentRow.id || parentRow.name)}::${depth}`;
+  if (visited.has(visitKey)) return;
+  visited.add(visitKey);
+
+  const kids = getChildrenFor(parentRow) || [];
+  for (const kid of kids) {
+    const kidName = (kid.name || "").trim();
+    if (!kidName) continue;
+
+    const kidQty = Number(kid.coeff || 1) * qty;
+
+    // mēģinām atrast pilno ierakstu cenrādī, lai varētu izvilkt arī tā bērnus
+    const resolved =
+      findRowByNameFuzzy(kidName, categoryHint, priceCatalog) ||
+      findRowByNameFuzzy(kidName, "", priceCatalog);
+
+    // cena / dalījums
+    let labor = Number(kid.labor || 0);
+    let materials = Number(kid.materials || 0);
+    let mechanisms = Number(kid.mechanisms || 0);
+    let unit = normalizeUnit(kid.unit || parentRow.unit || "");
+
+    // ja resolved eksistē, paņemam no tā precīzākas vērtības (ja vajag)
+    if (resolved) {
+      labor = pickNum(resolved, LABOR_KEYS);
+      materials = pickNum(resolved, MATERIAL_KEYS);
+      mechanisms = pickNum(resolved, MECHANISM_KEYS);
+      unit = normalizeUnit(resolved.unit || unit);
+    }
+
+    const split = labor + materials + mechanisms;
+    const unitPrice = split ? split : (resolved ? pickNum(resolved, UNIT_PRICE_KEYS) : 0);
+
+    selections.push({
+      isChild: true,
+      room: roomLabel,
+      name: `    ${kidName}`, // indent vizuāli
+      unit,
+      qty: kidQty,
+      labor,
+      materials,
+      mechanisms,
+      unitPrice,
+    });
+
+    // *** šeit galvenais: izvēršam arī bērnu bērnus ***
+    if (resolved) {
+      expandChildrenRecursive({
+        parentRow: resolved,
+        qty: kidQty,
+        categoryHint: resolved.category || categoryHint,
+        priceCatalog,
+        getChildrenFor,
+        findRowByNameFuzzy,
+        normalizeUnit,
+        pickNum,
+        LABOR_KEYS,
+        MATERIAL_KEYS,
+        MECHANISM_KEYS,
+        UNIT_PRICE_KEYS,
+        selections,
+        roomLabel,
+        visited,
+        depth: depth + 1,
+        maxDepth,
+      });
+    }
+  }
+}
+
   async function exportToExcel() {
     try {
       const pad2 = (n) => String(n).padStart(2, "0");
@@ -1788,21 +1903,21 @@ let tameName = window.prompt(
           const qty = parseDec(a.quantity);
           if (!qty) return;
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
+// --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
 if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
   const qty = parseDec(a.quantity);
   if (!qty) return;
 
-  const parts = String(a.itemUid).split("::"); 
-  // ["SWED_SURFACE", cat, position, variant]
+  const parts = String(a.itemUid).split("::");
   const cat = parts[1] || "";
   const position = parts[2] || "";
   const variant = parts[3] || "";
 
-  // parent row (virspozīcija)
+  // ✅ parādi arī kategoriju pie virspozīcijas (lai Excelā ir skaidrs)
   selections.push({
     isChild: false,
     room: `${ri.type} ${ri.index}`,
-    name: position + (variant ? ` · ${variant}` : ""),
+    name: `[${cat}] ${position}` + (variant ? ` · ${variant}` : ""),
     unit: normalizeUnit(a.unit || "m2"),
     qty,
     labor: 0,
@@ -1811,7 +1926,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
     unitPrice: 0,
   });
 
-  // now expand works under it
+  // izvēlamies darbu sarakstu
   let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
   if (keys && typeof keys === "object" && !Array.isArray(keys)) {
     keys = variant === "tapetes" ? keys.tapetes : keys.krasojamas;
@@ -1822,6 +1937,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
       const hit = findRowByNameFuzzy(k, cat, priceCatalog);
       if (!hit) continue;
 
+      // 1) ieliekam pašu darbu (child)
       const cLabor = pickNum(hit, LABOR_KEYS);
       const cMat   = pickNum(hit, MATERIAL_KEYS);
       const cMech  = pickNum(hit, MECHANISM_KEYS);
@@ -1833,17 +1949,36 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
         room: `${ri.type} ${ri.index}`,
         name: hit.name,
         unit: normalizeUnit(hit.unit || a.unit || "m2"),
-        qty, // koef = 1
+        qty,
         labor: cLabor,
         materials: cMat,
         mechanisms: cMech,
         unitPrice: cUprice,
       });
+
+      // 2) ✅ un tagad rekursīvi ieliekam hit bērnus (apakšpozīcijas, bērnu bērnus, utt.)
+      expandChildrenRecursive({
+        parentRow: hit,
+        qty: qty,
+        categoryHint: cat,
+        priceCatalog,
+        getChildrenFor,
+        findRowByNameFuzzy,
+        normalizeUnit,
+        pickNum,
+        LABOR_KEYS,
+        MATERIAL_KEYS,
+        MECHANISM_KEYS,
+        UNIT_PRICE_KEYS,
+        selections,
+        roomLabel: `${ri.type} ${ri.index}`,
+      });
     }
   }
 
-  return; // svarīgi: neiet tālāk uz parasto parent loģiku
+  return;
 }
+
 
           const parent =
             priceCatalog.find((i) => i.uid === a.itemUid) ||
@@ -2721,10 +2856,8 @@ const cat = (row.category || "").trim();
 const isSwedbankSurfaceSelector =
   insurer === "Swedbank" &&
   SWEDBANK_SURFACE_CATS.has(cat) &&
-  (
-    !row.itemUid ||
-    String(row.itemUid || "").startsWith("SWED_SURFACE::")
-  );
+  !row.swedAuto;
+
 
               return (
                 <div
