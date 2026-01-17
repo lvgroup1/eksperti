@@ -965,7 +965,7 @@ if (insurer === "Swedbank" && Array.isArray(json)) {
     const p = row?.parent_uid;
     const kids = row?.child_names;
     if (!p || !Array.isArray(kids)) continue;
-    m[nk(p)] = kids; // key = SW-0016
+    m[nk(p)] = kids; // piem. "SW-0016" -> ["špahtele ...","grunts"]
   }
 } else if (typeof json === "object") {
   // Balta/GJ: json ir objekts { parentName: [...] }
@@ -975,6 +975,7 @@ if (insurer === "Swedbank" && Array.isArray(json)) {
 }
 
 setChildHints(m);
+
 
       } catch { /* ignore */ }
     })();
@@ -1406,8 +1407,9 @@ const gjChildOnlyNames = useMemo(() => {
 
     // D) name-based hints (merge by *catalog* row to keep split/unit_price)
     const hints =
-  childHints[normKey(parent.name)] ||
-  childHints[normKey(parent.uid)];
+  childHints[normTxt(parent.name)] ||
+  childHints[normTxt(parent.uid)];
+
 
     if (Array.isArray(hints)) {
       for (const hint of hints) {
@@ -1709,96 +1711,67 @@ case 8:
   /* ==========================
      Excel export (BALTA template; expands children)
      ========================== */
-     function expandChildrenRecursive({
+function expandChildrenRecursive({
   parentRow,
   qty,
   categoryHint,
   priceCatalog,
   getChildrenFor,
-  findRowByNameFuzzy,
-  normalizeUnit,
-  pickNum,
-  LABOR_KEYS,
-  MATERIAL_KEYS,
-  MECHANISM_KEYS,
-  UNIT_PRICE_KEYS,
   selections,
   roomLabel,
-  visited = new Set(),
   depth = 0,
-  maxDepth = 6,
+  visited = new Set(),
 }) {
-  if (!parentRow || depth > maxDepth) return;
+  if (!parentRow || depth > 10) return; // drošībai pret cikliem
 
-  const visitKey = `${(parentRow.uid || parentRow.id || parentRow.name)}::${depth}`;
-  if (visited.has(visitKey)) return;
-  visited.add(visitKey);
+  const children = getChildrenFor(parentRow) || [];
+  for (const ch of children) {
+    const chName = (ch.name || "").trim();
+    if (!chName) continue;
 
-  const kids = getChildrenFor(parentRow) || [];
-  for (const kid of kids) {
-    const kidName = (kid.name || "").trim();
-    if (!kidName) continue;
+    // ciklu / dublikātu drošinātājs
+    const key = `${(parentRow.uid || parentRow.name)}->${chName}::${ch.unit || ""}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
 
-    const kidQty = Number(kid.coeff || 1) * qty;
-
-    // mēģinām atrast pilno ierakstu cenrādī, lai varētu izvilkt arī tā bērnus
-    const resolved =
-      findRowByNameFuzzy(kidName, categoryHint, priceCatalog) ||
-      findRowByNameFuzzy(kidName, "", priceCatalog);
-
-    // cena / dalījums
-    let labor = Number(kid.labor || 0);
-    let materials = Number(kid.materials || 0);
-    let mechanisms = Number(kid.mechanisms || 0);
-    let unit = normalizeUnit(kid.unit || parentRow.unit || "");
-
-    // ja resolved eksistē, paņemam no tā precīzākas vērtības (ja vajag)
-    if (resolved) {
-      labor = pickNum(resolved, LABOR_KEYS);
-      materials = pickNum(resolved, MATERIAL_KEYS);
-      mechanisms = pickNum(resolved, MECHANISM_KEYS);
-      unit = normalizeUnit(resolved.unit || unit);
-    }
-
-    const split = labor + materials + mechanisms;
-    const unitPrice = split ? split : (resolved ? pickNum(resolved, UNIT_PRICE_KEYS) : 0);
+    const childQty = (Number(ch.coeff || 1) || 1) * (Number(qty) || 0);
 
     selections.push({
       isChild: true,
       room: roomLabel,
-      name: `    ${kidName}`, // indent vizuāli
-      unit,
-      qty: kidQty,
-      labor,
-      materials,
-      mechanisms,
-      unitPrice,
+      name: chName,
+      unit: ch.unit || parentRow.unit || "",
+      qty: childQty,
+      labor: Number(ch.labor || 0),
+      materials: Number(ch.materials || 0),
+      mechanisms: Number(ch.mechanisms || 0),
+      unitPrice: Number(ch.unit_price || ch.unitPrice || 0),
+      category: categoryHint || parentRow.category || "",
+      parentName: parentRow.name || "",
     });
 
-    // *** šeit galvenais: izvēršam arī bērnu bērnus ***
-    if (resolved) {
+    // mēģinām atrast “pilno” child rindu katalogā, lai tai būtu savi bērni
+    const fullChild =
+      priceCatalog.find(r => (r.uid && ch.uid && r.uid === ch.uid)) ||
+      priceCatalog.find(r => (r.name || "").trim() === chName && (r.category || "").trim() === (categoryHint || parentRow.category || "").trim()) ||
+      priceCatalog.find(r => (r.name || "").trim() === chName);
+
+    if (fullChild) {
       expandChildrenRecursive({
-        parentRow: resolved,
-        qty: kidQty,
-        categoryHint: resolved.category || categoryHint,
+        parentRow: fullChild,
+        qty: childQty,
+        categoryHint: fullChild.category || categoryHint || "",
         priceCatalog,
         getChildrenFor,
-        findRowByNameFuzzy,
-        normalizeUnit,
-        pickNum,
-        LABOR_KEYS,
-        MATERIAL_KEYS,
-        MECHANISM_KEYS,
-        UNIT_PRICE_KEYS,
         selections,
         roomLabel,
-        visited,
         depth: depth + 1,
-        maxDepth,
+        visited,
       });
     }
   }
 }
+
 
   async function exportToExcel() {
     try {
@@ -1979,21 +1952,22 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
 
       // 2) ✅ un tagad rekursīvi ieliekam hit bērnus (apakšpozīcijas, bērnu bērnus, utt.)
       expandChildrenRecursive({
-        parentRow: hit,
-        qty: qty,
-        categoryHint: cat,
-        priceCatalog,
-        getChildrenFor,
-        findRowByNameFuzzy,
-        normalizeUnit,
-        pickNum,
-        LABOR_KEYS,
-        MATERIAL_KEYS,
-        MECHANISM_KEYS,
-        UNIT_PRICE_KEYS,
-        selections,
-        roomLabel: `${ri.type} ${ri.index}`,
-      });
+  parentRow: hit,
+  qty: qty,
+  categoryHint: cat,
+  priceCatalog,
+  getChildrenFor,
+  findRowByNameFuzzy,
+  normalizeUnit,
+  pickNum,
+  LABOR_KEYS,
+  MATERIAL_KEYS,
+  MECHANISM_KEYS,
+  UNIT_PRICE_KEYS,
+  selections,
+  roomLabel: `${ri.type} ${ri.index}`,
+});
+
     }
   }
 
@@ -2027,27 +2001,17 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
           });
 
           // auto-append children (indented, no numbering)
-          const kids = getChildrenFor(parent);
-          for (const ch of kids) {
-            const cQty    = parseDec(ch.coeff ?? 1) * qty;
-            const cLabor  = parseDec(ch.labor ?? 0);
-            const cMat    = parseDec(ch.materials ?? 0);
-            const cMech   = parseDec(ch.mechanisms ?? 0);
-            const cSplit  = cLabor + cMat + cMech;
-            const cUprice = cSplit ? cSplit : parseDec(ch.unit_price ?? ch.unit_price_raw ?? 0);
+// ✅ rekursīvi pievieno VISAS apakšpozīcijas (līdz galam)
+expandChildrenRecursive({
+  parentRow: parent,
+  qty,
+  categoryHint: parent.category || a.category || "",
+  priceCatalog,
+  getChildrenFor,
+  selections,
+  roomLabel: `${ri.type} ${ri.index}`,
+});
 
-            selections.push({
-              isChild: true,
-              room: `${ri.type} ${ri.index}`,
-              name: ch.name || "",
-              unit: normalizeUnit(ch.unit || unit),
-              qty: cQty,
-              labor: cLabor,
-              materials: cMat,
-              mechanisms: cMech,
-              unitPrice: cUprice,
-            });
-          }
         });
       });
 
