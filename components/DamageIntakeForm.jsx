@@ -1406,9 +1406,11 @@ const gjChildOnlyNames = useMemo(() => {
     }
 
     // D) name-based hints (merge by *catalog* row to keep split/unit_price)
-    const hints =
+   const hints =
   childHints[normTxt(parent.name)] ||
+  childHints[normTxt(parent.category)] ||
   childHints[normTxt(parent.uid)];
+
 
 
     if (Array.isArray(hints)) {
