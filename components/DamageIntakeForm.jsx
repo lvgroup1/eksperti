@@ -1736,10 +1736,18 @@ function expandChildrenRecursive({
 
     const childQty = (Number(ch.coeff || 1) || 1) * (Number(qty) || 0);
 
+
+const formattedName =
+  depth <= 0
+    ? chName
+    : chName.startsWith("-")
+      ? ` ${chName}`
+      : ` - ${chName}`; 
+      
     selections.push({
       isChild: true,
       room: roomLabel,
-      name: chName,
+      name: formattedName,
       unit: ch.unit || parentRow.unit || "",
       qty: childQty,
       labor: Number(ch.labor || 0),
@@ -1911,7 +1919,8 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
   selections.push({
     isChild: false,
     room: `${ri.type} ${ri.index}`,
-    name: `[${cat}] ${position}` + (variant ? ` · ${variant}` : ""),
+    name: `${position}` + (variant ? ` · ${variant}` : ""),
+    category: cat,
     unit: normalizeUnit(a.unit || "m2"),
     qty,
     labor: 0,
@@ -1966,6 +1975,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
   UNIT_PRICE_KEYS,
   selections,
   roomLabel: `${ri.type} ${ri.index}`,
+  depth: 1,
 });
 
     }
@@ -1992,6 +2002,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
             isChild: false,
             room: `${ri.type} ${ri.index}`,
             name: a.itemName || parent.name || "",
+            category: parent.category || a.category || "",
             unit,
             qty,
             labor: pLabor,
@@ -2077,11 +2088,35 @@ expandChildrenRecursive({
         ws.getRow(r).height = 18;
         r++;
 
-        for (const s of rows) {
+        let lastCat = null;
+for (const s of rows) {
+  // ✅ insert category header before each new category (only before parent rows)
+  if (!s.isChild) {
+    const cat = (s.category || "").trim();
+    if (cat && cat !== lastCat) {
+      ws.mergeCells(r, 2, r, 12);
+
+      const catCell = ws.getCell(r, 2);
+      catCell.value = cat;
+
+      // style like a category header (bold, left)
+      catCell.font = { ...FONT, bold: true };
+      catCell.alignment = { wrapText: true, vertical: "middle" };
+      catCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } };
+      catCell.border = borderAll;
+
+      // keep row height tidy
+      ws.getRow(r).height = 16;
+
+      r++;
+      lastCat = cat;
+    }
+  }
+
           const row = ws.getRow(r);
 
           row.getCell(1).value = s.isChild ? "" : nr++;
-          row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+          row.getCell(2).value = s.isChild ? `${s.name}` : s.name;
           row.getCell(3).value = s.unit;
           row.getCell(4).value = s.qty;
 
@@ -2113,14 +2148,14 @@ expandChildrenRecursive({
           row.getCell(4).numFmt = QTY;
           for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
 
-          const isZebra = ((r - START) % 2) === 1;
+          const isZebra = ((r - START) % 2) === 1 && !s.isChild;
           for (let c = 1; c <= COLS; c++) {
             const cell = row.getCell(c);
             if (ZEBRA && isZebra) {
               cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
             }
             cell.border = borderAll;
-            cell.font = { ...FONT, italic: !!s.isChild };
+            cell.font = { ...FONT, italic: false };
             cell.alignment = c === 2
               ? { wrapText: true, vertical: "middle" }
               : { vertical: "middle", horizontal: "right" };
