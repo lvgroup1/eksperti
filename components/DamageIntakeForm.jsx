@@ -2001,15 +2001,16 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
           selections.push({
             isChild: false,
             room: `${ri.type} ${ri.index}`,
-            name: a.itemName || parent.name || "",
-            category: parent.category || a.category || "",
-            unit,
-            qty,
-            labor: pLabor,
-            materials: pMat,
-            mechanisms: pMech,
-            unitPrice: pUnitPrice,
-          });
+            category: parent.category || a.category || "", // ✅ ŠIS IR KRITISKS
+name: a.itemName || parent.name || "",
+  unit,
+  qty,
+  labor: pLabor,
+  materials: pMat,
+  mechanisms: pMech,
+  unitPrice: pUnitPrice,
+});
+
 
           // auto-append children (indented, no numbering)
 // ✅ rekursīvi pievieno VISAS apakšpozīcijas (līdz galam)
