@@ -2064,27 +2064,28 @@ expandChildrenRecursive({
         return;
       }
 
-      // Headers
-      const START = 15;
-      const HEAD1 = START - 2;
-      const HEAD2 = START - 1;
-      const COLS  = 12;
+// Headers (NO "Nr." column)
+const START = 15;
+const HEAD1 = START - 2;
+const HEAD2 = START - 1;
+const COLS  = 11;
 
-      ws.getCell(HEAD1, 1).value = "Nr.";
-      ws.getCell(HEAD1, 2).value = "Darbu nosaukums";
-      ws.getCell(HEAD1, 3).value = "Mērv.";
-      ws.getCell(HEAD1, 4).value = "Daudz.";
-      ws.mergeCells(HEAD1, 5, HEAD1, 8);  ws.getCell(HEAD1, 5).value = "Vienības cena, EUR";
-      ws.mergeCells(HEAD1, 9, HEAD1, 12); ws.getCell(HEAD1, 9).value = "Summa, EUR";
+// A..K
+ws.getCell(HEAD1, 1).value = "Darbu nosaukums";
+ws.getCell(HEAD1, 2).value = "Mērv.";
+ws.getCell(HEAD1, 3).value = "Daudz.";
+ws.mergeCells(HEAD1, 4, HEAD1, 7);   ws.getCell(HEAD1, 4).value = "Vienības cena, EUR";
+ws.mergeCells(HEAD1, 8, HEAD1, 11);  ws.getCell(HEAD1, 8).value = "Summa, EUR";
 
-      ws.getCell(HEAD2, 5).value = "Darbs";
-      ws.getCell(HEAD2, 6).value = "Materiāli";
-      ws.getCell(HEAD2, 7).value = "Mehānismi";
-      ws.getCell(HEAD2, 8).value = "Cena";
-      ws.getCell(HEAD2, 9).value = "Darbs";
-      ws.getCell(HEAD2,10).value = "Materiāli";
-      ws.getCell(HEAD2,11).value = "Mehānismi";
-      ws.getCell(HEAD2,12).value = "Kopā";
+ws.getCell(HEAD2, 4).value = "Darbs";
+ws.getCell(HEAD2, 5).value = "Materiāli";
+ws.getCell(HEAD2, 6).value = "Mehānismi";
+ws.getCell(HEAD2, 7).value = "Cena";
+ws.getCell(HEAD2, 8).value = "Darbs";
+ws.getCell(HEAD2, 9).value = "Materiāli";
+ws.getCell(HEAD2,10).value = "Mehānismi";
+ws.getCell(HEAD2,11).value = "Kopā";
+
 
       for (const rr of [HEAD1, HEAD2]) {
         const row = ws.getRow(rr);
@@ -2098,202 +2099,207 @@ expandChildrenRecursive({
         row.height = 22;
       }
 
-      // Data rows
-      let r = START, nr = 1;
-      let first = null, last = null;
+// Data rows (NO numbering column)
+let r = START;
+let first = null, last = null;
 
-      // group selections by room
-      const groups = new Map();
-      selections.forEach((s) => {
-        if (!groups.has(s.room)) groups.set(s.room, []);
-        groups.get(s.room).push(s);
-      });
+// group selections by room
+const groups = new Map();
+selections.forEach((s) => {
+  if (!groups.has(s.room)) groups.set(s.room, []);
+  groups.get(s.room).push(s);
+});
 
-      for (const [roomName, rows] of groups.entries()) {
-        // section header
-        ws.mergeCells(r, 2, r, 12);
-        const sec = ws.getCell(r, 2);
-        sec.value = roomName;
-        sec.fill = sectionFill;
-        sec.font = { ...FONT, bold: true };
-        sec.alignment = { wrapText: true, vertical: "middle" };
-        sec.border = { bottom: thin };
-        ws.getRow(r).height = 18;
-        r++;
+for (const [roomName, rows] of groups.entries()) {
+  // section header (room)
+  ws.mergeCells(r, 1, r, 11);
+  const sec = ws.getCell(r, 1);
+  sec.value = roomName;
+  sec.fill = sectionFill;
+  sec.font = { ...FONT, bold: true };
+  sec.alignment = { wrapText: true, vertical: "middle" };
+  sec.border = { bottom: thin };
+  ws.getRow(r).height = 18;
+  r++;
 
-        let lastCat = null;
-for (const s of rows) {
-  // ✅ insert category header before each new category (only before parent rows)
-  if (!s.isChild) {
-    const cat = (s.category || "").trim();
-    if (cat && cat !== lastCat) {
-      ws.mergeCells(r, 2, r, 12);
+  for (const s of rows) {
+    const row = ws.getRow(r);
 
-      const catCell = ws.getCell(r, 2);
-      catCell.value = cat;
+    // A..K
+    row.getCell(1).value = s.isChild ? `    ${s.name}` : s.name; // Darbu nosaukums
+    row.getCell(2).value = s.unit;                                // Mērv.
+    row.getCell(3).value = s.qty;                                 // Daudz.
 
-      // style like a category header (bold, left)
-      catCell.font = { ...FONT, bold: true };
-      catCell.alignment = { wrapText: true, vertical: "middle" };
-      catCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } };
-      catCell.border = borderAll;
+    const e = Number(s.labor || 0);
+    const f = Number(s.materials || 0);
+    const g = Number(s.mechanisms || 0);
+    const hasSplit = (e + f + g) > 0;
 
-      // keep row height tidy
-      ws.getRow(r).height = 16;
-
-      r++;
-      lastCat = cat;
+    if (hasSplit) {
+      ws.getCell(r, 4).value = e; // D Darbs
+      ws.getCell(r, 5).value = f; // E Materiāli
+      ws.getCell(r, 6).value = g; // F Mehānismi
+    } else {
+      const fallback = Number(s.unitPrice || 0);
+      ws.getCell(r, 4).value = 0;
+      ws.getCell(r, 5).value = fallback;
+      ws.getCell(r, 6).value = 0;
     }
+
+    // G = D+E+F ; H..K = * qty
+    ws.getCell(r, 7).value  = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
+    ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
+    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
+    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
+    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+
+    row.getCell(3).numFmt = QTY;
+    for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
+
+    const isZebra = ((r - START) % 2) === 1;
+    for (let c = 1; c <= COLS; c++) {
+      const cell = row.getCell(c);
+      if (ZEBRA && isZebra) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
+      }
+      cell.border = borderAll;
+      cell.font = { ...FONT, italic: false };
+      cell.alignment = c === 1
+        ? { wrapText: true, vertical: "middle" }
+        : { vertical: "middle", horizontal: "right" };
+    }
+
+    if (first === null) first = r;
+    last = r;
+    r++;
   }
+}
 
-          const row = ws.getRow(r);
 
-          row.getCell(1).value = s.isChild ? "" : nr++;
-          row.getCell(2).value = s.isChild ? `${s.name}` : s.name;
-          row.getCell(3).value = s.unit;
-          row.getCell(4).value = s.qty;
+const boldCell = (addr) => {
+  ws.getCell(addr).font = { ...FONT, bold: true };
+};
 
-          // split (E/F/G) with robust fallback
-          const e = Number(s.labor || 0);
-          const f = Number(s.materials || 0);
-          const g = Number(s.mechanisms || 0);
-          const hasSplit = (e + f + g) > 0;
+// Totals block (A..K, NO Nr column)
+const rowKopa = r + 1;
+ws.getCell(`A${rowKopa}`).value = "Kopā";
 
-          if (hasSplit) {
-            ws.getCell(r, 5).value = e; // E Darbs
-            ws.getCell(r, 6).value = f; // F Materiāli
-            ws.getCell(r, 7).value = g; // G Mehānismi
-          } else {
-            // no split -> treat unitPrice as materials (BALTA convention we’re using)
-            const fallback = Number(s.unitPrice || 0);
-            ws.getCell(r, 5).value = 0;
-            ws.getCell(r, 6).value = fallback;
-            ws.getCell(r, 7).value = 0;
-          }
+// H..K are totals (Darbs/Materiāli/Mehānismi/Kopā)
+ws.getCell(`H${rowKopa}`).value = { formula: first ? `SUM(H${first}:H${last})` : "0" };
+ws.getCell(`I${rowKopa}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
+ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
+ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
 
-          // H = E+F+G ; I..L = per split * qty ; L = H * qty
-          ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-          ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-          ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
-          ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
-          ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` };
+for (const c of ["H", "I", "J", "K"]) ws.getCell(`${c}${rowKopa}`).numFmt = MONEY;
+boldCell(`A${rowKopa}`);
 
-          row.getCell(4).numFmt = QTY;
-          for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
+const rowTrans = rowKopa + 1;
+ws.getCell(`A${rowTrans}`).value =
+  "Materiālu, grunts apmaiņas un būvgružu transporta izdevumi";
+ws.getCell(`B${rowTrans}`).value = 0.07;
 
-          const isZebra = ((r - START) % 2) === 1 && !s.isChild;
-          for (let c = 1; c <= COLS; c++) {
-            const cell = row.getCell(c);
-            if (ZEBRA && isZebra) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-            }
-            cell.border = borderAll;
-            cell.font = { ...FONT, italic: false };
-            cell.alignment = c === 2
-              ? { wrapText: true, vertical: "middle" }
-              : { vertical: "middle", horizontal: "right" };
-          }
+// transport is applied to materials total (I)
+ws.getCell(`I${rowTrans}`).value = { formula: `ROUND(I${rowKopa}*B${rowTrans},2)` };
+ws.getCell(`K${rowTrans}`).value = { formula: `I${rowTrans}` };
+ws.getCell(`I${rowTrans}`).numFmt = MONEY;
+ws.getCell(`K${rowTrans}`).numFmt = MONEY;
 
-          if (first === null) first = r;
-          last = r;
-          r++;
-        }
-      }
+const rowDirect = rowTrans + 1;
+ws.getCell(`A${rowDirect}`).value = "Tiešās izmaksas kopā";
+ws.getCell(`H${rowDirect}`).value = { formula: `H${rowKopa}` };
+ws.getCell(`I${rowDirect}`).value = { formula: `ROUND(I${rowKopa}+I${rowTrans},2)` };
+ws.getCell(`J${rowDirect}`).value = { formula: `J${rowKopa}` };
+ws.getCell(`K${rowDirect}`).value = { formula: `ROUND(H${rowDirect}+I${rowDirect}+J${rowDirect},2)` };
+for (const c of ["H", "I", "J", "K"]) ws.getCell(`${c}${rowDirect}`).numFmt = MONEY;
+boldCell(`A${rowDirect}`);
 
-      const boldCell = (addr) => { ws.getCell(addr).font = { ...FONT, bold: true }; };
+const rowOver = rowDirect + 1;
+ws.getCell(`A${rowOver}`).value = "Virsizdevumi";
+ws.getCell(`B${rowOver}`).value = 0.09;
+ws.getCell(`K${rowOver}`).value = { formula: `ROUND(K${rowDirect}*B${rowOver},2)` };
+ws.getCell(`K${rowOver}`).numFmt = MONEY;
 
-      // Totals block
-      const rowKopa = r + 1;
-      ws.getCell(`B${rowKopa}`).value = "Kopā";
-      ws.getCell(`I${rowKopa}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
-      ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
-      ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
-      ws.getCell(`L${rowKopa}`).value = { formula: first ? `SUM(L${first}:L${last})` : "0" };
-      for (const c of [9,10,11,12]) ws.getCell(rowKopa, c).numFmt = MONEY;
-      boldCell(`B${rowKopa}`);
+const rowProfit = rowOver + 1;
+ws.getCell(`A${rowProfit}`).value = "Peļņa";
+ws.getCell(`B${rowProfit}`).value = 0.07;
+ws.getCell(`K${rowProfit}`).value = { formula: `ROUND(K${rowDirect}*B${rowProfit},2)` };
+ws.getCell(`K${rowProfit}`).numFmt = MONEY;
 
-      const rowTrans = rowKopa + 1;
-      ws.getCell(`B${rowTrans}`).value = "Materiālu, grunts apmaiņas un būvgružu transporta izdevumi";
-      ws.getCell(`C${rowTrans}`).value = 0.07;
-      ws.getCell(`J${rowTrans}`).value = { formula: `ROUND(J${rowKopa}*C${rowTrans},2)` };
-      ws.getCell(`L${rowTrans}`).value = { formula: `J${rowTrans}` };
-      ws.getCell(`J${rowTrans}`).numFmt = MONEY;
-      ws.getCell(`L${rowTrans}`).numFmt = MONEY;
+const rowDDSN = rowProfit + 1;
+ws.getCell(`A${rowDDSN}`).value = "Darba devēja sociālais nodoklis";
+ws.getCell(`B${rowDDSN}`).value = 0.2359;
 
-      const rowDirect = rowTrans + 1;
-      ws.getCell(`B${rowDirect}`).value = "Tiešās izmaksas kopā";
-      ws.getCell(`I${rowDirect}`).value = { formula: `I${rowKopa}` };
-      ws.getCell(`J${rowDirect}`).value = { formula: `ROUND(J${rowKopa}+J${rowTrans},2)` };
-      ws.getCell(`K${rowDirect}`).value = { formula: `K${rowKopa}` };
-      ws.getCell(`L${rowDirect}`).value = { formula: `ROUND(I${rowDirect}+J${rowDirect}+K${rowDirect},2)` };
-      for (const c of [9,10,11,12]) ws.getCell(rowDirect, c).numFmt = MONEY;
-      boldCell(`B${rowDirect}`);
+// DDSN is applied to labor total (H)
+ws.getCell(`H${rowDDSN}`).value = { formula: `ROUND(H${rowKopa}*B${rowDDSN},2)` };
+ws.getCell(`K${rowDDSN}`).value = { formula: `H${rowDDSN}` };
+ws.getCell(`H${rowDDSN}`).numFmt = MONEY;
+ws.getCell(`K${rowDDSN}`).numFmt = MONEY;
 
-      const rowOver = rowDirect + 1;
-      ws.getCell(`B${rowOver}`).value = "Virsizdevumi";
-      ws.getCell(`C${rowOver}`).value = 0.09;
-      ws.getCell(`L${rowOver}`).value = { formula: `ROUND(L${rowDirect}*C${rowOver},2)` };
-      ws.getCell(`L${rowOver}`).numFmt = MONEY;
+const rowTotal = rowDDSN + 1;
+ws.getCell(`A${rowTotal}`).value = "Kopējās izmaksas";
+ws.getCell(`K${rowTotal}`).value = {
+  formula: `ROUND(K${rowDirect}+K${rowOver}+K${rowProfit}+K${rowDDSN},2)`,
+};
+ws.getCell(`K${rowTotal}`).numFmt = MONEY;
+boldCell(`A${rowTotal}`);
+boldCell(`K${rowTotal}`);
 
-      const rowProfit = rowOver + 1;
-      ws.getCell(`B${rowProfit}`).value = "Peļņa";
-      ws.getCell(`C${rowProfit}`).value = 0.07;
-      ws.getCell(`L${rowProfit}`).value = { formula: `ROUND(L${rowDirect}*C${rowProfit},2)` };
-      ws.getCell(`L${rowProfit}`).numFmt = MONEY;
+const rowPVN = rowTotal + 1;
+ws.getCell(`A${rowPVN}`).value = "PVN";
+ws.getCell(`B${rowPVN}`).value = 0.21;
+ws.getCell(`K${rowPVN}`).value = { formula: `ROUND(K${rowTotal}*B${rowPVN},2)` };
+ws.getCell(`K${rowPVN}`).numFmt = MONEY;
 
-      const rowDDSN = rowProfit + 1;
-      ws.getCell(`B${rowDDSN}`).value = "Darba devēja sociālais nodoklis";
-      ws.getCell(`C${rowDDSN}`).value = 0.2359;
-      ws.getCell(`I${rowDDSN}`).value = { formula: `ROUND(I${rowKopa}*C${rowDDSN},2)` };
-      ws.getCell(`L${rowDDSN}`).value = { formula: `I${rowDDSN}` };
-      ws.getCell(`I${rowDDSN}`).numFmt = MONEY;
-      ws.getCell(`L${rowDDSN}`).numFmt = MONEY;
+const rowGrand = rowPVN + 1;
+ws.getCell(`A${rowGrand}`).value = "Pavisam kopā";
+ws.getCell(`K${rowGrand}`).value = { formula: `ROUND(K${rowTotal}+K${rowPVN},2)` };
+ws.getCell(`K${rowGrand}`).numFmt = MONEY;
+boldCell(`A${rowGrand}`);
+boldCell(`K${rowGrand}`);
 
-      const rowTotal = rowDDSN + 1;
-      ws.getCell(`B${rowTotal}`).value = "Kopējās izmaksas";
-      ws.getCell(`L${rowTotal}`).value = { formula: `ROUND(L${rowDirect}+L${rowOver}+L${rowProfit}+L${rowDDSN},2)` };
-      ws.getCell(`L${rowTotal}`).numFmt = MONEY;
-      boldCell(`B${rowTotal}`); boldCell(`L${rowTotal}`);
+// 👉 šīm rindām daudzums nedrīkst būt > 0
+[
+  rowKopa,
+  rowTrans,
+  rowDirect,
+  rowOver,
+  rowProfit,
+  rowDDSN,
+  rowTotal,
+  rowPVN,
+  rowGrand,
+].forEach(clearQty);
 
-      const rowPVN = rowTotal + 1;
-      ws.getCell(`B${rowPVN}`).value = "PVN";
-      ws.getCell(`C${rowPVN}`).value = 0.21;
-      ws.getCell(`L${rowPVN}`).value = { formula: `ROUND(L${rowTotal}*C${rowPVN},2)` };
-      ws.getCell(`L${rowPVN}`).numFmt = MONEY;
+// Summary box (move from J/L to I/K)
+ws.getCell("I9").value = "Tāmes summa euro :";
+ws.getCell("K9").value = { formula: `K${rowTotal}` };
+ws.getCell("K9").numFmt = MONEY;
 
-      const rowGrand = rowPVN + 1;
-      ws.getCell(`B${rowGrand}`).value = "Pavisam kopā";
-      ws.getCell(`L${rowGrand}`).value = { formula: `ROUND(L${rowTotal}+L${rowPVN},2)` };
-      ws.getCell(`L${rowGrand}`).numFmt = MONEY;
-      boldCell(`B${rowGrand}`); boldCell(`L${rowGrand}`);
+ws.getCell("I10").value = "PVN 21%:";
+ws.getCell("K10").value = { formula: `K${rowPVN}` };
+ws.getCell("K10").numFmt = MONEY;
 
-            // 👉 šīm rindām daudzums nedrīkst būt > 0
-      [
-        rowKopa,
-        rowTrans,
-        rowDirect,
-        rowOver,
-        rowProfit,
-        rowDDSN,
-        rowTotal,
-        rowPVN,
-        rowGrand,
-      ].forEach(clearQty);
+ws.getCell("I11").value = "Pavisam kopā euro:";
+ws.getCell("K11").value = { formula: `K${rowGrand}` };
+ws.getCell("K11").numFmt = MONEY;
 
-      ws.getCell("J9").value = "Tāmes summa euro :";
-      ws.getCell("L9").value = { formula: `L${rowTotal}` }; ws.getCell("L9").numFmt = MONEY;
-      ws.getCell("J10").value = "PVN 21%:";            ws.getCell("L10").value = { formula: `L${rowPVN}` };  ws.getCell("L10").numFmt = MONEY;
-      ws.getCell("J11").value = "Pavisam kopā euro:";  ws.getCell("L11").value = { formula: `L${rowGrand}` }; ws.getCell("L11").numFmt = MONEY;
+ws.getCell("K9").numFmt = MONEY;
+ws.getCell("K10").numFmt = MONEY;
+ws.getCell("K11").numFmt = MONEY;
 
-      const sumRows = [rowKopa,rowTrans,rowDirect,rowOver,rowProfit,rowDDSN,rowTotal,rowPVN,rowGrand];
-      for (const rr of sumRows) {
-        for (let c = 1; c <= COLS; c++) {
-          const cell = ws.getCell(rr, c);
-          cell.border = borderAll;
-          cell.font = { ...FONT, bold: cell.font?.bold || false };
-          cell.alignment = c === 2 ? { wrapText: true, vertical: "middle" } : { vertical: "middle", horizontal: "right" };
-        }
-      }
+// Borders + alignment for totals rows
+const sumRows = [rowKopa,rowTrans,rowDirect,rowOver,rowProfit,rowDDSN,rowTotal,rowPVN,rowGrand];
+for (const rr of sumRows) {
+  for (let c = 1; c <= COLS; c++) {
+    const cell = ws.getCell(rr, c);
+    cell.border = borderAll;
+    cell.font = { ...FONT, bold: cell.font?.bold || false };
+    cell.alignment = c === 1
+      ? { wrapText: true, vertical: "middle" }
+      : { vertical: "middle", horizontal: "right" };
+  }
+}
+
 
       // Notes
       const notesTitleRow = rowGrand + 3;
