@@ -1405,13 +1405,18 @@ const gjChildOnlyNames = useMemo(() => {
       for (const ch of adj) pushMapped(ch, parent.unit);
     }
 
-    // D) name-based hints (merge by *catalog* row to keep split/unit_price)
-   const hints =
-  childHints[normTxt(parent.name)] ||
-  childHints[normTxt(parent.category)] ||
-  childHints[normTxt(parent.uid)];
+   // D) name-based hints
+let hints = null;
 
-
+if (insurer === "Swedbank") {
+  // Swedbank child_hints ir piesaistīti TIKAI parent UID
+  hints = childHints[normTxt(parent.uid)];
+} else {
+  // Balta / Gjensidige
+  hints =
+    childHints[normTxt(parent.name)] ||
+    childHints[normTxt(parent.category)];
+}
 
     if (Array.isArray(hints)) {
       for (const hint of hints) {
