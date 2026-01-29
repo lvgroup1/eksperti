@@ -113,14 +113,36 @@ const SWEDBANK_SURFACE_WORKS = {
   // Te atstājam minimālu (lai nerādas “vecais saraksts”), un vēlāk vari papildināt ar Sienu analogiem.
   "Sienas, ailes": {
     "Krāsots betons": [
-      "Krāsojums (ar špaktelējumu)",
+      "Sienu attīrīšana no esošā seguma",
+      "Sienu gruntēšana, špahtelēšana un slīpēšana",
+      "Sienu krāsošana ar emulsijas krāsu",
     ],
+
     "Krāsots ģipškartons": [
-      "Ģipškartona konstrukcija (parastais ģipškartons)",
+      "Sienu attīrīšana no esošā seguma",
+      "Ģipškartona un metāla karkasa demontāža",
+      "Piekārto reģipšu griestu metāla karkasa ierīkošana",
+      "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+      "Sienu gruntēšana, špahtelēšana un slīpēšana",
+      "Sienu krāsošana ar emulsijas krāsu",
     ],
+
     "Ģipškartons un krāsojamās tapetes vai tapetes": {
-      krasojamas: ["Krāsojamās tapetes", "Tapešu līmēšana"],
-      tapetes: ["Tapetes", "Tapešu līmēšana"],
+      krasojamas: [
+        "Sienu attīrīšana no esošā seguma",
+        "Ģipškartona un metāla karkasa demontāža",
+        "Piekārto reģipšu griestu metāla karkasa ierīkošana",
+        "Karkasa apšūšana ar ģipškartonu un šuvju apstrāde",
+        "Sienu gruntēšana, špahtelēšana un slīpēšana",
+        "Sienu gruntēšana pirms tapešu līmēšanas",
+        "Tapešu līmēšana",
+        "Sienu krāsošana ar emulsijas krāsu",
+      ],
+      tapetes: [
+        "Sienu attīrīšana no esošā seguma",
+        "Sienu gruntēšana pirms tapešu līmēšanas",
+        "Tapešu līmēšana",
+      ],
     },
   },
 };
@@ -1413,9 +1435,11 @@ if (insurer === "Swedbank") {
   hints = childHints[normTxt(parent.uid)];
 } else {
   // Balta / Gjensidige
-  hints =
-    childHints[normTxt(parent.name)] ||
-    childHints[normTxt(parent.category)];
+  const hints =
+  childHints[normTxt(parent.name)] ||
+  childHints[normTxt(parent.id)] ||     // ✅ svarīgi Swedbank
+  childHints[normTxt(parent.uid)];
+
 }
 
     if (Array.isArray(hints)) {
@@ -1955,16 +1979,17 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
       const cUprice = cSplit ? cSplit : pickNum(hit, UNIT_PRICE_KEYS);
 
       selections.push({
-        isChild: true,
-        room: `${ri.type} ${ri.index}`,
-        name: hit.name,
-        unit: normalizeUnit(hit.unit || a.unit || "m2"),
-        qty,
-        labor: cLabor,
-        materials: cMat,
-        mechanisms: cMech,
-        unitPrice: cUprice,
-      });
+  isChild: false, // ✅ šis ir “darbs”, nevis apakšpozīcija
+  room: `${ri.type} ${ri.index}`,
+  name: hit.name,
+  unit: normalizeUnit(hit.unit || a.unit || "m2"),
+  qty,
+  labor: cLabor,
+  materials: cMat,
+  mechanisms: cMech,
+  unitPrice: cUprice,
+});
+
 
       // 2) ✅ un tagad rekursīvi ieliekam hit bērnus (apakšpozīcijas, bērnu bērnus, utt.)
       expandChildrenRecursive({
