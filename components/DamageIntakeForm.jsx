@@ -2397,8 +2397,8 @@ ws.mergeCells(blockStart + 3, 3, blockStart + 3, 6);
       ws.getCell(blockStart + 2, 9).value = "";
 
       // Column widths
-      const baseW = [6, 56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
-      for (let c = 1; c <= 12; c++) ws.getColumn(c).width = baseW[c - 1];
+      const baseW = [56, 12, 10, 14, 14, 14, 14, 16, 16, 16, 18];
+      for (let c = 1; c <= 11; c++) ws.getColumn(c).width = baseW[c - 1];
 
       // finalize
       wb.removeWorksheet(src.id);
