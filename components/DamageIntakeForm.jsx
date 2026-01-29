@@ -2123,12 +2123,25 @@ for (const [roomName, rows] of groups.entries()) {
   r++;
 
   for (const s of rows) {
-    const row = ws.getRow(r);
+  const row = ws.getRow(r);
 
-    // A..K
-    row.getCell(1).value = s.isChild ? `    ${s.name}` : s.name; // Darbu nosaukums
-    row.getCell(2).value = s.unit;                                // Mērv.
-    row.getCell(3).value = s.qty;                                 // Daudz.
+  // Nosaukums
+  row.getCell(1).value = s.isChild ? "" : ""; // Nr kolonnu tu jau noņēmi
+  row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+
+  if (!s.isChild) {
+    // ✅ VIRSRINDA → PILNĪGI TUKŠA (kā paraugā)
+    row.getCell(3).value = "";
+    row.getCell(4).value = "";
+
+    for (const c of [5,6,7,8,9,10,11,12]) {
+      row.getCell(c).value = "-";
+    }
+
+  } else {
+    // ✅ APAKŠPOZĪCIJA → RĒĶINI
+    row.getCell(3).value = s.unit;
+    row.getCell(4).value = s.qty;
 
     const e = Number(s.labor || 0);
     const f = Number(s.materials || 0);
@@ -2136,43 +2149,30 @@ for (const [roomName, rows] of groups.entries()) {
     const hasSplit = (e + f + g) > 0;
 
     if (hasSplit) {
-      ws.getCell(r, 4).value = e; // D Darbs
-      ws.getCell(r, 5).value = f; // E Materiāli
-      ws.getCell(r, 6).value = g; // F Mehānismi
+      ws.getCell(r, 5).value = e;
+      ws.getCell(r, 6).value = f;
+      ws.getCell(r, 7).value = g;
     } else {
       const fallback = Number(s.unitPrice || 0);
-      ws.getCell(r, 4).value = 0;
-      ws.getCell(r, 5).value = fallback;
-      ws.getCell(r, 6).value = 0;
+      ws.getCell(r, 5).value = 0;
+      ws.getCell(r, 6).value = fallback;
+      ws.getCell(r, 7).value = 0;
     }
 
-    // G = D+E+F ; H..K = * qty
-    ws.getCell(r, 7).value  = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
-    ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
-    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
-    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
-    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+    ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
+    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
+    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
+    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
+    ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` };
 
-    row.getCell(3).numFmt = QTY;
-    for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
-
-    const isZebra = ((r - START) % 2) === 1;
-    for (let c = 1; c <= COLS; c++) {
-      const cell = row.getCell(c);
-      if (ZEBRA && isZebra) {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA_BG } };
-      }
-      cell.border = borderAll;
-      cell.font = { ...FONT, italic: false };
-      cell.alignment = c === 1
-        ? { wrapText: true, vertical: "middle" }
-        : { vertical: "middle", horizontal: "right" };
-    }
-
-    if (first === null) first = r;
-    last = r;
-    r++;
+    row.getCell(4).numFmt = QTY;
+    for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
   }
+
+  // borders + alignment paliek kā ir
+  r++;
+}
+
 }
 
 
