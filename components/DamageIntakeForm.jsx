@@ -2122,56 +2122,84 @@ for (const [roomName, rows] of groups.entries()) {
   ws.getRow(r).height = 18;
   r++;
 
-  for (const s of rows) {
+for (const s of rows) {
   const row = ws.getRow(r);
 
-  // Nosaukums
-  row.getCell(1).value = s.isChild ? "" : ""; // Nr kolonnu tu jau noņēmi
-  row.getCell(2).value = s.isChild ? `    ${s.name}` : s.name;
+  // A kolonna = Darbu nosaukums
+  row.getCell(1).value = s.isChild ? `    ${s.name}` : s.name;
 
-  if (!s.isChild) {
-    // ✅ VIRSRINDA → PILNĪGI TUKŠA (kā paraugā)
+  // B = Mērv.
+  row.getCell(2).value = s.unit || "—";
+
+  // C = Daudz.
+  row.getCell(3).value = s.qty ?? "";
+
+  const isNoNumberSurfaceHeader =
+    insurer === "Swedbank" &&
+    !s.isChild &&
+    ["Krāsots betons", "Krāsots ģipškartons", "Ģipškartons un krāsojamās tapetes vai tapetes"].includes(
+      String(s.name || "").trim()
+    );
+
+  // Ja šī ir viena no 3 virs-pozīcijām, tad tai jābūt “tukšai” (ar defisi)
+  if (isNoNumberSurfaceHeader) {
+    // Daudzums tukšs
     row.getCell(3).value = "";
-    row.getCell(4).value = "";
 
-    for (const c of [5,6,7,8,9,10,11,12]) {
+    // D..K ieliekam "-"
+    for (let c = 4; c <= 11; c++) {
       row.getCell(c).value = "-";
+      row.getCell(c).alignment = { vertical: "middle", horizontal: "center" };
     }
-
   } else {
-    // ✅ APAKŠPOZĪCIJA → RĒĶINI
-    row.getCell(3).value = s.unit;
-    row.getCell(4).value = s.qty;
-
-    const e = Number(s.labor || 0);
-    const f = Number(s.materials || 0);
-    const g = Number(s.mechanisms || 0);
-    const hasSplit = (e + f + g) > 0;
+    // D/E/F = Darbs/Materiāli/Mehānismi
+    const d = Number(s.labor || 0);
+    const e = Number(s.materials || 0);
+    const f = Number(s.mechanisms || 0);
+    const hasSplit = (d + e + f) > 0;
 
     if (hasSplit) {
-      ws.getCell(r, 5).value = e;
-      ws.getCell(r, 6).value = f;
-      ws.getCell(r, 7).value = g;
+      ws.getCell(r, 4).value = d; // D
+      ws.getCell(r, 5).value = e; // E
+      ws.getCell(r, 6).value = f; // F
     } else {
       const fallback = Number(s.unitPrice || 0);
-      ws.getCell(r, 5).value = 0;
-      ws.getCell(r, 6).value = fallback;
-      ws.getCell(r, 7).value = 0;
+      ws.getCell(r, 4).value = 0;
+      ws.getCell(r, 5).value = fallback;
+      ws.getCell(r, 6).value = 0;
     }
 
-    ws.getCell(r, 8).value  = { formula: `ROUND(SUM(E${r}:G${r}),2)` };
-    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*D${r},2)` };
-    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*D${r},2)` };
-    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*D${r},2)` };
-    ws.getCell(r,12).value  = { formula: `ROUND(H${r}*D${r},2)` };
+    // G = cena (D+E+F)
+    ws.getCell(r, 7).value = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
 
-    row.getCell(4).numFmt = QTY;
-    for (const c of [5,6,7,8,9,10,11,12]) row.getCell(c).numFmt = MONEY;
+    // H..J = summas (Darbs/Materiāli/Mehānismi) * daudz.
+    ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
+    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
+    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
+
+    // K = kopā (G * daudz.)
+    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+
+    row.getCell(3).numFmt = QTY;
+    for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
   }
 
-  // borders + alignment paliek kā ir
+  // styling (lai “Darbu nosaukums” nebūtu šaurs + wrap)
+  for (let c = 1; c <= COLS; c++) {
+    const cell = row.getCell(c);
+    cell.border = borderAll;
+    cell.font = { ...FONT, italic: !!s.isChild };
+    cell.alignment =
+      c === 1
+        ? { wrapText: true, vertical: "middle" }
+        : { vertical: "middle", horizontal: "right" };
+  }
+
+  if (first === null) first = r;
+  last = r;
   r++;
 }
+
 
 }
 
@@ -2189,6 +2217,7 @@ ws.getCell(`H${rowKopa}`).value = { formula: first ? `SUM(H${first}:H${last})` :
 ws.getCell(`I${rowKopa}`).value = { formula: first ? `SUM(I${first}:I${last})` : "0" };
 ws.getCell(`J${rowKopa}`).value = { formula: first ? `SUM(J${first}:J${last})` : "0" };
 ws.getCell(`K${rowKopa}`).value = { formula: first ? `SUM(K${first}:K${last})` : "0" };
+
 
 for (const c of ["H", "I", "J", "K"]) ws.getCell(`${c}${rowKopa}`).numFmt = MONEY;
 boldCell(`A${rowKopa}`);
