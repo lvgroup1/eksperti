@@ -2044,7 +2044,45 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
   if (uids && typeof uids === "object" && !Array.isArray(uids)) {
     uids = variantKey ? uids[variantKey] : [];
   }
-  if (!Array.isArray(uids) || !uids.length) return;
+
+  // fallback: derive rows from the static work map when UID mapping is missing
+  let surfaceRows = [];
+  if (Array.isArray(uids) && uids.length) {
+    surfaceRows = uids
+      .map((uid) => priceCatalog.find((row) => String(row.uid) === String(uid) || String(row.id) === String(uid)))
+      .filter(Boolean);
+  }
+
+  if (!surfaceRows.length) {
+    let workDefs = SWEDBANK_SURFACE_WORKS?.[rawCat]?.[position];
+    if (workDefs && typeof workDefs === "object" && !Array.isArray(workDefs)) {
+      workDefs = variantKey ? (workDefs[variantKey] || workDefs[a.swedSurfaceVariant] || []) : [];
+    }
+
+    if (Array.isArray(workDefs) && workDefs.length) {
+      surfaceRows = workDefs
+        .map((workName) =>
+          findRowByName(workName, rawCat) ||
+          findRowByName(workName, catKey) ||
+          findRowByNameFuzzy(workName, rawCat, priceCatalog) ||
+          findRowByNameFuzzy(workName, catKey, priceCatalog)
+        )
+        .filter(Boolean);
+    }
+  }
+
+  if (!surfaceRows.length) {
+    console.warn("[SWEDBANK export] No mapped rows for surface position", {
+      room: `${ri.type} ${ri.index}`,
+      category: rawCat,
+      catKey,
+      position,
+      variant: a.swedSurfaceVariant,
+      variantKey,
+      itemUid: a.itemUid,
+    });
+    return;
+  }
 
   selections.push({
     isChild: false,
@@ -2060,8 +2098,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
     unitPrice: null,
   });
 
-  for (const uid of uids) {
-    const hit = priceCatalog.find((row) => String(row.uid) === String(uid));
+  for (const hit of surfaceRows) {
     if (!hit) continue;
 
     const cLabor = pickNum(hit, LABOR_KEYS);
@@ -2142,6 +2179,11 @@ expandChildrenRecursive({
       });
 
       if (!selections.length) {
+        console.warn("[exportToExcel] No selections were created", {
+          insurer,
+          roomInstances,
+          roomActions,
+        });
         alert("Nav nevienas pozīcijas ar daudzumu. Atver telpu un pārliecinies, ka daudzums ir aizpildīts.");
         return;
       }
