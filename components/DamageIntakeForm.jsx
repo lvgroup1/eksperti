@@ -1490,13 +1490,43 @@ const gjChildOnlyNames = useMemo(() => {
         Number(x?.mechanisms || 0).toFixed(4),
       ].join("::");
 
+    const numericWeight = (x) =>
+      Number(x?.labor || 0) +
+      Number(x?.materials || 0) +
+      Number(x?.mechanisms || 0) +
+      Number(x?.unit_price_raw || x?.unit_price || 0);
+
     const pushMapped = (raw, fallbackUnit) => {
       const mapped = mapChildFromFlat(raw, fallbackUnit);
-      const k = keyOf(mapped);
-      if (mapped.name && !seen.has(k)) {
-        seen.add(k);
-        out.push(mapped);
+      if (!mapped.name) return;
+
+      // Swedbank: never keep synthetic/empty 0.00 child rows
+      if (insurer === "Swedbank" && numericWeight(mapped) === 0) {
+        return;
       }
+
+      const k = keyOf(mapped);
+      if (seen.has(k)) return;
+
+      // Stronger Swedbank de-duplication by child name:
+      // if the same child already exists, keep the richer/non-zero one.
+      if (insurer === "Swedbank") {
+        const existingIdx = out.findIndex(
+          (x) => normTxt(x?.name) === normTxt(mapped.name)
+        );
+        if (existingIdx >= 0) {
+          const existing = out[existingIdx];
+          const existingWeight = numericWeight(existing);
+          const mappedWeight = numericWeight(mapped);
+          if (mappedWeight > existingWeight) {
+            out[existingIdx] = mapped;
+          }
+          return;
+        }
+      }
+
+      seen.add(k);
+      out.push(mapped);
     };
 
     // A) embedded children already attached to parent
@@ -1512,9 +1542,12 @@ const gjChildOnlyNames = useMemo(() => {
     }
 
     // C) adjacency fallback (children that followed parent in raw order)
-    const adj = adjChildrenByParent.get(parent.uid);
-    if (Array.isArray(adj) && adj.length) {
-      for (const ch of adj) pushMapped(ch, parent.unit);
+    // Swedbank already has explicit child data and flat links, so skip adjacency there
+    if (insurer !== "Swedbank") {
+      const adj = adjChildrenByParent.get(parent.uid);
+      if (Array.isArray(adj) && adj.length) {
+        for (const ch of adj) pushMapped(ch, parent.unit);
+      }
     }
     const swedbankDetails = SWEDBANK_CHILD_DETAILS[parent.uid];
 if (Array.isArray(swedbankDetails) && swedbankDetails.length) {
@@ -2047,9 +2080,16 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
   // fallback: derive rows from the static work map when UID mapping is missing
   let surfaceRows = [];
   if (Array.isArray(uids) && uids.length) {
+    const seenSurface = new Set();
     surfaceRows = uids
       .map((uid) => priceCatalog.find((row) => String(row.uid) === String(uid) || String(row.id) === String(uid)))
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((row) => {
+        const k = String(row.uid || row.id || row.name || "");
+        if (seenSurface.has(k)) return false;
+        seenSurface.add(k);
+        return true;
+      });
   }
 
   if (!surfaceRows.length) {
@@ -2059,6 +2099,7 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
     }
 
     if (Array.isArray(workDefs) && workDefs.length) {
+      const seenSurface = new Set();
       surfaceRows = workDefs
         .map((workName) =>
           findRowByName(workName, rawCat) ||
@@ -2066,7 +2107,13 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
           findRowByNameFuzzy(workName, rawCat, priceCatalog) ||
           findRowByNameFuzzy(workName, catKey, priceCatalog)
         )
-        .filter(Boolean);
+        .filter(Boolean)
+        .filter((row) => {
+          const k = String(row.uid || row.id || row.name || "");
+          if (seenSurface.has(k)) return false;
+          seenSurface.add(k);
+          return true;
+        });
     }
   }
 
@@ -2272,7 +2319,7 @@ for (const s of rows) {
   row.getCell(1).value = s.isChild ? `    ${s.name}` : s.name;
 
   // B = Mērv.
-  row.getCell(2).value = s.unit || "—";
+  row.getCell(2).value = s.unit || "";
 
   // C = Daudz.
   row.getCell(3).value = s.qty ?? "";
@@ -2280,27 +2327,40 @@ for (const s of rows) {
   const d = Number(s.labor || 0);
   const e = Number(s.materials || 0);
   const f = Number(s.mechanisms || 0);
+  const fallback = Number(s.unitPrice || 0);
   const hasSplit = (d + e + f) > 0;
+  const hasAnyValue = hasSplit || fallback > 0;
 
   if (hasSplit) {
     ws.getCell(r, 4).value = d;
     ws.getCell(r, 5).value = e;
     ws.getCell(r, 6).value = f;
-  } else {
-    const fallback = Number(s.unitPrice || 0);
+  } else if (fallback > 0) {
     ws.getCell(r, 4).value = 0;
     ws.getCell(r, 5).value = fallback;
     ws.getCell(r, 6).value = 0;
+  } else {
+    ws.getCell(r, 4).value = "";
+    ws.getCell(r, 5).value = "";
+    ws.getCell(r, 6).value = "";
   }
 
-  ws.getCell(r, 7).value  = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
-  ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
-  ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
-  ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
-  ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+  if (hasAnyValue) {
+    ws.getCell(r, 7).value  = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
+    ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
+    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
+    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
+    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
 
-  row.getCell(3).numFmt = QTY;
-  for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
+    row.getCell(3).numFmt = QTY;
+    for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
+  } else {
+    ws.getCell(r, 7).value = "";
+    ws.getCell(r, 8).value = "";
+    ws.getCell(r, 9).value = "";
+    ws.getCell(r,10).value = "";
+    ws.getCell(r,11).value = "";
+  }
 
   // styling (lai “Darbu nosaukums” nebūtu šaurs + wrap)
   for (let c = 1; c <= COLS; c++) {
