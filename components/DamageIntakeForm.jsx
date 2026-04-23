@@ -1481,7 +1481,14 @@ const gjChildOnlyNames = useMemo(() => {
 
     const out = [];
     const seen = new Set(); // de-dupe by name+unit
-    const keyOf = (x) => `${normTxt(x?.name)}::${normalizeUnit(x?.unit || "")}`;
+    const keyOf = (x) =>
+      [
+        normTxt(x?.name),
+        normalizeUnit(x?.unit || ""),
+        Number(x?.labor || 0).toFixed(4),
+        Number(x?.materials || 0).toFixed(4),
+        Number(x?.mechanisms || 0).toFixed(4),
+      ].join("::");
 
     const pushMapped = (raw, fallbackUnit) => {
       const mapped = mapChildFromFlat(raw, fallbackUnit);
@@ -1525,48 +1532,40 @@ if (Array.isArray(swedbankDetails) && swedbankDetails.length) {
 }
 
 // D) name-based hints
-const hints =
-  insurer === "Swedbank"
-    ? childHints[normTxt(parent.uid)]
-    : childHints[normTxt(parent.name)] || childHints[normTxt(parent.category)];
+// Swedbank already has explicit child details, so do not add synthetic 0.00 rows from hints
+if (insurer !== "Swedbank") {
+  const hints =
+    childHints[normTxt(parent.name)] || childHints[normTxt(parent.category)];
 
-    if (Array.isArray(hints)) {
-      for (const hint of hints) {
-        const hintName = typeof hint === "string" ? hint : hint?.name;
-        if (!hintName) continue;
-        const coeff = Number(typeof hint === "object" && hint?.coeff ? hint.coeff : 1) || 1;
-        const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
+  if (Array.isArray(hints)) {
+    for (const hint of hints) {
+      const hintName = typeof hint === "string" ? hint : hint?.name;
+      if (!hintName) continue;
 
-        // Prefer same category; fall back to any
-        const match =
-          findRowByName(hintName, parent.category) ||
-          findRowByNameFuzzy(hintName, parent.category, priceCatalog);
+      const coeff = Number(typeof hint === "object" && hint?.coeff ? hint.coeff : 1) || 1;
+      const unitHint = typeof hint === "object" && hint?.unit ? hint.unit : undefined;
 
-        if (match) {
-          pushMapped(
-            {
-              ...match,
-              unit: unitHint || match.unit || parent.unit,
-              coeff,
-              labor:      pickNum(match, LABOR_KEYS),
-              materials:  pickNum(match, MATERIAL_KEYS),
-              mechanisms: pickNum(match, MECHANISM_KEYS),
-              unit_price: pickNum(match, UNIT_PRICE_KEYS),
-            },
-            parent.unit
-          );
-        } else {
-          // synthetic child if we don't have a real catalog row
-          pushMapped({
-            name: hintName,
-            unit: unitHint || parent.unit,
-            coeff,
-            labor: 0, materials: 0, mechanisms: 0,
-            unit_price: 0
-          }, parent.unit);
-        }
-      }
+      const match =
+        findRowByName(hintName, parent.category) ||
+        findRowByNameFuzzy(hintName, parent.category, priceCatalog);
+
+      if (!match) continue;
+
+      pushMapped(
+        {
+          ...match,
+          unit: unitHint || match.unit || parent.unit,
+          coeff,
+          labor: pickNum(match, LABOR_KEYS),
+          materials: pickNum(match, MATERIAL_KEYS),
+          mechanisms: pickNum(match, MECHANISM_KEYS),
+          unit_price: pickNum(match, UNIT_PRICE_KEYS),
+        },
+        parent.unit
+      );
     }
+  }
+}
 
     return out;
   }, [priceCatalog, childHints, adjChildrenByParent, findRowByName]);
