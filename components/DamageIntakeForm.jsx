@@ -1728,6 +1728,7 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
       // šī rinda paliek kā “virspozīcija”, nevis konkrēts darbs
       category: cat,
+      quantity: baseRow.quantity || "1",
       itemUid: uid,
       itemId: uid,
       itemName: position,           // UI rādīs šo
@@ -2021,7 +2022,13 @@ let tameName = window.prompt(
       roomInstances.forEach((ri) => {
         const list = roomActions[ri.id] || [];
         list.forEach((a) => {
-          const qty = parseDec(a.quantity);
+          const qtyRaw = a.quantity ?? a.qty ?? "";
+          let qty = parseDec(qtyRaw);
+
+          if (!qty && insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
+            qty = 1;
+          }
+
           if (!qty) return;
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
@@ -2135,7 +2142,7 @@ expandChildrenRecursive({
       });
 
       if (!selections.length) {
-        alert("Nav nevienas pozīcijas ar daudzumu.");
+        alert("Nav nevienas pozīcijas ar daudzumu. Atver telpu un pārliecinies, ka daudzums ir aizpildīts.");
         return;
       }
 
