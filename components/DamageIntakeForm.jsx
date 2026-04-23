@@ -65,6 +65,89 @@ const SWEDBANK_SURFACE_POSITIONS = [
   "Krāsots ģipškartons",
   "Ģipškartons un krāsojamās tapetes vai tapetes",
 ];
+const SWEDBANK_SURFACE_CATEGORY_MAP = {
+  "Griesti": "Griesti",
+  "Sienas": "Sienas",
+  "Sienas, ailes": "Sienas",
+};
+
+const SWEDBANK_SURFACE_VARIANT_MAP = {
+  krasojamas: "krasojamas_tapetes",
+  krasojamas_tapetes: "krasojamas_tapetes",
+  tapetes: "tapetes",
+};
+
+const SWEDBANK_CHILD_DETAILS = {
+  "SW-0003": [
+    { name: "metāla karkass", unit: "m2", coeff: 1, materials: 7.57 },
+    { name: "skrūves", unit: "100 gab", coeff: 0.026, materials: 9.0 },
+  ],
+  "SW-0004": [
+    { name: "ģipškartons GKB 12,5mm", unit: "m2", coeff: 1.15, materials: 3.2 },
+    { name: "sietiņlenta", unit: "m", coeff: 0.83, materials: 0.05 },
+    { name: "šuvju špaktele Knauf Uniflot", unit: "kg", coeff: 0.33, materials: 2.5 },
+    { name: "skrūves", unit: "100 gab", coeff: 0.253, materials: 0.8 },
+  ],
+  "SW-0016": [
+    { name: "špahtele sheetrock finish", unit: "kg", coeff: 2, materials: 0.87 },
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0017": [
+    { name: "emulsijas krāsa, tonēta", unit: "l", coeff: 0.3, materials: 5.7 },
+  ],
+  "SW-0019": [
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0020": [
+    { name: "krāsojamās tapetes", unit: "m2", coeff: 1.4, materials: 1.18 },
+    { name: "tapešu līme", unit: "l", coeff: 0.25, materials: 2.51 },
+  ],
+  "SW-0021": [
+    { name: "emulsijas krāsa, tonēta", unit: "l", coeff: 0.3, materials: 5.7 },
+  ],
+  "SW-0023": [
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0024": [
+    { name: "tapetes", unit: "m2", coeff: 1.4, materials: 2.56 },
+    { name: "tapešu līme", unit: "l", coeff: 0.25, materials: 2.51 },
+  ],
+  "SW-0057": [
+    { name: "metāla karkass", unit: "m2", coeff: 1, materials: 7.63 },
+    { name: "akmens vate 50mm", unit: "m2", coeff: 1.05, materials: 1.5 },
+    { name: "skrūves", unit: "100 gab", coeff: 0.0176, materials: 9.5 },
+  ],
+  "SW-0058": [
+    { name: "ģipškartons GKB 12,5mm, 2.kārtas", unit: "m2", coeff: 2.3, materials: 3.2 },
+    { name: "sietiņlenta", unit: "m", coeff: 1.65, materials: 0.05 },
+    { name: "šuvju špaktele Knauf Uniflot", unit: "kg", coeff: 0.33, materials: 2.5 },
+    { name: "skrūves", unit: "100 gab", coeff: 0.319, materials: 0.8 },
+  ],
+  "SW-0073": [
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0074": [
+    { name: "tapetes", unit: "m2", coeff: 1.4, materials: 2.56 },
+    { name: "tapešu līme", unit: "l", coeff: 0.25, materials: 2.51 },
+  ],
+  "SW-0076": [
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0077": [
+    { name: "krāsojamās tapetes", unit: "m2", coeff: 1.4, materials: 1.18 },
+    { name: "tapešu līme", unit: "l", coeff: 0.25, materials: 2.51 },
+  ],
+  "SW-0078": [
+    { name: "emulsijas krāsa, tonēta", unit: "l", coeff: 0.3, materials: 5.7 },
+  ],
+  "SW-0080": [
+    { name: "špaktele", unit: "kg", coeff: 2, materials: 0.84 },
+    { name: "grunts", unit: "l", coeff: 0.16, materials: 2.1 },
+  ],
+  "SW-0081": [
+    { name: "emulsijas krāsa, tonēta", unit: "l", coeff: 0.3, materials: 5.7 },
+  ],
+};
 
 // minimāls “auto” darbu komplekts katrai pozīcijai (ņemts no Swedbank cenrāža nosaukumiem)
 const SWEDBANK_SURFACE_WORKS = {
@@ -1426,21 +1509,26 @@ const gjChildOnlyNames = useMemo(() => {
     if (Array.isArray(adj) && adj.length) {
       for (const ch of adj) pushMapped(ch, parent.unit);
     }
-
-   // D) name-based hints
-let hints = null;
-
-if (insurer === "Swedbank") {
-  // Swedbank child_hints ir piesaistīti TIKAI parent UID
-  hints = childHints[normTxt(parent.uid)];
-} else {
-  // Balta / Gjensidige
-  const hints =
-  childHints[normTxt(parent.name)] ||
-  childHints[normTxt(parent.id)] ||     // ✅ svarīgi Swedbank
-  childHints[normTxt(parent.uid)];
-
+    const swedbankDetails = SWEDBANK_CHILD_DETAILS[parent.uid];
+if (Array.isArray(swedbankDetails) && swedbankDetails.length) {
+  for (const ch of swedbankDetails) {
+    pushMapped(
+      {
+        ...ch,
+        labor: 0,
+        mechanisms: 0,
+        unit_price: Number(ch.materials || 0),
+      },
+      parent.unit
+    );
+  }
 }
+
+// D) name-based hints
+const hints =
+  insurer === "Swedbank"
+    ? childHints[normTxt(parent.uid)]
+    : childHints[normTxt(parent.name)] || childHints[normTxt(parent.category)];
 
     if (Array.isArray(hints)) {
       for (const hint of hints) {
@@ -1848,8 +1936,8 @@ const formattedName =
 
       // 👉 palīdzība: kopsavilkuma rindām noņemam daudzumu, lai tās nav "pozīcijas"
       const clearQty = (rowIndex) => {
-        ws.getCell(rowIndex, 4).value = 0;      // D kolonna – Daudz.
-        ws.getCell(rowIndex, 4).numFmt = QTY;
+        ws.getCell(rowIndex, 3).value = 0;
+        ws.getCell(rowIndex, 3).numFmt = QTY;
       };
 
       // Header
@@ -1938,79 +2026,66 @@ let tameName = window.prompt(
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
 if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
-  const qty = parseDec(a.quantity);
-  if (!qty) return;
+  const rawCat = normCat(a.category || "");
+  const catKey = SWEDBANK_SURFACE_CATEGORY_MAP[rawCat] || rawCat;
+  const position = a.swedSurfacePos || a.itemName || "";
+  const variantKey = a.swedSurfaceVariant
+    ? (SWEDBANK_SURFACE_VARIANT_MAP[a.swedSurfaceVariant] || a.swedSurfaceVariant)
+    : null;
 
-  const parts = String(a.itemUid).split("::");
-  const cat = parts[1] || "";
-  const position = parts[2] || "";
-  const variant = parts[3] || "";
+  let uids = SWEDBANK_POSITIONS?.[catKey]?.[position];
+  if (uids && typeof uids === "object" && !Array.isArray(uids)) {
+    uids = variantKey ? uids[variantKey] : [];
+  }
+  if (!Array.isArray(uids) || !uids.length) return;
 
-  // ✅ parādi arī kategoriju pie virspozīcijas (lai Excelā ir skaidrs)
   selections.push({
     isChild: false,
+    isSurfaceHeader: true,
     room: `${ri.type} ${ri.index}`,
-    name: `${position}` + (variant ? ` · ${variant}` : ""),
-    category: cat,
-    unit: normalizeUnit(a.unit || "m2"),
-    qty,
-    labor: 0,
-    materials: 0,
-    mechanisms: 0,
-    unitPrice: 0,
+    name: `${position}` + (a.swedSurfaceVariant ? ` · ${a.swedSurfaceVariant}` : ""),
+    category: rawCat,
+    unit: "",
+    qty: "",
+    labor: null,
+    materials: null,
+    mechanisms: null,
+    unitPrice: null,
   });
 
-  // izvēlamies darbu sarakstu
-  let keys = SWEDBANK_SURFACE_WORKS?.[cat]?.[position];
-  if (keys && typeof keys === "object" && !Array.isArray(keys)) {
-    keys = variant === "tapetes" ? keys.tapetes : keys.krasojamas;
-  }
+  for (const uid of uids) {
+    const hit = priceCatalog.find((row) => String(row.uid) === String(uid));
+    if (!hit) continue;
 
-  if (Array.isArray(keys)) {
-    for (const k of keys) {
-      const hit = findRowByNameFuzzy(k, cat, priceCatalog);
-      if (!hit) continue;
+    const cLabor = pickNum(hit, LABOR_KEYS);
+    const cMat = pickNum(hit, MATERIAL_KEYS);
+    const cMech = pickNum(hit, MECHANISM_KEYS);
+    const cSplit = cLabor + cMat + cMech;
+    const cUprice = cSplit ? cSplit : pickNum(hit, UNIT_PRICE_KEYS);
 
-      // 1) ieliekam pašu darbu (child)
-      const cLabor = pickNum(hit, LABOR_KEYS);
-      const cMat   = pickNum(hit, MATERIAL_KEYS);
-      const cMech  = pickNum(hit, MECHANISM_KEYS);
-      const cSplit = cLabor + cMat + cMech;
-      const cUprice = cSplit ? cSplit : pickNum(hit, UNIT_PRICE_KEYS);
+    selections.push({
+      isChild: false,
+      room: `${ri.type} ${ri.index}`,
+      name: hit.name,
+      category: rawCat,
+      unit: normalizeUnit(hit.unit || a.unit || "m2"),
+      qty,
+      labor: cLabor,
+      materials: cMat,
+      mechanisms: cMech,
+      unitPrice: cUprice,
+    });
 
-      selections.push({
-  isChild: false, // ✅ šis ir “darbs”, nevis apakšpozīcija
-  room: `${ri.type} ${ri.index}`,
-  name: hit.name,
-  unit: normalizeUnit(hit.unit || a.unit || "m2"),
-  qty,
-  labor: cLabor,
-  materials: cMat,
-  mechanisms: cMech,
-  unitPrice: cUprice,
-});
-
-
-      // 2) ✅ un tagad rekursīvi ieliekam hit bērnus (apakšpozīcijas, bērnu bērnus, utt.)
-      expandChildrenRecursive({
-  parentRow: hit,
-  qty: qty,
-  categoryHint: cat,
-  priceCatalog,
-  getChildrenFor,
-  findRowByNameFuzzy,
-  normalizeUnit,
-  pickNum,
-  LABOR_KEYS,
-  MATERIAL_KEYS,
-  MECHANISM_KEYS,
-  UNIT_PRICE_KEYS,
-  selections,
-  roomLabel: `${ri.type} ${ri.index}`,
-  depth: 1,
-});
-
-    }
+    expandChildrenRecursive({
+      parentRow: hit,
+      qty,
+      categoryHint: rawCat,
+      priceCatalog,
+      getChildrenFor,
+      selections,
+      roomLabel: `${ri.type} ${ri.index}`,
+      depth: 1,
+    });
   }
 
   return;
@@ -2124,6 +2199,26 @@ for (const [roomName, rows] of groups.entries()) {
 
 for (const s of rows) {
   const row = ws.getRow(r);
+  if (s.isSurfaceHeader) {
+    row.getCell(1).value = s.name;
+    row.getCell(2).value = "";
+    row.getCell(3).value = "";
+    for (let c = 4; c <= 11; c++) row.getCell(c).value = "-";
+
+    for (let c = 1; c <= COLS; c++) {
+      const cell = row.getCell(c);
+      cell.border = borderAll;
+      cell.font = { ...FONT, italic: false, bold: false };
+      cell.alignment = c === 1
+        ? { wrapText: true, vertical: "middle" }
+        : { vertical: "middle", horizontal: c >= 4 ? "center" : "right" };
+    }
+
+    if (first === null) first = r;
+    last = r;
+    r++;
+    continue;
+  }
 
   // A kolonna = Darbu nosaukums
   row.getCell(1).value = s.isChild ? `    ${s.name}` : s.name;
@@ -2134,57 +2229,30 @@ for (const s of rows) {
   // C = Daudz.
   row.getCell(3).value = s.qty ?? "";
 
-  const surfaceName = String(s.name || "").trim();
-  const surfaceBase = surfaceName.split(" · ")[0].trim();
-  const isNoNumberSurfaceHeader =
-    insurer === "Swedbank" &&
-    !s.isChild &&
-    ["Krāsots betons", "Krāsots ģipškartons", "Ģipškartons un krāsojamās tapetes vai tapetes"].includes(
-      surfaceBase
-    );
+  const d = Number(s.labor || 0);
+  const e = Number(s.materials || 0);
+  const f = Number(s.mechanisms || 0);
+  const hasSplit = (d + e + f) > 0;
 
-  // Ja šī ir viena no 3 virs-pozīcijām, tad tai jābūt “tukšai” (ar defisi)
-  if (isNoNumberSurfaceHeader) {
-    // Daudzums tukšs
-    row.getCell(3).value = "";
-
-    // D..K ieliekam "-"
-    for (let c = 4; c <= 11; c++) {
-      row.getCell(c).value = "-";
-      row.getCell(c).alignment = { vertical: "middle", horizontal: "center" };
-    }
+  if (hasSplit) {
+    ws.getCell(r, 4).value = d;
+    ws.getCell(r, 5).value = e;
+    ws.getCell(r, 6).value = f;
   } else {
-    // D/E/F = Darbs/Materiāli/Mehānismi
-    const d = Number(s.labor || 0);
-    const e = Number(s.materials || 0);
-    const f = Number(s.mechanisms || 0);
-    const hasSplit = (d + e + f) > 0;
-
-    if (hasSplit) {
-      ws.getCell(r, 4).value = d; // D
-      ws.getCell(r, 5).value = e; // E
-      ws.getCell(r, 6).value = f; // F
-    } else {
-      const fallback = Number(s.unitPrice || 0);
-      ws.getCell(r, 4).value = 0;
-      ws.getCell(r, 5).value = fallback;
-      ws.getCell(r, 6).value = 0;
-    }
-
-    // G = cena (D+E+F)
-    ws.getCell(r, 7).value = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
-
-    // H..J = summas (Darbs/Materiāli/Mehānismi) * daudz.
-    ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
-    ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
-    ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
-
-    // K = kopā (G * daudz.)
-    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
-
-    row.getCell(3).numFmt = QTY;
-    for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
+    const fallback = Number(s.unitPrice || 0);
+    ws.getCell(r, 4).value = 0;
+    ws.getCell(r, 5).value = fallback;
+    ws.getCell(r, 6).value = 0;
   }
+
+  ws.getCell(r, 7).value  = { formula: `ROUND(SUM(D${r}:F${r}),2)` };
+  ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
+  ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
+  ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
+  ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+
+  row.getCell(3).numFmt = QTY;
+  for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
 
   // styling (lai “Darbu nosaukums” nebūtu šaurs + wrap)
   for (let c = 1; c <= COLS; c++) {
