@@ -1,0 +1,21 @@
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next export",
+    "predeploy": "npm run build && npm run export",
+    "deploy": "gh-pages -d out -t true",
+    "start": "next start"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "shx": "^0.4.0"
+  }
+}
+
