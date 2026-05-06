@@ -206,6 +206,83 @@ const SWEDBANK_SURFACE_WORKS = {
         "Tapešu līmēšana",
       ],
     },
+    "Apmetums, 10mm": [
+  "Esošā apmetuma demontāža",
+  "Griestu apmešana 10mm biezumā",
+],
+
+"Putoplasta plāksnes": [
+  "Griestu attīrīšana no esošā seguma",
+  "Putoplasta plākšņu montāža",
+],
+
+"Armstrong tipa griesti (plākšņu)": [
+  "Armstrong tipa griestu  plākšņu demontāža",
+  "Armstrong tipa griestu  plākšņu montāža",
+],
+
+"Armstrong tipa griesti (karkasa)": [
+  "Armstrong tipa griestu karkasa demontāža",
+  "Armstrong tipa griestu karkasa montāža",
+],
+
+"PVC apdares dēļi": [
+  "PVC apdares paneļu demontāža",
+  "PVC apdares dēļu ierīkošana",
+],
+
+"PVC apdares paneļi": [
+  "PVC apdares paneļu demontāža",
+  "PVC apdares paneļu ierīkošana",
+],
+
+"Augstvērtīgs dekoratīvais apmetums (venēcijas)": [
+  "Griestu attīrīšana no esošā seguma (apmetuma nokalšana)",
+  "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) Venēcijas apmetums, dabīgs marmora efekts",
+],
+
+"Augstvērtīgs dekoratīvais apmetums (minerālais)": [
+  "Griestu attīrīšana no esošā seguma (apmetuma nokalšana)",
+  "Dekoratīvā apmetuma ierīkošana (tai sk. virsmas sagatavošana un gruntēšana) minerālais apmetums ar krāsošanu",
+],
+
+"Nostieptie griesti": [
+  "Nostiepto griestu demontāža",
+  "Nostiepto griestu ierīkošana",
+],
+
+"Koka dēlīšu apšuvums": [
+  "Esošo koka dēlīšu demontāža saglabājot latojumu",
+  "Koka dēlīšu apšuvuma ierīkošana",
+],
+
+"Ģipša dekoratīvās karnīzes (atlietas, jaunas)": [
+  "Griestu karnīžu restaurācija (atlējumu izgatavošana un ierīkošana)",
+],
+
+"Griestu apstrāde ar pretsēnīšu šķidrumu": [
+  "Griestu apstrāde ar pretsēnīšu šķidrumu",
+],
+
+"Karnīžu montāža saglabājot esošās": [
+  "Karnīžu demontāža (saglabājot esošās)",
+  "Karnīžu ierīkošana (izmantojot esošās)",
+],
+
+"Koka karnīzes": [
+  "Karnīžu demontāža",
+  "Karnīžu ierīkošana",
+],
+
+"Putoplasta karnīzes": [
+  "Karnīžu demontāža",
+  "Karnīžu ierīkošana",
+],
+
+"Papildu iespējamie darbi griestu apdarē": [
+  "Vairākslāņu tapešu attīrīšana no griestiem",
+  "Griestu gruntēšana, špahtelēšana un slīpēšana",
+],
   },
 
   // Sienām doc nedod detalizētu sarakstu, bet prasība ir par “pozīciju līmeni”.
