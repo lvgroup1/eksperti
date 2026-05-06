@@ -3277,9 +3277,8 @@ const isSwedbankSurfaceSelector =
   }}
 >
   <option value="">— izvēlies pozīciju —</option>
-
   {((row.category || "").trim() === "Griesti"
-    ? SWEDBANK_SURFACE_POSITIONS
+    ? Object.keys(SWEDBANK_SURFACE_WORKS.Griesti || {})
     : SWEDBANK_BASIC_SURFACE_POSITIONS
   ).map((pos) => (
     <option key={pos} value={pos}>
