@@ -3255,6 +3255,14 @@ const isSwedbankSurfaceSelector =
 
     setRowField(editingRoomId, idx, "swedSurfacePos", pos);
 
+    if (!pos) {
+      setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
+      setRowField(editingRoomId, idx, "itemUid", "");
+      setRowField(editingRoomId, idx, "itemId", "");
+      setRowField(editingRoomId, idx, "itemName", "");
+      return;
+    }
+
     if (pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
       setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
       applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
@@ -3269,7 +3277,11 @@ const isSwedbankSurfaceSelector =
   }}
 >
   <option value="">— izvēlies pozīciju —</option>
-  {(cat === "Griesti" ? SWEDBANK_SURFACE_POSITIONS : SWEDBANK_BASIC_SURFACE_POSITIONS).map((pos) => (
+
+  {((row.category || "").trim() === "Griesti"
+    ? SWEDBANK_SURFACE_POSITIONS
+    : SWEDBANK_BASIC_SURFACE_POSITIONS
+  ).map((pos) => (
     <option key={pos} value={pos}>
       {pos}
     </option>
