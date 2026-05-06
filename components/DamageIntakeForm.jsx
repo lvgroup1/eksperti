@@ -81,6 +81,11 @@ const SWEDBANK_SURFACE_POSITIONS = [
   "Putoplasta karnīzes",
   "Papildu iespējamie darbi griestu apdarē",
 ];
+const SWEDBANK_BASIC_SURFACE_POSITIONS = [
+  "Krāsots betons",
+  "Krāsots ģipškartons",
+  "Ģipškartons un krāsojamās tapetes vai tapetes",
+];
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
@@ -3243,34 +3248,33 @@ const isSwedbankSurfaceSelector =
 
   {isSwedbankSurfaceSelector ? (
     <>
-      <select
-        value={row.swedSurfacePos || ""}
-        onChange={(e) => {
-          const pos = e.target.value;
-          setRowField(editingRoomId, idx, "swedSurfacePos", pos);
+<select
+  value={row.swedSurfacePos || ""}
+  onChange={(e) => {
+    const pos = e.target.value;
 
-          // ja maina pozīciju, notīra variantu
-          setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
-          // auto-ielikšana notiks, kad būs izvēlēts variants (ja vajag) vai uzreiz (ja nevajag)
-          if (pos && pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
-            applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
-          }
-        }}
-        style={{
-          width: "100%",
-          padding: "8px 12px",
-          borderRadius: 10,
-          border: "1px solid #e5e7eb",
-          background: "white",
-        }}
-      >
-        <option value="">— izvēlies pozīciju —</option>
-        <option value="Krāsots betons">Krāsots betons</option>
-        <option value="Krāsots ģipškartons">Krāsots ģipškartons</option>
-        <option value="Ģipškartons un krāsojamās tapetes vai tapetes">
-          Ģipškartons un krāsojamās tapetes vai tapetes
-        </option>
-      </select>
+    setRowField(editingRoomId, idx, "swedSurfacePos", pos);
+
+    if (pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
+      setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
+      applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
+    }
+  }}
+  style={{
+    width: "100%",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    padding: 8,
+    background: "white",
+  }}
+>
+  <option value="">— izvēlies pozīciju —</option>
+  {(cat === "Griesti" ? SWEDBANK_SURFACE_POSITIONS : SWEDBANK_BASIC_SURFACE_POSITIONS).map((pos) => (
+    <option key={pos} value={pos}>
+      {pos}
+    </option>
+  ))}
+</select>
 
       {/* Variant izvēle tikai 3. pozīcijai */}
       {row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" && (
