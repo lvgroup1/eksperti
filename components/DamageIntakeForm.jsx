@@ -3252,9 +3252,9 @@ const isSwedbankSurfaceSelector =
   value={row.swedSurfacePos || ""}
   onChange={(e) => {
     const pos = e.target.value;
-
+  
     setRowField(editingRoomId, idx, "swedSurfacePos", pos);
-
+  
     if (!pos) {
       setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
       setRowField(editingRoomId, idx, "itemUid", "");
@@ -3262,7 +3262,7 @@ const isSwedbankSurfaceSelector =
       setRowField(editingRoomId, idx, "itemName", "");
       return;
     }
-
+  
     if (pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
       setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
       applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
@@ -3277,14 +3277,14 @@ const isSwedbankSurfaceSelector =
   }}
 >
   <option value="">— izvēlies pozīciju —</option>
-  {((row.category || "").trim() === "Griesti"
-    ? Object.keys(SWEDBANK_SURFACE_WORKS.Griesti || {})
-    : SWEDBANK_BASIC_SURFACE_POSITIONS
-  ).map((pos) => (
-    <option key={pos} value={pos}>
-      {pos}
-    </option>
-  ))}
+  {(String(row.category || "").trim() === "Griesti"
+  ? SWEDBANK_SURFACE_POSITIONS
+  : SWEDBANK_BASIC_SURFACE_POSITIONS
+).map((pos) => (
+  <option key={pos} value={pos}>
+    {pos}
+  </option>
+))}
 </select>
 
       {/* Variant izvēle tikai 3. pozīcijai */}
