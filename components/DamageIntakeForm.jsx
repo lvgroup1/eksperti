@@ -86,6 +86,31 @@ const SWEDBANK_BASIC_SURFACE_POSITIONS = [
   "Krāsots ģipškartons",
   "Ģipškartons un krāsojamās tapetes vai tapetes",
 ];
+const SWEDBANK_WALL_SURFACE_POSITIONS = [
+  "Krāsots betons",
+  "Krāsots ģipškartons",
+  "Ģipškartons un krāsojamās tapetes vai tapetes",
+
+  "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)",
+  "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)",
+  "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)",
+  "Koka skaidu plākšņu sienas apakšklājs",
+  "Apmetums, 10mm",
+  "Krāsojums (ar špaktelējumu)",
+  "Augstvērtīgs dekoratīvais apmetums",
+  "Fototapete",
+  "MDF apdares paneļi",
+  "Koka dēlīšu apšuvums",
+  "Koka latojuma montāža",
+  "Sienu flīzējums",
+  "Preskartons (krāsots)",
+  "Apstrāde ar pretsēnīšu šķidrumu",
+  "Ailes ar krāsojumu",
+  "Ailes ar krāsojamām tapetēm",
+  "Ailes ar tapetēm",
+  "Augstvērtīgs dekoratīvais apmetums ailē",
+  "Papildu iespējamie darbi sienu apdarē",
+];
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
@@ -3277,9 +3302,12 @@ const isSwedbankSurfaceSelector =
   }}
 >
   <option value="">— izvēlies pozīciju —</option>
-  {(String(row.category || "").trim() === "Griesti"
-  ? SWEDBANK_SURFACE_POSITIONS
-  : SWEDBANK_BASIC_SURFACE_POSITIONS
+  {(
+  String(row.category || "").trim() === "Griesti"
+    ? SWEDBANK_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Sienas, ailes"
+      ? SWEDBANK_WALL_SURFACE_POSITIONS
+      : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
     {pos}
