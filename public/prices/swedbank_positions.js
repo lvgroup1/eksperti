@@ -83,4 +83,84 @@ export const SWEDBANK_POSITIONS = {
       ],
     },
   },
+  Grīdas: {
+    "Palīgdarbi": [
+      "SW-0111",
+      "SW-0112",
+      "SW-0113",
+      "SW-0114",
+    ],
+  
+    "Saplāksnis": [
+      "SW-0119",
+      "SW-0120",
+    ],
+  
+    "OSB-3": [
+      "SW-0121",
+      "SW-0122",
+    ],
+  
+    "Preskartons": [
+      "SW-0123",
+      "SW-0124",
+    ],
+  
+    "Grīdas krāsojums": [
+      "SW-0125",
+      "SW-0126",
+      "SW-0127",
+    ],
+  
+    "Linolejs": [
+      "SW-0128",
+      "SW-0129",
+      "SW-0130",
+    ],
+  
+    "Lamināts": [
+      "SW-0131",
+      "SW-0132",
+    ],
+  
+    "Mīkstais grīdas segums": [
+      "SW-0134",
+      "SW-0135",
+    ],
+  
+    "Parketa dēļi": [
+      "SW-0136",
+      "SW-0137",
+    ],
+  
+    "Esošas dēļu grīdas slīpēšana, lakošana": [
+      "SW-0138",
+      "SW-0139",
+    ],
+  
+    "Grīdas flīzējums": [
+      "SW-0092",
+      "SW-0140",
+      "SW-0141",
+    ],
+  
+    "Koka grīdlīstes": [
+      "SW-0142",
+      "SW-0143",
+    ],
+  
+    "PVC grīdlīstes": [
+      "SW-0145",
+      "SW-0146",
+    ],
+  
+    "Sliekšņi": [
+      "SW-0147",
+    ],
+  
+    "Koka latojuma montāža": [
+      "SW-0148",
+      "SW-0149",
+    ],
+  },
 };

@@ -58,7 +58,7 @@ const SWEDBANK_CATEGORIES = [
   "Būvgružu utilizācija",
 ];
 
-const SWEDBANK_SURFACE_CATS = new Set(["Griesti", "Sienas, ailes", "Sienas"]);
+const SWEDBANK_SURFACE_CATS = new Set(["Griesti", "Sienas, ailes", "Sienas", "Grīdas"]);
 
 const SWEDBANK_SURFACE_POSITIONS = [
   "Krāsots betons",
@@ -111,10 +111,28 @@ const SWEDBANK_WALL_SURFACE_POSITIONS = [
   "Augstvērtīgs dekoratīvais apmetums ailē",
   "Papildu iespējamie darbi sienu apdarē",
 ];
+const SWEDBANK_FLOOR_SURFACE_POSITIONS = [
+  "Palīgdarbi",
+  "Saplāksnis",
+  "OSB-3",
+  "Preskartons",
+  "Grīdas krāsojums",
+  "Linolejs",
+  "Lamināts",
+  "Mīkstais grīdas segums",
+  "Parketa dēļi",
+  "Esošas dēļu grīdas slīpēšana, lakošana",
+  "Grīdas flīzējums",
+  "Koka grīdlīstes",
+  "PVC grīdlīstes",
+  "Sliekšņi",
+  "Koka latojuma montāža",
+];
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
   "Sienas, ailes": "Sienas",
+  "Grīdas": "Grīdas",
 };
 
 const SWEDBANK_SURFACE_VARIANT_MAP = {
@@ -350,6 +368,74 @@ const SWEDBANK_SURFACE_WORKS = {
         "Tapešu līmēšana",
       ],
     },
+  },
+  Grīdas: {
+    "Palīgdarbi": [
+      "Grīdas seguma demontāža",
+      "Grīdas pamatnes sagatavošana",
+    ],
+  
+    "Saplāksnis": [
+      "Saplāksņa montāža",
+    ],
+  
+    "OSB-3": [
+      "OSB-3 plākšņu montāža",
+    ],
+  
+    "Preskartons": [
+      "Preskartona montāža",
+    ],
+  
+    "Grīdas krāsojums": [
+      "Grīdas gruntēšana pirms krāsošanas",
+      "Grīdas krāsošana",
+    ],
+  
+    "Linolejs": [
+      "Linoleja ieklāšana",
+    ],
+  
+    "Lamināts": [
+      "Lamināta ieklāšana",
+    ],
+  
+    "Mīkstais grīdas segums": [
+      "Mīkstā grīdas seguma ieklāšana",
+    ],
+  
+    "Parketa dēļi": [
+      "Parketa dēļu ieklāšana",
+    ],
+  
+    "Esošas dēļu grīdas slīpēšana, lakošana": [
+      "Esošas dēļu grīdas slīpēšana",
+      "Esošas dēļu grīdas lakošana",
+    ],
+  
+    "Grīdas flīzējums": [
+      "Flīžu demontāža",
+      "Hidroizolācijas ierīkošana zem flīzēm",
+      "Grīdas flīzēšana",
+    ],
+  
+    "Koka grīdlīstes": [
+      "Grīdlīstu demontāža",
+      "Koka grīdlīstu montāža",
+    ],
+  
+    "PVC grīdlīstes": [
+      "Grīdlīstu demontāža",
+      "PVC grīdlīstu montāža",
+    ],
+  
+    "Sliekšņi": [
+      "Sliekšņa montāža",
+    ],
+  
+    "Koka latojuma montāža": [
+      "Koka latojuma montāža",
+    ],
   },
 };
 
@@ -3307,7 +3393,9 @@ const isSwedbankSurfaceSelector =
     ? SWEDBANK_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Sienas, ailes"
       ? SWEDBANK_WALL_SURFACE_POSITIONS
-      : SWEDBANK_BASIC_SURFACE_POSITIONS
+      : String(row.category || "").trim() === "Grīdas"
+        ? SWEDBANK_FLOOR_SURFACE_POSITIONS
+        : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
     {pos}
@@ -3363,8 +3451,11 @@ const isSwedbankSurfaceSelector =
           cursor: "pointer",
         }}
       >
-{insurer === "Swedbank" && (cat === "Griesti" || cat === "Sienas, ailes") && row.swedSurfacePos
-  ? row.swedSurfacePos + (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
+{insurer === "Swedbank" &&
+(cat === "Griesti" || cat === "Sienas, ailes" || cat === "Grīdas") &&
+row.swedSurfacePos
+  ? row.swedSurfacePos +
+    (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
   : row.itemName
     ? row.itemName + (row.unit ? ` · ${row.unit}` : "")
     : "— izvēlies pozīciju —"}
