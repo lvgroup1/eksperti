@@ -58,7 +58,14 @@ const SWEDBANK_CATEGORIES = [
   "Būvgružu utilizācija",
 ];
 
-const SWEDBANK_SURFACE_CATS = new Set(["Griesti", "Sienas, ailes", "Sienas", "Grīdas"]);
+const SWEDBANK_SURFACE_CATS = new Set([
+  "Griesti",
+  "Sienas, ailes",
+  "Sienas",
+  "Grīdas",
+  "Citi apdares darbi",
+  "Jumts",
+]);
 
 const SWEDBANK_SURFACE_POSITIONS = [
   "Krāsots betons",
@@ -128,11 +135,39 @@ const SWEDBANK_FLOOR_SURFACE_POSITIONS = [
   "Sliekšņi",
   "Koka latojuma montāža",
 ];
+const SWEDBANK_OTHER_SURFACE_POSITIONS = [
+  "PVC logi",
+  "Koka logi",
+  "Loga, durvju stikla paketes nomaiņa",
+  "Koka palodzes",
+  "Koka palodžu slīpēšana",
+  "MDF palodzes",
+  "Ārējās skārda palodzes",
+  "Durvju maiņa",
+  "Loga/durvju ailes apdare",
+  "Koka durvju remonts",
+];
+
+const SWEDBANK_ROOF_SURFACE_POSITIONS = [
+  "Pamatdarbības",
+  "Lietus ūdens teknes un notekcaurules",
+  "Jumta vējkastes",
+  "Jumts, dažādi darbi",
+];
+
+const SWEDBANK_DOOR_VARIANTS = [
+  "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, individuāli izgatavotas koka durvis",
+  "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, standarta izmēra gatavas koka durvis",
+  "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, standarta izmēra gatavas MDF/preskartona durvis",
+  "Durvju vērtnes montāža (durvju vērtne, furnitūra), 900x2100mm, idividuāli izgatavota koka durvju vērtne",
+  "Durvis, 900x2100mm, PVC durvis ar stiklu",
+];
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
   "Sienas, ailes": "Sienas",
   "Grīdas": "Grīdas",
+  "Jumts": "Jumts",
 };
 
 const SWEDBANK_SURFACE_VARIANT_MAP = {
@@ -211,6 +246,36 @@ const SWEDBANK_CHILD_DETAILS = {
   "SW-0081": [
     { name: "emulsijas krāsa, tonēta", unit: "l", coeff: 0.3, materials: 5.7 },
   ],
+  "SW-0451": [
+  { name: "antikondensāta plēve", unit: "m2", coeff: 1.1, materials: 0.68 },
+  { name: "palīgmateriāli", unit: "m2", coeff: 1, materials: 0.14 },
+],
+"SW-0454": [
+  { name: "koka latas 50x50mm", unit: "m3", coeff: 0.005, materials: 300 },
+  { name: "palīgmateriāli", unit: "m2", coeff: 1, materials: 0.43 },
+],
+"SW-0457": [
+  { name: "koka latas 40x75mm", unit: "m3", coeff: 0.0103, materials: 300 },
+  { name: "palīgmateriāli", unit: "m2", coeff: 1, materials: 0.43 },
+],
+"SW-0460": [
+  { name: "valcprofils PURAL (0.6mm) Monier Rukki", unit: "m2", coeff: 1.1, materials: 19.64 },
+  { name: "palīgmateriāli", unit: "m2", coeff: 1, materials: 1.14 },
+],
+"SW-0465": [
+  { name: "teknes 110mm, ieskaitot veidgabalus", unit: "m", coeff: 1.1, materials: 14 },
+  { name: "palīgmateriāli", unit: "m", coeff: 1, materials: 0.85 },
+],
+"SW-0468": [
+  { name: "notekcaurules 80mm, ieskaitot veidgabalus", unit: "m", coeff: 1.1, materials: 16 },
+  { name: "palīgmateriāli", unit: "m", coeff: 1, materials: 0.85 },
+],
+"SW-0473": [
+  { name: "ēvelēti dēļi", unit: "m2", coeff: 1.1, materials: 20 },
+],
+"SW-0475": [
+  { name: "Pinotex", unit: "l", coeff: 0.3, materials: 6.14 },
+],
 };
 
 // minimāls “auto” darbu komplekts katrai pozīcijai (ņemts no Swedbank cenrāža nosaukumiem)
@@ -435,6 +500,35 @@ const SWEDBANK_SURFACE_WORKS = {
   
     "Koka latojuma montāža": [
       "Koka latojuma montāža",
+    ],
+  },
+  Jumts: {
+    "Pamatdarbības": [
+      "Esošā jumta seguma demontāža",
+      "Esošā latojuma, šķērslatojuma un pretkondensāta plēves demontāža",
+      "Antikondensāta plēves montāža",
+      "Koka latojuma montāža, solis 600mm",
+      "Šķērslatojuma montāža, solis 350mm",
+      "Jumta seguma montāža",
+    ],
+  
+    "Lietus ūdens teknes un notekcaurules": [
+      "Lietus ūdens tekņu un notekcauruļu demontāža",
+      "Lietus tekņu uzstādīšana",
+      "Lietus notekcauruļu uzstādīšana",
+    ],
+  
+    "Jumta vējkastes": [
+      "Esošās vēja kastes demontāža",
+      "Vējkastes montāža",
+      "Vējkastes krāsošana ar Pinotex",
+    ],
+  
+    "Jumts, dažādi darbi": [
+      "Kores montāža",
+      "Skārda pieslēgumi sienai",
+      "Skārda pieslēgumi skurstenim",
+      "Skursteņa jumtiņa montāža 1200x600",
     ],
   },
 };
@@ -3395,7 +3489,11 @@ const isSwedbankSurfaceSelector =
       ? SWEDBANK_WALL_SURFACE_POSITIONS
       : String(row.category || "").trim() === "Grīdas"
         ? SWEDBANK_FLOOR_SURFACE_POSITIONS
-        : SWEDBANK_BASIC_SURFACE_POSITIONS
+        : String(row.category || "").trim() === "Citi apdares darbi"
+          ? SWEDBANK_OTHER_SURFACE_POSITIONS
+          : String(row.category || "").trim() === "Jumts"
+            ? SWEDBANK_ROOF_SURFACE_POSITIONS
+            : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
     {pos}
@@ -3404,7 +3502,8 @@ const isSwedbankSurfaceSelector =
 </select>
 
       {/* Variant izvēle tikai 3. pozīcijai */}
-      {row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" && (
+      {(row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" ||
+  row.swedSurfacePos === "Durvju maiņa") && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 13, marginBottom: 4 }}>Veids</div>
           <select
@@ -3425,8 +3524,22 @@ const isSwedbankSurfaceSelector =
             }}
           >
             <option value="">— izvēlies —</option>
-            <option value="krasojamas">Krāsojamās tapetes</option>
-            <option value="tapetes">Tapetes</option>
+                       {(row.swedSurfacePos === "Durvju maiņa"
+  ? SWEDBANK_DOOR_VARIANTS
+  : [
+      { value: "krasojamas", label: "Krāsojamās tapetes" },
+      { value: "tapetes", label: "Tapetes" },
+    ]
+).map((opt) => {
+  const value = typeof opt === "string" ? opt : opt.value;
+  const label = typeof opt === "string" ? opt : opt.label;
+
+  return (
+    <option key={value} value={value}>
+      {label}
+    </option>
+  );
+})}
           </select>
         </div>
       )}
@@ -3452,7 +3565,7 @@ const isSwedbankSurfaceSelector =
         }}
       >
 {insurer === "Swedbank" &&
-(cat === "Griesti" || cat === "Sienas, ailes" || cat === "Grīdas") &&
+(cat === "Griesti" || cat === "Sienas, ailes" || cat === "Grīdas" || cat === "Citi apdares darbi") &&
 row.swedSurfacePos
   ? row.swedSurfacePos +
     (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
