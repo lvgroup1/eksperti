@@ -65,6 +65,7 @@ const SWEDBANK_SURFACE_CATS = new Set([
   "Grīdas",
   "Citi apdares darbi",
   "Jumts",
+  "Fasāde",
 ]);
 
 const SWEDBANK_SURFACE_POSITIONS = [
@@ -155,6 +156,10 @@ const SWEDBANK_ROOF_SURFACE_POSITIONS = [
   "Jumts, dažādi darbi",
 ];
 
+const SWEDBANK_FACADE_SURFACE_POSITIONS = [
+  "Fasāde",
+];
+
 const SWEDBANK_DOOR_VARIANTS = [
   "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, individuāli izgatavotas koka durvis",
   "Durvju montāža (durvju vērtne, kārba, furnitūra, aplodas), 900x2100mm, standarta izmēra gatavas koka durvis",
@@ -168,6 +173,7 @@ const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Sienas, ailes": "Sienas",
   "Grīdas": "Grīdas",
   "Jumts": "Jumts",
+  "Fasāde": "Fasāde",
 };
 
 const SWEDBANK_SURFACE_VARIANT_MAP = {
@@ -275,6 +281,24 @@ const SWEDBANK_CHILD_DETAILS = {
 ],
 "SW-0475": [
   { name: "Pinotex", unit: "l", coeff: 0.3, materials: 6.14 },
+],
+"SW-0485": [
+  { name: "Sastatņu montāža, demontāža, īre (1. mēnesis)", unit: "m2", coeff: 0.8, labor: 4.3, materials: 0.6, mechanisms: 2.46015 },
+  { name: "akmens vate Paroc Linio 15 100mm", unit: "m2", coeff: 1.05, materials: 12 },
+  { name: "līmjava", unit: "kg", coeff: 5, materials: 0.22 },
+  { name: "dībelis", unit: "gab", coeff: 6, materials: 0.15 },
+],
+"SW-0489": [
+  { name: "armēšanas java", unit: "kg", coeff: 6, materials: 0.22 },
+  { name: "stiklašķiedras siets", unit: "m2", coeff: 1.2, materials: 0.6 },
+],
+"SW-0492": [
+  { name: "grunts", unit: "l", coeff: 0.2, materials: 2.2 },
+  { name: "dekoratīvais apmetums", unit: "kg", coeff: 4.5, materials: 0.34 },
+],
+"SW-0495": [
+  { name: "grunts", unit: "l", coeff: 0.2, materials: 2 },
+  { name: "silikātkrāsa (tonēta)", unit: "l", coeff: 0.3, materials: 5.5 },
 ],
 };
 
@@ -531,6 +555,15 @@ const SWEDBANK_SURFACE_WORKS = {
       "Skursteņa jumtiņa montāža 1200x600",
     ],
   },
+  "Fasāde": {
+  "Fasāde": [
+    "Fasādes apšuvuma demontāža (dekoratīvais apmetums, plastikāta siets, siltinājums",
+    "Fasādes siltināšana ar akmens vati",
+    "Plastikāta sieta montāža",
+    "Fasādes plānais dekoratīvais apmetums",
+    "Fasāde krāsošana",
+  ],
+},
 };
 
 
@@ -3493,6 +3526,8 @@ const isSwedbankSurfaceSelector =
           ? SWEDBANK_OTHER_SURFACE_POSITIONS
           : String(row.category || "").trim() === "Jumts"
             ? SWEDBANK_ROOF_SURFACE_POSITIONS
+            : String(row.category || "").trim() === "Fasāde"
+  ? SWEDBANK_FACADE_SURFACE_POSITIONS
             : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
@@ -3565,7 +3600,7 @@ const isSwedbankSurfaceSelector =
         }}
       >
 {insurer === "Swedbank" &&
-(cat === "Griesti" || cat === "Sienas, ailes" || cat === "Grīdas" || cat === "Citi apdares darbi") &&
+(cat === "Griesti" || cat === "Sienas, ailes" || cat === "Grīdas" || cat === "Citi apdares darbi" || cat === "Jumts"|| cat === "Fasāde") &&
 row.swedSurfacePos
   ? row.swedSurfacePos +
     (row.swedSurfaceVariant ? ` · ${row.swedSurfaceVariant}` : "")
