@@ -147,6 +147,7 @@ const SWEDBANK_OTHER_SURFACE_POSITIONS = [
   "Durvju maiņa",
   "Loga/durvju ailes apdare",
   "Koka durvju remonts",
+  "Iebūvēta skapja demontāža, montāža",
 ];
 
 const SWEDBANK_ROOF_SURFACE_POSITIONS = [
@@ -167,11 +168,28 @@ const SWEDBANK_DOOR_VARIANTS = [
   "Durvju vērtnes montāža (durvju vērtne, furnitūra), 900x2100mm, idividuāli izgatavota koka durvju vērtne",
   "Durvis, 900x2100mm, PVC durvis ar stiklu",
 ];
+
+const SWEDBANK_WARDROBE_VARIANTS = [
+  {
+    value: "1",
+    label: "1 durvis",
+  },
+  {
+    value: "2",
+    label: "2 durvis",
+  },
+  {
+    value: "3",
+    label: "3 durvis",
+  },
+];
+
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
   "Sienas, ailes": "Sienas",
   "Grīdas": "Grīdas",
+  "Citi apdares darbi": "Citi apdares darbi",
   "Jumts": "Jumts",
   "Fasāde": "Fasāde",
 };
@@ -180,6 +198,10 @@ const SWEDBANK_SURFACE_VARIANT_MAP = {
   krasojamas: "krasojamas_tapetes",
   krasojamas_tapetes: "krasojamas_tapetes",
   tapetes: "tapetes",
+  "1": "1",
+  "2": "2",
+  "3": "3",
+  ...Object.fromEntries(SWEDBANK_DOOR_VARIANTS.map((v) => [v, v])),
 };
 
 const SWEDBANK_CHILD_DETAILS = {
@@ -564,6 +586,7 @@ const SWEDBANK_SURFACE_WORKS = {
     "Fasāde krāsošana",
   ],
 },
+
 };
 
 
@@ -3501,7 +3524,11 @@ const isSwedbankSurfaceSelector =
       return;
     }
   
-    if (pos !== "Ģipškartons un krāsojamās tapetes vai tapetes") {
+    if (
+      pos !== "Ģipškartons un krāsojamās tapetes vai tapetes" &&
+      pos !== "Durvju maiņa" &&
+      pos !== "Iebūvēta skapja demontāža, montāža"
+    ) {
       setRowField(editingRoomId, idx, "swedSurfaceVariant", "");
       applySwedbankSurfacePosition(editingRoomId, idx, row.category, pos, "");
     }
@@ -3537,47 +3564,58 @@ const isSwedbankSurfaceSelector =
 </select>
 
       {/* Variant izvēle tikai 3. pozīcijai */}
-      {(row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" ||
-  row.swedSurfacePos === "Durvju maiņa") && (
-        <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 13, marginBottom: 4 }}>Veids</div>
-          <select
-            value={row.swedSurfaceVariant || ""}
-            onChange={(e) => {
-              const v = e.target.value; // "krasojamas" | "tapetes"
-              setRowField(editingRoomId, idx, "swedSurfaceVariant", v);
-              if (v) {
-                applySwedbankSurfacePosition(editingRoomId, idx, row.category, row.swedSurfacePos, v);
-              }
-            }}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-              background: "white",
-            }}
-          >
-            <option value="">— izvēlies —</option>
-                       {(row.swedSurfacePos === "Durvju maiņa"
-  ? SWEDBANK_DOOR_VARIANTS
-  : [
-      { value: "krasojamas", label: "Krāsojamās tapetes" },
-      { value: "tapetes", label: "Tapetes" },
-    ]
-).map((opt) => {
-  const value = typeof opt === "string" ? opt : opt.value;
-  const label = typeof opt === "string" ? opt : opt.label;
+      {(
+  row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" ||
+  row.swedSurfacePos === "Durvju maiņa" ||
+  row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža"
+) && (
+  <div style={{ marginTop: 8 }}>
+    <div style={{ fontSize: 13, marginBottom: 4 }}>
+      {row.swedSurfacePos === "Durvju maiņa"
+        ? "Durvju variants"
+        : row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža"
+          ? "Durvju skaits"
+          : "Tapetes variants"}
+    </div>
 
-  return (
-    <option key={value} value={value}>
-      {label}
-    </option>
-  );
-})}
-          </select>
-        </div>
-      )}
+    <select
+      value={row.swedSurfaceVariant || ""}
+      onChange={(e) => {
+        const v = e.target.value;
+        setRowField(editingRoomId, idx, "swedSurfaceVariant", v);
+        applySwedbankSurfacePosition(editingRoomId, idx, row.category, row.swedSurfacePos, v);
+      }}
+      style={{
+        width: "100%",
+        border: "1px solid #e5e7eb",
+        borderRadius: 10,
+        padding: 8,
+        background: "white",
+      }}
+    >
+      <option value="">— izvēlies variantu —</option>
+
+      {(row.swedSurfacePos === "Durvju maiņa"
+        ? SWEDBANK_DOOR_VARIANTS
+        : row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža"
+          ? SWEDBANK_WARDROBE_VARIANTS
+          : [
+              { value: "krasojamas", label: "Krāsojamās tapetes" },
+              { value: "tapetes", label: "Tapetes" },
+            ]
+      ).map((opt) => {
+        const value = typeof opt === "string" ? opt : opt.value;
+        const label = typeof opt === "string" ? opt : opt.label;
+
+        return (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        );
+      })}
+    </select>
+  </div>
+)}
     </>
   ) : (
     <>
