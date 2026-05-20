@@ -183,6 +183,29 @@ const SWEDBANK_WARDROBE_VARIANTS = [
     label: "3 durvis",
   },
 ];
+const SWEDBANK_ROOM_CLEANING_VARIANTS = [
+  {
+    value: "lidz30",
+    label: "Līdz 30 m2",
+    itemCode: "SW-TELPU-001",
+    itemName: "Telpu kopšana līdz 30 m2",
+    price: 85,
+  },
+  {
+    value: "30_60",
+    label: "30-60 m2",
+    itemCode: "SW-TELPU-002",
+    itemName: "Telpu kopšana 30-60 m2",
+    price: 145,
+  },
+  {
+    value: "60_100",
+    label: "60-100 m2",
+    itemCode: "SW-TELPU-003",
+    itemName: "Telpu kopšana 60-100 m2",
+    price: 220,
+  },
+];
 
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
@@ -2076,6 +2099,25 @@ function setRowCategory(roomId, idx, category) {
       base.swedAuto = false;
     }
 
+    if (insurer === "Swedbank" && cat === "Telpu kopšana") {
+  const defaultCleaning = SWEDBANK_ROOM_CLEANING_VARIANTS[0];
+
+  base.swedSurfacePos = "Telpu kopšana";
+  base.swedSurfaceVariant = defaultCleaning.value;
+
+  base.itemUid = defaultCleaning.itemCode;
+  base.itemId = defaultCleaning.itemCode;
+  base.itemName = defaultCleaning.itemName;
+
+  base.quantity = "1";
+  base.unit = "kpl";
+
+  base.unit_price = defaultCleaning.price;
+  base.labor = defaultCleaning.price;
+  base.materials = 0;
+  base.mechanisms = 0;
+}
+
     list[idx] = base;
     return { ...ra, [roomId]: list };
   });
@@ -3555,6 +3597,8 @@ const isSwedbankSurfaceSelector =
             ? SWEDBANK_ROOF_SURFACE_POSITIONS
             : String(row.category || "").trim() === "Fasāde"
   ? SWEDBANK_FACADE_SURFACE_POSITIONS
+  : String(row.category || "").trim() === "Telpu kopšana"
+? ["Telpu kopšana"]
             : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
@@ -3571,6 +3615,58 @@ const isSwedbankSurfaceSelector =
 ) && (
   <div style={{ marginTop: 8 }}>
     <div style={{ fontSize: 13, marginBottom: 4 }}>
+    {row.category === "Telpu kopšana" && (
+  <div style={{ marginTop: 8 }}>
+    <select
+      value={row.swedSurfaceVariant || "lidz30"}
+      onChange={(e) => {
+        const variant = SWEDBANK_ROOM_CLEANING_VARIANTS.find(
+          (v) => v.value === e.target.value
+        );
+
+        if (!variant) return;
+
+        setRoomActions((ra) => {
+          const list = [...(ra[editingRoomId] || [])];
+
+          list[idx] = {
+            ...list[idx],
+            swedSurfaceVariant: variant.value,
+
+            itemUid: variant.itemCode,
+            itemId: variant.itemCode,
+            itemName: variant.itemName,
+
+            quantity: "1",
+            unit: "kpl",
+
+            unit_price: variant.price,
+            labor: variant.price,
+            materials: 0,
+            mechanisms: 0,
+          };
+
+          return {
+            ...ra,
+            [editingRoomId]: list,
+          };
+        });
+      }}
+      style={{
+        width: "100%",
+        padding: 10,
+        borderRadius: 8,
+        border: "1px solid #ccc",
+      }}
+    >
+      {SWEDBANK_ROOM_CLEANING_VARIANTS.map((v) => (
+        <option key={v.value} value={v.value}>
+          {v.label}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
       {row.swedSurfacePos === "Durvju maiņa"
         ? "Durvju variants"
         : row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža"
