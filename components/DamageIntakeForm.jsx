@@ -210,10 +210,29 @@ const SWEDBANK_ROOM_CLEANING_VARIANTS = [
 ];
 
 const getSwedbankCleaningVariantByM2 = (m2) => {
-  const n = Number(m2 || 0);
-  if (n <= 30) return SWEDBANK_ROOM_CLEANING_VARIANTS[0];
-  if (n <= 60) return SWEDBANK_ROOM_CLEANING_VARIANTS[1];
-  return SWEDBANK_ROOM_CLEANING_VARIANTS[2];
+  const area = Number(m2 || 0);
+
+  if (area <= 30) {
+    return {
+      value: "0-30",
+      itemName: "Telpu kopšana 0-30 m2",
+      price: 79.23,
+    };
+  }
+
+  if (area <= 60) {
+    return {
+      value: "30-60",
+      itemName: "Telpu kopšana 30-60 m2",
+      price: 158.46,
+    };
+  }
+
+  return {
+    value: "60-100",
+    itemName: "Telpu kopšana 60-100 m2",
+    price: 264.1,
+  };
 };
 
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
