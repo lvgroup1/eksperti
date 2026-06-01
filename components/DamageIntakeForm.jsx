@@ -68,6 +68,7 @@ const SWEDBANK_SURFACE_CATS = new Set([
   "Jumts",
 "Fasāde",
 "Telpu kopšana",
+"Būvgružu utilizācija",
 ]);
 
 const SWEDBANK_SURFACE_POSITIONS = [
@@ -185,6 +186,13 @@ const SWEDBANK_WARDROBE_VARIANTS = [
     label: "3 durvis",
   },
 ];
+
+const SWEDBANK_WASTE_VARIANTS = [
+  { value: "1", label: "1 m3" },
+  { value: "5.5", label: "5.5 m3" },
+  { value: "8.5", label: "8.5 m3" },
+];
+
 const SWEDBANK_ROOM_CLEANING_VARIANTS = [
   {
     value: "lidz30",
@@ -2552,6 +2560,44 @@ if (
 
   return;
 }
+if (
+  insurer === "Swedbank" &&
+  String(a.category || "").trim() === "Būvgružu utilizācija"
+) {
+  const wasteVariant = String(a.swedSurfaceVariant || "");
+
+  const wasteRow = priceCatalog.find(
+    (row) =>
+      normTxt(row.category) === normTxt("Būvgružu utilizācija") &&
+      (
+        (wasteVariant === "1" && normTxt(row.name).includes(normTxt("1m3"))) ||
+        (wasteVariant === "5.5" && normTxt(row.name).includes(normTxt("5,5m3"))) ||
+        (wasteVariant === "8.5" && normTxt(row.name).includes(normTxt("8,5m3")))
+      )
+  );
+
+  if (wasteRow) {
+    selections.push({
+      isChild: false,
+      room: `${ri.type} ${ri.index}`,
+      name: wasteRow.name,
+      category: "Būvgružu utilizācija",
+      unit: wasteRow.unit || "kpl",
+      qty: 1,
+      labor: pickNum(wasteRow, LABOR_KEYS),
+      materials: pickNum(wasteRow, MATERIAL_KEYS),
+      mechanisms: pickNum(wasteRow, MECHANISM_KEYS),
+      unitPrice:
+        pickNum(wasteRow, UNIT_PRICE_KEYS) ||
+        pickNum(wasteRow, LABOR_KEYS) +
+          pickNum(wasteRow, MATERIAL_KEYS) +
+          pickNum(wasteRow, MECHANISM_KEYS),
+    });
+  }
+
+  return;
+}
+
 if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
   const rawCat = normCat(a.category || "");
   const catKey = SWEDBANK_SURFACE_CATEGORY_MAP[rawCat] || rawCat;
