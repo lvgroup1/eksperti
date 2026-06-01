@@ -208,6 +208,13 @@ const SWEDBANK_ROOM_CLEANING_VARIANTS = [
   },
 ];
 
+const getSwedbankCleaningVariantByM2 = (m2) => {
+  const n = Number(m2 || 0);
+  if (n <= 30) return SWEDBANK_ROOM_CLEANING_VARIANTS[0];
+  if (n <= 60) return SWEDBANK_ROOM_CLEANING_VARIANTS[1];
+  return SWEDBANK_ROOM_CLEANING_VARIANTS[2];
+};
+
 const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Griesti": "Griesti",
   "Sienas": "Sienas",
@@ -2105,23 +2112,24 @@ function setRowCategory(roomId, idx, category) {
     }
 
     if (insurer === "Swedbank" && cat === "Telpu kopšana") {
-  const defaultCleaning = SWEDBANK_ROOM_CLEANING_VARIANTS[0];
-
-  base.swedSurfacePos = "Telpu kopšana";
-  base.swedSurfaceVariant = defaultCleaning.value;
-
-  base.itemUid = defaultCleaning.itemCode;
-  base.itemId = defaultCleaning.itemCode;
-  base.itemName = defaultCleaning.itemName;
-
-  base.quantity = "1";
-  base.unit = "kpl";
-
-  base.unit_price = defaultCleaning.price;
-  base.labor = defaultCleaning.price;
-  base.materials = 0;
-  base.mechanisms = 0;
-}
+      const defaultCleaning = SWEDBANK_ROOM_CLEANING_VARIANTS[0];
+    
+      base.swedSurfacePos = "Telpu kopšana";
+      base.swedSurfaceVariant = defaultCleaning.value;
+      base.swedAuto = false;
+    
+      base.itemUid = `SWED_SURFACE::${cat}::Telpu kopšana::${defaultCleaning.value}`;
+      base.itemId = base.itemUid;
+      base.itemName = "Telpu kopšana";
+    
+      base.quantity = "";
+      base.unit = "m2";
+    
+      base.unit_price = 0;
+      base.labor = 0;
+      base.materials = 0;
+      base.mechanisms = 0;
+    }
 
     list[idx] = base;
     return { ...ra, [roomId]: list };
@@ -2166,11 +2174,11 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
       // šī rinda paliek kā “virspozīcija”, nevis konkrēts darbs
       category: cat,
-      quantity: baseRow.quantity || "1",
+      quantity: position === "Telpu kopšana" ? baseRow.quantity || "" : baseRow.quantity || "1",
       itemUid: uid,
       itemId: uid,
       itemName: position,           // UI rādīs šo
-      unit: baseRow.unit || "m2",    // pēc noklusējuma
+      unit: position === "Telpu kopšana" ? "m2" : baseRow.unit || "m2",    // pēc noklusējuma
 
       // virspozīcijai cenas nerādām (Excelā apakšdarbi dos summu)
       unit_price: 0,
@@ -2180,7 +2188,9 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
       // Swedbank izvēles lauki UI
       swedSurfacePos: position,
-      swedSurfaceVariant: variant || "",
+      swedSurfaceVariant: position === "Telpu kopšana"
+  ? getSwedbankCleaningVariantByM2(baseRow.quantity).value
+  : variant || "",
 
       // vari atstāt false, lai vienmēr rāda to Swedbank selector UI
       swedAuto: false,
@@ -2470,6 +2480,24 @@ let tameName = window.prompt(
           if (!qty) return;
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
 // --- SWEDBANK surface synthetic parent (Griesti / Sienas, ailes) ---
+if (insurer === "Swedbank" && String(a.category || "").trim() === "Telpu kopšana") {
+  const cleaning = getSwedbankCleaningVariantByM2(qty);
+
+  selections.push({
+    isChild: false,
+    room: `${ri.type} ${ri.index}`,
+    name: cleaning.itemName,
+    category: "Telpu kopšana",
+    unit: "kpl",
+    qty: 1,
+    labor: cleaning.price,
+    materials: 0,
+    mechanisms: 0,
+    unitPrice: cleaning.price,
+  });
+
+  return;
+}
 if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
   const rawCat = normCat(a.category || "");
   const catKey = SWEDBANK_SURFACE_CATEGORY_MAP[rawCat] || rawCat;
@@ -3614,10 +3642,9 @@ const isSwedbankSurfaceSelector =
 
       {/* Variant izvēle tikai 3. pozīcijai */}
       {(
-  row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" ||
-  row.swedSurfacePos === "Durvju maiņa" ||
-  row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža" ||
-  row.swedSurfacePos === "Telpu kopšana"
+row.swedSurfacePos === "Ģipškartons un krāsojamās tapetes vai tapetes" ||
+row.swedSurfacePos === "Durvju maiņa" ||
+row.swedSurfacePos === "Iebūvēta skapja demontāža, montāža"
 ) && (
   <div style={{ marginTop: 8 }}>
     <div style={{ fontSize: 13, marginBottom: 4 }}>
