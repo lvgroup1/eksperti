@@ -64,6 +64,7 @@ const SWEDBANK_SURFACE_CATS = new Set([
   "Sienas",
   "Grīdas",
   "Citi apdares darbi",
+  "Citi darbi un izmaksas",
   "Jumts",
 "Fasāde",
 "Telpu kopšana",
@@ -221,6 +222,7 @@ const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Sienas, ailes": "Sienas",
   "Grīdas": "Grīdas",
   "Citi apdares darbi": "Citi apdares darbi",
+  "Citi darbi un izmaksas": "Citi apdares darbi",
   "Jumts": "Jumts",
   "Fasāde": "Fasāde",
   "Telpu kopšana": "Telpu kopšana",
@@ -3621,18 +3623,21 @@ const isSwedbankSurfaceSelector =
   String(row.category || "").trim() === "Griesti"
     ? SWEDBANK_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Sienas, ailes"
-      ? SWEDBANK_WALL_SURFACE_POSITIONS
-      : String(row.category || "").trim() === "Grīdas"
-        ? SWEDBANK_FLOOR_SURFACE_POSITIONS
-        : String(row.category || "").trim() === "Citi apdares darbi"
-          ? SWEDBANK_OTHER_SURFACE_POSITIONS
-          : String(row.category || "").trim() === "Jumts"
-            ? SWEDBANK_ROOF_SURFACE_POSITIONS
-            : String(row.category || "").trim() === "Fasāde"
-  ? SWEDBANK_FACADE_SURFACE_POSITIONS
-  : String(row.category || "").trim() === "Telpu kopšana"
-  ? ["Telpu kopšana"]
-            : SWEDBANK_BASIC_SURFACE_POSITIONS
+    ? SWEDBANK_WALL_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Grīdas"
+    ? SWEDBANK_FLOOR_SURFACE_POSITIONS
+    : (
+        String(row.category || "").trim() === "Citi apdares darbi" ||
+        String(row.category || "").trim() === "Citi darbi un izmaksas"
+      )
+    ? SWEDBANK_OTHER_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Jumts"
+    ? SWEDBANK_ROOF_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Fasāde"
+    ? SWEDBANK_FACADE_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Telpu kopšana"
+    ? ["Telpu kopšana"]
+    : SWEDBANK_BASIC_SURFACE_POSITIONS
 ).map((pos) => (
   <option key={pos} value={pos}>
     {pos}
