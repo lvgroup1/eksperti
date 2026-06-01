@@ -68,7 +68,6 @@ const SWEDBANK_SURFACE_CATS = new Set([
   "Jumts",
 "Fasāde",
 "Telpu kopšana",
-"Būvgružu utilizācija",
 ]);
 
 const SWEDBANK_SURFACE_POSITIONS = [
@@ -240,6 +239,29 @@ const getSwedbankCleaningVariantByM2 = (m2) => {
     value: "60-100",
     itemName: "Telpu kopšana 60-100 m2",
     price: 264.1,
+  };
+};
+
+const getSwedbankWasteVariantByM3 = (m3) => {
+  const volume = Number(m3 || 0);
+
+  if (volume <= 1) {
+    return {
+      itemName: "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 1m3",
+      price: 64.75,
+    };
+  }
+
+  if (volume <= 5.5) {
+    return {
+      itemName: "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 5,5m3",
+      price: 259.25,
+    };
+  }
+
+  return {
+    itemName: "Būvgružu utilizācija, ieskaitot sanešanu līdz konteineram, 8,5m3",
+    price: 366,
   };
 };
 
@@ -2160,10 +2182,26 @@ function setRowCategory(roomId, idx, category) {
       base.mechanisms = 0;
     }
 
+    if (insurer === "Swedbank" && cat === "Būvgružu utilizācija") {
+      base.itemUid = `SWED_WASTE::${cat}`;
+      base.itemId = base.itemUid;
+      base.itemName = "Būvgružu utilizācija";
+    
+      base.quantity = "";
+      base.unit = "m3";
+    
+      base.unit_price = 0;
+      base.labor = 0;
+      base.materials = 0;
+      base.mechanisms = 0;
+    }
+
     list[idx] = base;
     return { ...ra, [roomId]: list };
   });
 }
+
+
 
   function setRowItem(roomId, idx, uid) {
     const item = priceCatalog.find((i) => i.uid === uid);
@@ -2527,6 +2565,26 @@ if (insurer === "Swedbank" && String(a.category || "").trim() === "Telpu kopšan
 
   return;
 }
+
+if (insurer === "Swedbank" && String(a.category || "").trim() === "Būvgružu utilizācija") {
+  const waste = getSwedbankWasteVariantByM3(qty);
+
+  selections.push({
+    isChild: false,
+    room: `${ri.type} ${ri.index}`,
+    name: waste.itemName,
+    category: "Būvgružu utilizācija",
+    unit: "kpl",
+    qty: 1,
+    labor: waste.price,
+    materials: 0,
+    mechanisms: 0,
+    unitPrice: waste.price,
+  });
+
+  return;
+}
+
 if (
   insurer === "Swedbank" &&
   String(a.category || "").trim() === "Citi darbi un izmaksas" &&
