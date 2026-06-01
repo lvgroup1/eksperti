@@ -2500,6 +2500,39 @@ if (insurer === "Swedbank" && String(a.category || "").trim() === "Telpu kopšan
 
   return;
 }
+if (
+  insurer === "Swedbank" &&
+  String(a.category || "").trim() === "Citi darbi un izmaksas" &&
+  String(a.swedSurfacePos || a.itemName || "").trim() === "Iebūvēta skapja demontāža, montāža"
+) {
+  const doorVariant = String(a.swedSurfaceVariant || a.quantity || "1");
+  const wantedName = `Iebūvēta skapja demontāža, montāža (${doorVariant}-durvju)`;
+
+  const wardrobeRow = priceCatalog.find(
+    (row) => normTxt(row.name) === normTxt(wantedName)
+  );
+
+  if (wardrobeRow) {
+    selections.push({
+      isChild: false,
+      room: `${ri.type} ${ri.index}`,
+      name: wardrobeRow.name,
+      category: "Citi darbi un izmaksas",
+      unit: wardrobeRow.unit || "kpl",
+      qty: 1,
+      labor: pickNum(wardrobeRow, LABOR_KEYS),
+      materials: pickNum(wardrobeRow, MATERIAL_KEYS),
+      mechanisms: pickNum(wardrobeRow, MECHANISM_KEYS),
+      unitPrice:
+        pickNum(wardrobeRow, UNIT_PRICE_KEYS) ||
+        pickNum(wardrobeRow, LABOR_KEYS) +
+          pickNum(wardrobeRow, MATERIAL_KEYS) +
+          pickNum(wardrobeRow, MECHANISM_KEYS),
+    });
+  }
+
+  return;
+}
 if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::")) {
   const rawCat = normCat(a.category || "");
   const catKey = SWEDBANK_SURFACE_CATEGORY_MAP[rawCat] || rawCat;
@@ -2786,7 +2819,7 @@ for (const s of rows) {
     ws.getCell(r, 8).value  = { formula: `ROUND(D${r}*C${r},2)` };
     ws.getCell(r, 9).value  = { formula: `ROUND(E${r}*C${r},2)` };
     ws.getCell(r,10).value  = { formula: `ROUND(F${r}*C${r},2)` };
-    ws.getCell(r,11).value  = { formula: `ROUND(G${r}*C${r},2)` };
+    ws.getCell(r,11).value  = { formula: `ROUND(SUM(H${r}:J${r}),2)` };
 
     row.getCell(3).numFmt = QTY;
     for (const c of [4,5,6,7,8,9,10,11]) row.getCell(c).numFmt = MONEY;
