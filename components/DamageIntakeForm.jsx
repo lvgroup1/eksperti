@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { SWEDBANK_POSITIONS } from "../data/swedbank_positions";
+import { SWEDBANK_POSITIONS } from "../public/prices/swedbank_positions";
 
 
 /* ==========================
