@@ -170,6 +170,7 @@ const SWEDBANK_FLOOR_SURFACE_POSITIONS = [
   "Sliekšņi",
   "Koka latojuma montāža",
 ];
+
 const SWEDBANK_OTHER_SURFACE_POSITIONS = [
   "PVC logi",
   "Koka logi",
@@ -181,12 +182,6 @@ const SWEDBANK_OTHER_SURFACE_POSITIONS = [
   "Durvju maiņa",
   "Loga/durvju ailes apdare",
   "Koka durvju remonts",
-  "Iebūvēta skapja demontāža, montāža",
-  "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)",
-  "Vannas demontāža un montāža",
-  "Duškabīnes demontāža un montāža",
-  "Izlietnes demontāža, montāža",
-  "Klozetpoda demontāža, montāža",
 ];
 
 const SWEDBANK_ROOF_SURFACE_POSITIONS = [
