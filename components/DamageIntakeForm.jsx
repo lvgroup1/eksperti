@@ -311,6 +311,48 @@ const SWEDBANK_SURFACE_VARIANT_MAP = {
   ...Object.fromEntries(SWEDBANK_DOOR_VARIANTS.map((v) => [v, v])),
 };
 
+const getSwedbankMappedUids = (category, position, variant) => {
+  const rawCat = String(category || "").trim();
+  const wantedCatKey = SWEDBANK_SURFACE_CATEGORY_MAP[rawCat] || rawCat;
+  const wantedPosKey = String(position || "").trim();
+
+  const wantedVariantKey =
+    SWEDBANK_SURFACE_VARIANT_MAP[String(variant || "").trim()] ||
+    String(variant || "").trim();
+
+  const catKey =
+    Object.keys(SWEDBANK_POSITIONS || {}).find(
+      (key) => normTxt(key) === normTxt(wantedCatKey)
+    ) || wantedCatKey;
+
+  const categoryMap = SWEDBANK_POSITIONS?.[catKey];
+  if (!categoryMap) return [];
+
+  const posKey =
+    Object.keys(categoryMap || {}).find(
+      (key) => normTxt(key) === normTxt(wantedPosKey)
+    ) || wantedPosKey;
+
+  const mapped = categoryMap[posKey];
+
+  if (Array.isArray(mapped)) return mapped;
+
+  if (mapped && typeof mapped === "object") {
+    const variantKey =
+      Object.keys(mapped || {}).find(
+        (key) => normTxt(key) === normTxt(wantedVariantKey)
+      ) || wantedVariantKey;
+
+    if (variantKey && Array.isArray(mapped[variantKey])) {
+      return mapped[variantKey];
+    }
+
+    return Object.values(mapped).find((v) => Array.isArray(v)) || [];
+  }
+
+  return [];
+};
+
 const SWEDBANK_CHILD_DETAILS = {
   "SW-0003": [
     { name: "metāla karkass", unit: "m2", coeff: 1, materials: 7.57 },
@@ -2692,25 +2734,17 @@ if (insurer === "Swedbank" && String(a.itemUid || "").startsWith("SWED_SURFACE::
     ? (SWEDBANK_SURFACE_VARIANT_MAP[a.swedSurfaceVariant] || a.swedSurfaceVariant)
     : null;
 
-  let uids = SWEDBANK_POSITIONS?.[catKey]?.[position];
-  if (uids && typeof uids === "object" && !Array.isArray(uids)) {
-    uids = variantKey ? uids[variantKey] : [];
-  }
-
-  // fallback: derive rows from the static work map when UID mapping is missing
-  let surfaceRows = [];
-  if (Array.isArray(uids) && uids.length) {
-    const seenSurface = new Set();
-    surfaceRows = uids
-      .map((uid) => priceCatalog.find((row) => String(row.uid) === String(uid) || String(row.id) === String(uid)))
-      .filter(Boolean)
-      .filter((row) => {
-        const k = String(row.uid || row.id || row.name || "");
-        if (seenSurface.has(k)) return false;
-        seenSurface.add(k);
-        return true;
-      });
-  }
+    const mappedUids = getSwedbankMappedUids(
+      a.category,
+      position,
+      a.swedSurfaceVariant
+    );
+    
+    const surfaceRows = mappedUids
+      .map((uid) =>
+        priceCatalog.find((row) => String(row.uid || "") === String(uid))
+      )
+      .filter(Boolean);
 
   if (!surfaceRows.length) {
     let workDefs = SWEDBANK_SURFACE_WORKS?.[rawCat]?.[position];
