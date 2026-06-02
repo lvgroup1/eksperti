@@ -20,6 +20,27 @@ const ROOM_TYPES = [
   "Virtuve","Guļamistaba","Koridors","Katla telpa","Dzīvojamā istaba",
   "Vannas istaba","Tualete","Garderobe","Cits",
 ];
+
+const SWEDBANK_WORK_COST_POSITIONS = [
+  "Esoša gaismekļa demontāža, montāža",
+  "Esoša difuzora demontāža, montāža",
+  "Lustras demontāža, montāža",
+  "Esoša iebūvēta gaismekļa demontāža, montāža",
+  "Aizskaru karnīzes demontāža, montāža",
+  "Rozešu un sledžu demontāža, montāža",
+  "Radiatora demontāža, montāža",
+  "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)",
+  "Mēbeles pārvietošana",
+  "Iebūvēta skapja demontāža, montāža",
+  "Elektroinstalācijas pārbaude",
+  "Vannas demontāža un montāža",
+  "Duškabīnes demontāža un montāža",
+  "Izlietnes demontāža, montāža",
+  "Klozetpoda demontāža, montāža",
+  "Biotualetes noma un apkalpošana divas reizes mēnesi (transportēšana uz objektu un atpakaļ, Rīga)",
+  "Deodorācija",
+];
+
 const normCat = (v) => (v || "").trim();
 
 const isKitchenRoomName = (roomName) =>
@@ -3775,11 +3796,10 @@ const isSwedbankSurfaceSelector =
     ? SWEDBANK_WALL_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Grīdas"
     ? SWEDBANK_FLOOR_SURFACE_POSITIONS
-    : (
-        String(row.category || "").trim() === "Citi apdares darbi" ||
-        String(row.category || "").trim() === "Citi darbi un izmaksas"
-      )
-    ? SWEDBANK_OTHER_SURFACE_POSITIONS.filter((pos) => {
+    : String(row.category || "").trim() === "Citi apdares darbi"
+    ? SWEDBANK_OTHER_SURFACE_POSITIONS
+    : String(row.category || "").trim() === "Citi darbi un izmaksas"
+    ? SWEDBANK_WORK_COST_POSITIONS.filter((pos) => {
         const currentRoom = roomInstances.find((r) => r.id === editingRoomId);
         const roomName = `${currentRoom?.type || ""} ${currentRoom?.index || ""}`;
 

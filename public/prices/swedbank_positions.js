@@ -182,11 +182,6 @@ export const SWEDBANK_POSITIONS = {
 
   "Loga/durvju ailes apdare": ["SW-0167", "SW-0168", "SW-0169", "SW-0170", "SW-0171", "SW-0172", "SW-0173", "SW-0174", "SW-0175"],
   "Koka durvju remonts": ["SW-0160", "SW-0176", "SW-0177"],
-  "Iebūvēta skapja demontāža, montāža": {
-  "1": ["SW-0508"],
-  "2": ["SW-0509"],
-  "3": ["SW-0510"],
-},
 },
 "Citi darbi un izmaksas": {
   "Iebūvēta skapja demontāža, montāža": {
