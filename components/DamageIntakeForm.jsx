@@ -22,6 +22,17 @@ const ROOM_TYPES = [
 ];
 const normCat = (v) => (v || "").trim();
 
+const isKitchenRoomName = (roomName) =>
+  normTxt(roomName).includes(normTxt("Virtuve"));
+
+const isBathroomRoomName = (roomName) => {
+  const n = normTxt(roomName);
+  return n.includes(normTxt("Vannas istaba")) || n.includes(normTxt("Vannaistaba"));
+};
+
+const isToiletRoomName = (roomName) =>
+  normTxt(roomName).includes(normTxt("Tualete"));
+
 // numeric key sets for robust parsing
 const LABOR_KEYS      = ["labor","darbs"];
 const MATERIAL_KEYS = [
@@ -150,6 +161,11 @@ const SWEDBANK_OTHER_SURFACE_POSITIONS = [
   "Loga/durvju ailes apdare",
   "Koka durvju remonts",
   "Iebūvēta skapja demontāža, montāža",
+  "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)",
+  "Vannas demontāža un montāža",
+  "Duškabīnes demontāža un montāža",
+  "Izlietnes demontāža, montāža",
+  "Klozetpoda demontāža, montāža",
 ];
 
 const SWEDBANK_ROOF_SURFACE_POSITIONS = [
@@ -3781,12 +3797,36 @@ const isSwedbankSurfaceSelector =
     : String(row.category || "").trim() === "Sienas, ailes"
     ? SWEDBANK_WALL_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Grīdas"
-    ? SWEDBANK_FLOOR_SURFACE_POSITIONS
-    : (
-        String(row.category || "").trim() === "Citi apdares darbi" ||
-        String(row.category || "").trim() === "Citi darbi un izmaksas"
-      )
-    ? SWEDBANK_OTHER_SURFACE_POSITIONS
+    ? SWEDBANK_OTHER_SURFACE_POSITIONS.filter((pos) => {
+      const roomName = `${ri.type} ${ri.index}`;
+  
+      const kitchenPosition =
+        "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)";
+  
+      const bathroomOnlyPositions = [
+        "Vannas demontāža un montāža",
+        "Duškabīnes demontāža un montāža",
+      ];
+  
+      const bathroomOrToiletPositions = [
+        "Izlietnes demontāža, montāža",
+        "Klozetpoda demontāža, montāža",
+      ];
+  
+      if (normTxt(pos) === normTxt(kitchenPosition)) {
+        return isKitchenRoomName(roomName);
+      }
+  
+      if (bathroomOnlyPositions.some((p) => normTxt(pos) === normTxt(p))) {
+        return isBathroomRoomName(roomName);
+      }
+  
+      if (bathroomOrToiletPositions.some((p) => normTxt(pos) === normTxt(p))) {
+        return isBathroomRoomName(roomName) || isToiletRoomName(roomName);
+      }
+  
+      return true;
+    })
     : String(row.category || "").trim() === "Jumts"
     ? SWEDBANK_ROOF_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Fasāde"
