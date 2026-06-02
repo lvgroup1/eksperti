@@ -202,30 +202,6 @@ const SWEDBANK_WARDROBE_VARIANTS = [
   },
 ];
 
-const SWEDBANK_ROOM_CLEANING_VARIANTS = [
-  {
-    value: "lidz30",
-    label: "Līdz 30 m2",
-    itemCode: "SW-TELPU-001",
-    itemName: "Telpu kopšana līdz 30 m2",
-    price: 85,
-  },
-  {
-    value: "30_60",
-    label: "30-60 m2",
-    itemCode: "SW-TELPU-002",
-    itemName: "Telpu kopšana 30-60 m2",
-    price: 145,
-  },
-  {
-    value: "60_100",
-    label: "60-100 m2",
-    itemCode: "SW-TELPU-003",
-    itemName: "Telpu kopšana 60-100 m2",
-    price: 220,
-  },
-];
-
 const getSwedbankCleaningVariantByM2 = (m2) => {
   const area = Number(m2 || 0);
 
@@ -281,7 +257,7 @@ const SWEDBANK_SURFACE_CATEGORY_MAP = {
   "Sienas, ailes": "Sienas",
   "Grīdas": "Grīdas",
   "Citi apdares darbi": "Citi apdares darbi",
-  "Citi darbi un izmaksas": "Citi apdares darbi",
+  "Citi darbi un izmaksas": "Citi darbi un izmaksas",
   "Jumts": "Jumts",
   "Fasāde": "Fasāde",
   "Telpu kopšana": "Telpu kopšana",
@@ -3791,43 +3767,49 @@ const isSwedbankSurfaceSelector =
     background: "white",
   }}
 >
-  <option value="">— izvēlies pozīciju —</option>
-  {(
+<option value="">— izvēlies pozīciju —</option>
+{(
   String(row.category || "").trim() === "Griesti"
     ? SWEDBANK_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Sienas, ailes"
     ? SWEDBANK_WALL_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Grīdas"
+    ? SWEDBANK_FLOOR_SURFACE_POSITIONS
+    : (
+        String(row.category || "").trim() === "Citi apdares darbi" ||
+        String(row.category || "").trim() === "Citi darbi un izmaksas"
+      )
     ? SWEDBANK_OTHER_SURFACE_POSITIONS.filter((pos) => {
-      const roomName = `${ri.type} ${ri.index}`;
-  
-      const kitchenPosition =
-        "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)";
-  
-      const bathroomOnlyPositions = [
-        "Vannas demontāža un montāža",
-        "Duškabīnes demontāža un montāža",
-      ];
-  
-      const bathroomOrToiletPositions = [
-        "Izlietnes demontāža, montāža",
-        "Klozetpoda demontāža, montāža",
-      ];
-  
-      if (normTxt(pos) === normTxt(kitchenPosition)) {
-        return isKitchenRoomName(roomName);
-      }
-  
-      if (bathroomOnlyPositions.some((p) => normTxt(pos) === normTxt(p))) {
-        return isBathroomRoomName(roomName);
-      }
-  
-      if (bathroomOrToiletPositions.some((p) => normTxt(pos) === normTxt(p))) {
-        return isBathroomRoomName(roomName) || isToiletRoomName(roomName);
-      }
-  
-      return true;
-    })
+        const currentRoom = roomInstances.find((r) => r.id === editingRoomId);
+        const roomName = `${currentRoom?.type || ""} ${currentRoom?.index || ""}`;
+
+        const kitchenPosition =
+          "Virtuves mēbeles un iekārtas demontāža, pārvietošana, montāža (standarta iekārta)";
+
+        const bathroomOnlyPositions = [
+          "Vannas demontāža un montāža",
+          "Duškabīnes demontāža un montāža",
+        ];
+
+        const bathroomOrToiletPositions = [
+          "Izlietnes demontāža, montāža",
+          "Klozetpoda demontāža, montāža",
+        ];
+
+        if (normTxt(pos) === normTxt(kitchenPosition)) {
+          return isKitchenRoomName(roomName);
+        }
+
+        if (bathroomOnlyPositions.some((p) => normTxt(pos) === normTxt(p))) {
+          return isBathroomRoomName(roomName);
+        }
+
+        if (bathroomOrToiletPositions.some((p) => normTxt(pos) === normTxt(p))) {
+          return isBathroomRoomName(roomName) || isToiletRoomName(roomName);
+        }
+
+        return true;
+      })
     : String(row.category || "").trim() === "Jumts"
     ? SWEDBANK_ROOF_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Fasāde"
