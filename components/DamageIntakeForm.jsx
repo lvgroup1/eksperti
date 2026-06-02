@@ -202,12 +202,6 @@ const SWEDBANK_WARDROBE_VARIANTS = [
   },
 ];
 
-const SWEDBANK_WASTE_VARIANTS = [
-  { value: "1", label: "1 m3" },
-  { value: "5.5", label: "5.5 m3" },
-  { value: "8.5", label: "8.5 m3" },
-];
-
 const SWEDBANK_ROOM_CLEANING_VARIANTS = [
   {
     value: "lidz30",
@@ -2257,11 +2251,17 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
 
       // šī rinda paliek kā “virspozīcija”, nevis konkrēts darbs
       category: cat,
-      quantity: position === "Telpu kopšana" ? baseRow.quantity || "" : baseRow.quantity || "1",
+      quantity: position === "Telpu kopšana" || position === "Būvgružu utilizācija"
+  ? baseRow.quantity || ""
+  : baseRow.quantity || "1",
       itemUid: uid,
       itemId: uid,
       itemName: position,           // UI rādīs šo
-      unit: position === "Telpu kopšana" ? "m2" : baseRow.unit || "m2",    // pēc noklusējuma
+      unit: position === "Telpu kopšana"
+  ? "m2"
+  : position === "Būvgružu utilizācija"
+    ? "m3"
+    : baseRow.unit || "m2",
 
       // virspozīcijai cenas nerādām (Excelā apakšdarbi dos summu)
       unit_price: 0,
@@ -2272,8 +2272,10 @@ function applySwedbankSurfacePosition(roomId, idx, category, position, variant) 
       // Swedbank izvēles lauki UI
       swedSurfacePos: position,
       swedSurfaceVariant: position === "Telpu kopšana"
-  ? getSwedbankCleaningVariantByM2(baseRow.quantity).value
-  : variant || "",
+      ? getSwedbankCleaningVariantByM2(baseRow.quantity).value
+      : position === "Būvgružu utilizācija"
+        ? getSwedbankWasteVariantByM3(baseRow.quantity).value
+        : variant || "",
 
       // vari atstāt false, lai vienmēr rāda to Swedbank selector UI
       swedAuto: false,
@@ -2638,7 +2640,6 @@ if (
   insurer === "Swedbank" &&
   String(a.category || "").trim() === "Būvgružu utilizācija"
 ) {
-  const wasteVariant = String(a.swedSurfaceVariant || "");
 
   const wasteRow = priceCatalog.find(
     (row) =>
@@ -3833,7 +3834,7 @@ const isSwedbankSurfaceSelector =
     ? SWEDBANK_FACADE_SURFACE_POSITIONS
     : String(row.category || "").trim() === "Telpu kopšana"
     ? ["Telpu kopšana"]
-    : SWEDBANK_BASIC_SURFACE_POSITIONS
+    : []
 ).map((pos) => (
   <option key={pos} value={pos}>
     {pos}
