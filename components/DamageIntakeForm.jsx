@@ -222,7 +222,26 @@ const SWEDBANK_WARDROBE_VARIANTS = [
     label: "3 durvis",
   },
 ];
-
+const SWEDBANK_ROOM_CLEANING_VARIANTS = [
+  {
+    value: "0-30",
+    label: "0-30 m2",
+    itemName: "Telpu kopšana 0-30 m2",
+    price: 79.23,
+  },
+  {
+    value: "30-60",
+    label: "30-60 m2",
+    itemName: "Telpu kopšana 30-60 m2",
+    price: 158.46,
+  },
+  {
+    value: "60-100",
+    label: "60-100 m2",
+    itemName: "Telpu kopšana 60-100 m2",
+    price: 264.1,
+  },
+];
 const getSwedbankCleaningVariantByM2 = (m2) => {
   const area = Number(m2 || 0);
 
