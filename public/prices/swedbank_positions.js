@@ -82,6 +82,79 @@ export const SWEDBANK_POSITIONS = {
         "SW-0077",
       ],
     },
+
+    "Ģipškartona konstrukcija - apšuvums (ugunsdrošais ģipškartons)": [
+      "SW-0056",
+      "SW-0057",
+      "SW-0058",
+      "SW-0080",
+      "SW-0081",
+    ],
+
+    "Ģipškartona konstrukcija - apšuvums (mitrumizturīgais ģipškartons)": [
+      "SW-0056",
+      "SW-0057",
+      "SW-0058",
+      "SW-0080",
+      "SW-0081",
+    ],
+
+    "Ģipškartona apdares kārba (mitrumizturīgais ģipškartons)": [
+      "SW-0056",
+      "SW-0057",
+      "SW-0058",
+      "SW-0080",
+      "SW-0081",
+    ],
+
+    "Koka skaidu plākšņu sienas apakšklājs": [
+      "SW-0119",
+      "SW-0120",
+    ],
+
+    "Apmetums, 10mm": [
+      "SW-0072",
+      "SW-0080",
+      "SW-0081",
+    ],
+
+    "Krāsojums (ar špaktelējumu)": [
+      "SW-0080",
+      "SW-0081",
+    ],
+
+    "Apstrāde ar pretsēnīšu šķidrumu": [
+      "SW-0099",
+    ],
+
+    "Ailes ar krāsojumu": [
+      "SW-0100",
+      "SW-0101",
+      "SW-0102",
+    ],
+
+    "Ailes ar krāsojamām tapetēm": [
+      "SW-0103",
+      "SW-0104",
+      "SW-0105",
+    ],
+
+    "Ailes ar tapetēm": [
+      "SW-0107",
+      "SW-0108",
+      "SW-0109",
+    ],
+
+    "Augstvērtīgs dekoratīvais apmetums ailē": [
+      "SW-0110",
+      "SW-0111",
+      "SW-0112",
+    ],
+
+    "Papildu iespējamie darbi sienu apdarē": [
+      "SW-0113",
+      "SW-0114",
+    ],
   },
   Grīdas: {
     "Palīgdarbi": [
